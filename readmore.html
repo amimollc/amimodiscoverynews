@@ -1,10 +1,10 @@
-<!-- readmore.html - News Card + Full Text Extraction (No images/videos, reload support) -->
+<!-- readmore.html - Full Article with Original News Card + Deep Extraction (2 min timeout, iframe fallback with blur & news card) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>ReadMore · Full Article Text</title>
+    <title>ReadMore · Full Article</title>
     <style>
         * {
             margin: 0;
@@ -13,25 +13,24 @@
         }
         body {
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
-            min-height: 100vh;
+            background: #f1f5f9;
             padding: 1.5rem;
             color: #0f172a;
         }
         .container {
-            max-width: 880px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         .card {
             background: white;
             border-radius: 32px;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.12);
             overflow: hidden;
-            border: 1px solid rgba(100, 116, 139, 0.2);
+            border: 1px solid rgba(100,116,139,0.25);
         }
         .header {
             background: #0f172a;
-            padding: 1.2rem 1.8rem;
+            padding: 1rem 1.8rem;
             color: white;
             display: flex;
             justify-content: space-between;
@@ -40,8 +39,11 @@
             gap: 0.8rem;
         }
         .header h1 {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
         }
         .header-actions {
             display: flex;
@@ -66,104 +68,182 @@
             background: #dc2626;
         }
         .btn-close:hover { background: #b91c1c; }
-
-        /* News Card (headline + description) */
-        .news-card {
-            background: #ffffff;
-            border-radius: 24px;
-            margin: 1.8rem;
-            padding: 1.5rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-        }
-        .article-headline {
-            font-size: 1.8rem;
-            font-weight: 800;
-            line-height: 1.3;
-            margin-bottom: 0.75rem;
-            color: #0f172a;
-        }
-        .article-meta {
-            font-size: 0.8rem;
-            color: #475569;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 0.75rem;
+        .split-layout {
             display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 1.8rem;
+            padding: 1.8rem;
         }
-        .article-description {
-            font-size: 1rem;
-            line-height: 1.5;
-            color: #334155;
-            background: #f8fafc;
-            padding: 1rem;
-            border-radius: 20px;
-            margin: 1rem 0 0.5rem 0;
-            font-style: normal;
-            border-left: 4px solid #3b82f6;
-        }
-        .source-link {
-            word-break: break-all;
-        }
-
-        /* Full extraction area */
-        .extraction-section {
-            margin: 0 1.8rem 1.8rem 1.8rem;
-            border-top: 2px dashed #e2e8f0;
-            padding-top: 1.5rem;
+        /* Original content (news card with text, images, videos) */
+        .original-preview {
+            background: #fefce8;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            position: relative;
         }
         .section-title {
+            background: #f8fafc;
+            padding: 0.8rem 1.5rem;
             font-weight: 700;
             font-size: 1.1rem;
-            margin-bottom: 0.8rem;
+            border-bottom: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            flex-wrap: wrap;
+            gap: 0.5rem;
+            color: #0f172a;
         }
-        .status-badge {
-            background: #e2e8f0;
-            border-radius: 30px;
-            padding: 0.2rem 0.8rem;
-            font-size: 0.7rem;
+        .iframe-wrapper {
+            background: #eef2ff;
+            position: relative;
+        }
+        #originalFrame {
+            width: 100%;
+            height: 620px;
+            border: none;
+            background: white;
+            display: block;
+        }
+        .iframe-fallback {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 12px;
+        }
+        .news-card-fallback {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 28px;
+            padding: 2rem;
+            max-width: 450px;
+            text-align: center;
+            border-left: 5px solid #3b82f6;
+            color: white;
+            box-shadow: 0 20px 35px -12px black;
+        }
+        .news-card-fallback i {
+            font-size: 2.5rem;
+            color: #3b82f6;
+            margin-bottom: 1rem;
+        }
+        .news-card-fallback h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .fallback-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.2rem;
+        }
+        .fallback-btn {
+            background: #3b82f6;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            color: white;
             font-weight: 600;
+            cursor: pointer;
         }
-        .loader-box {
+        .iframe-note {
+            background: #f1f5f9;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.8rem;
+            color: #334155;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+        .open-link-btn, .reload-iframe-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 0.3rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .reload-iframe-btn {
+            background: #facc15;
+            color: #0f172a;
+        }
+        .extraction-card {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .extraction-body {
+            padding: 1.5rem;
+        }
+        .loader-status {
             background: #f1f5f9;
             border-radius: 20px;
-            padding: 1.5rem;
+            padding: 1.2rem;
             text-align: center;
-            margin: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
         }
-        .spinner {
-            width: 40px;
-            height: 40px;
+        .spinner-small {
+            width: 36px;
+            height: 36px;
             border: 3px solid #cbd5e1;
             border-top: 3px solid #3b82f6;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto 1rem auto;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .extracted-text {
             background: #fafcff;
             border-radius: 20px;
-            padding: 1.2rem;
+            padding: 1rem;
             border: 1px solid #e2edff;
             font-size: 0.95rem;
             line-height: 1.65;
             white-space: pre-wrap;
-            max-height: 550px;
+            max-height: 460px;
             overflow-y: auto;
             margin: 1rem 0;
+        }
+        .media-section {
+            margin: 1.2rem 0 1rem 0;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+        }
+        .video-list {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 0.8rem 1rem;
+            list-style: none;
+        }
+        .video-list li {
+            margin-bottom: 0.5rem;
+            word-break: break-all;
+        }
+        .video-list a {
+            color: #2563eb;
+            text-decoration: none;
         }
         .action-bar {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
-            margin-top: 1rem;
+            margin-top: 1.2rem;
         }
         .btn {
             padding: 0.5rem 1.2rem;
@@ -181,19 +261,25 @@
         .btn-secondary { background: #e2e8f0; color: #1e293b; }
         .btn-primary:hover { background: #2563eb; }
         .btn-secondary:hover { background: #cbd5e1; }
-        .error-box {
+        .error-msg {
             background: #fef2f2;
             border-left: 5px solid #dc2626;
             padding: 1rem;
             border-radius: 16px;
-            margin: 1rem 0;
             color: #991b1b;
         }
-        @media (max-width: 640px) {
-            body { padding: 1rem; }
-            .news-card { margin: 1rem; padding: 1rem; }
-            .extraction-section { margin: 0 1rem 1rem 1rem; }
-            .article-headline { font-size: 1.4rem; }
+        .success-badge {
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 30px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        @media (max-width: 760px) {
+            body { padding: 0.8rem; }
+            .split-layout { padding: 1rem; }
+            #originalFrame { height: 450px; }
         }
     </style>
 </head>
@@ -201,34 +287,40 @@
 <div class="container">
     <div class="card">
         <div class="header">
-            <h1>📰 ReadMore · Full Text Extractor</h1>
+            <h1>📖 ReadMore · Live Article + Deep Extraction</h1>
             <div class="header-actions">
-                <button id="reloadBtn" class="btn-header btn-reload">⟳ Reload Extraction</button>
+                <button id="reloadBtn" class="btn-header btn-reload">⟳ Reload Both (iframe + loading text)</button>
                 <button id="closeBtn" class="btn-header btn-close">✕ Close</button>
             </div>
         </div>
-
-        <!-- News Card: headline + description, loads immediately -->
-        <div id="newsCardContainer" class="news-card">
-            <div class="loader-box">
-                <div class="spinner"></div>
-                <div>⏳ Loading article metadata ...</div>
+        <div class="split-layout">
+            <!-- ORIGINAL CONTENT: loads immediately, shows full text/images/videos -->
+            <div class="original-preview">
+                <div class="section-title">🌐 Original news page (text, images & videos)</div>
+                <div class="iframe-wrapper" id="iframeWrapper">
+                    <iframe id="originalFrame" title="Original Article" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-downloads allow-top-navigation"></iframe>
+                </div>
+                <div class="iframe-note">
+                    <span>📄 The real article – loads all media, styling, and interactive content.</span>
+                    <div>
+                        <button id="openNewTabBtn" class="open-link-btn">🔗 Open in new tab</button>
+                        <button id="reloadIframeOnly" class="reload-iframe-btn">⟳ Reload article only</button>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Full extraction area (text only) -->
-        <div class="extraction-section">
-            <div class="section-title">
-                📄 Full Article Text
-                <span id="extractStatusBadge" class="status-badge">⏳ waiting</span>
-            </div>
-            <div id="extractionContent">
-                <div class="loader-box">
-                    <div class="spinner"></div>
-                    <div>Loading ... Please wait(up to 2 minutes)</div>
-                    <small>Fetching the complete article text – 
-                    
-                    </small>
+            <!-- DEEP EXTRACTION (runs in background, up to 2 min) -->
+            <div class="extraction-card">
+                <div class="section-title">
+                    📡 Deep text & video Loading
+                    <span class="success-badge" id="extractionStatusBadge">⏳ processing</span>
+                </div>
+                <div class="extraction-body" id="extractionContentArea">
+                    <div class="loader-status">
+                        <div class="spinner-small"></div>
+                        <div><strong>🕒 Deep Loading in progress ... (up to 2 minutes)</strong></div>
+                        <small>Fetching full article text, loading video links, and metadata.<br>You can read the original above while this runs.</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -239,42 +331,118 @@
     (function() {
         const urlParams = new URLSearchParams(window.location.search);
         let articleUrl = urlParams.get('url');
-        let articleTitle = urlParams.get('title') || null;
+        let articleTitle = urlParams.get('title') || 'News Article';
 
         if (!articleUrl) {
-            document.getElementById('newsCardContainer').innerHTML = `
-                <div class="error-box">
-                    <strong>⚠️ No article URL provided.</strong><br>
-                    Please return to the main page and click "Read More".
-                </div>
-                <div class="action-bar">
-                    <button class="btn btn-primary" onclick="window.location.href='index.html'">🏠 Go to Home</button>
-                </div>
-            `;
-            document.getElementById('extractionContent').innerHTML = '';
+            document.querySelector('.split-layout').innerHTML = `<div style="padding:2rem; text-align:center; background:#fff0f0; border-radius:24px;">
+                <strong>⚠️ No article URL provided.</strong><br>
+                Please return to the main page and click "Read More".
+                <button onclick="window.location.href='index.html'" style="margin-top:1rem; background:#3b82f6; color:white; border:none; padding:0.5rem 1.2rem; border-radius:40px;">🏠 Go Home</button>
+            </div>`;
             return;
         }
 
-        // DOM elements
-        const newsCardDiv = document.getElementById('newsCardContainer');
-        const extractionDiv = document.getElementById('extractionContent');
-        const statusBadge = document.getElementById('extractStatusBadge');
+        document.title = `ReadMore: ${articleTitle.substring(0, 70)}`;
+
+        const iframeWrapper = document.getElementById('iframeWrapper');
+        const iframeEl = document.getElementById('originalFrame');
+        const extractionArea = document.getElementById('extractionContentArea');
         const reloadBtn = document.getElementById('reloadBtn');
         const closeBtn = document.getElementById('closeBtn');
+        const openNewTabBtn = document.getElementById('openNewTabBtn');
+        const reloadIframeOnly = document.getElementById('reloadIframeOnly');
+        const statusBadge = document.getElementById('extractionStatusBadge');
 
         let currentAbortController = null;
-        let extractedFullText = "";
+        let fallbackShown = false;
 
-        // Helper: escape HTML
+        // ----- Iframe fallback with blur & news card -----
+        function showIframeFallback() {
+            if (fallbackShown) return;
+            fallbackShown = true;
+            // Remove any existing fallback
+            const existing = iframeWrapper.querySelector('.iframe-fallback');
+            if (existing) existing.remove();
+            
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'iframe-fallback';
+            fallbackDiv.innerHTML = `
+                <div class="news-card-fallback">
+                    <i class="fas fa-newspaper"></i>
+                    <h3>⚠️ Original content blocked</h3>
+                    <p>The news website is preventing embedding or the iframe failed to load.<br>You can still read the full article by opening it directly.</p>
+                    <div class="fallback-buttons">
+                        <button id="fallbackOpenTab" class="fallback-btn"><i class="fas fa-external-link-alt"></i> Open in new tab</button>
+                        <button id="fallbackRetryIframe" class="fallback-btn" style="background:#facc15; color:#0f172a;"><i class="fas fa-sync-alt"></i> Retry iframe</button>
+                    </div>
+                </div>
+            `;
+            iframeWrapper.style.position = 'relative';
+            iframeWrapper.appendChild(fallbackDiv);
+            
+            document.getElementById('fallbackOpenTab')?.addEventListener('click', () => {
+                window.open(articleUrl, '_blank');
+            });
+            document.getElementById('fallbackRetryIframe')?.addEventListener('click', () => {
+                fallbackDiv.remove();
+                fallbackShown = false;
+                reloadIframe();
+                // set new timeout
+                setTimeout(() => {
+                    if (!fallbackShown && iframeEl && !iframeEl.src) showIframeFallback();
+                }, 8000);
+            });
+        }
+
+        // reload iframe with error detection
+        function reloadIframe() {
+            if (iframeEl) {
+                const oldSrc = iframeEl.src;
+                iframeEl.src = '';
+                setTimeout(() => {
+                    iframeEl.src = articleUrl;
+                    fallbackShown = false;
+                    // set a timeout to show fallback if iframe still fails
+                    setTimeout(() => {
+                        if (!fallbackShown && iframeEl && !iframeEl.contentWindow) {
+                            // heuristic: if after 8 seconds still no load, show fallback
+                            showIframeFallback();
+                        }
+                    }, 8000);
+                }, 50);
+            }
+        }
+
+        // initialize iframe with error handling
+        if (iframeEl) {
+            iframeEl.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-downloads allow-top-navigation-by-user-activation');
+            iframeEl.src = articleUrl;
+            
+            iframeEl.onload = () => {
+                // iframe loaded, remove any fallback if present
+                const existingFallback = iframeWrapper.querySelector('.iframe-fallback');
+                if (existingFallback) existingFallback.remove();
+                fallbackShown = false;
+            };
+            iframeEl.onerror = () => {
+                showIframeFallback();
+            };
+            // fallback timer
+            setTimeout(() => {
+                if (!fallbackShown && iframeEl && !iframeEl.contentWindow) {
+                    showIframeFallback();
+                }
+            }, 8000);
+        }
+
+        // ----- Deep extraction (full text & videos, up to 2 min) -----
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]);
         }
 
-        // Copy to clipboard
         async function copyToClipboard(text) {
-            try { await navigator.clipboard.writeText(text); }
-            catch { 
+            try { await navigator.clipboard.writeText(text); } catch {
                 const ta = document.createElement('textarea');
                 ta.value = text;
                 document.body.appendChild(ta);
@@ -284,77 +452,102 @@
             }
         }
 
-        // Show news card with headline and description (extracted from meta or fallback)
-        async function loadNewsCard(url, providedTitle) {
-            newsCardDiv.innerHTML = `<div class="loader-box"><div class="spinner"></div><div>📡 Fetching article info ...</div></div>`;
-            let headline = providedTitle || "Loading title...";
-            let description = "Fetching description from the article...";
-            let sourceUrl = url;
-
-            try {
-                const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                const resp = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
-                if (resp.ok) {
-                    const html = await resp.text();
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    // Try to get title if not provided
-                    if (!providedTitle) {
-                        const titleTag = doc.querySelector('title');
-                        if (titleTag) headline = titleTag.innerText.trim();
-                        const ogTitle = doc.querySelector('meta[property="og:title"]');
-                        if (ogTitle && ogTitle.getAttribute('content')) headline = ogTitle.getAttribute('content');
-                    }
-                    // Get description
-                    const metaDesc = doc.querySelector('meta[name="description"]');
-                    if (metaDesc && metaDesc.getAttribute('content')) description = metaDesc.getAttribute('content');
-                    const ogDesc = doc.querySelector('meta[property="og:description"]');
-                    if (ogDesc && ogDesc.getAttribute('content')) description = ogDesc.getAttribute('content');
-                    if (description.length > 300) description = description.substring(0, 300) + "...";
-                }
-            } catch (err) {
-                console.warn("Could not fetch meta info, using fallback");
-                if (!providedTitle) headline = "Article (title unavailable)";
-                description = "Description could not be loaded automatically. Full text will appear below after extraction.";
+        function setExtractionLoading(isLoading, message = "") {
+            if (isLoading) {
+                extractionArea.innerHTML = `
+                    <div class="loader-status">
+                        <div class="spinner-small"></div>
+                        <div><strong>⏳ ${escapeHtml(message) || 'Loading full article text & videos... (up to 2 minutes)'}</strong></div>
+                        <small>This can take up to 120 seconds for heavy news pages.<br>You can continue scrolling the original content above.</small>
+                    </div>
+                `;
+                statusBadge.innerText = '⏳ loading';
+                statusBadge.style.background = "#fef9c3";
+                statusBadge.style.color = "#854d0e";
             }
-
-            if (!headline || headline === "") headline = "News Article";
-            document.title = `ReadMore: ${headline.substring(0, 60)}`;
-
-            newsCardDiv.innerHTML = `
-                <div class="article-headline">${escapeHtml(headline)}</div>
-                <div class="article-meta">
-                    <span>🔗 <a href="${escapeHtml(sourceUrl)}" target="_blank" class="source-link">${escapeHtml(sourceUrl.length > 70 ? sourceUrl.substring(0,70)+'…' : sourceUrl)}</a></span>
-                </div>
-                <div class="article-description">
-                    <strong>📌 Description</strong><br>${escapeHtml(description)}
-                </div>
-                <div style="font-size:0.75rem; color:#64748b; margin-top:0.8rem;">⬇ Full article text is being extracted below (may take up to 2 min).</div>
-            `;
         }
 
-        // Full text extraction (no images/videos)
-        async function startFullTextExtraction(url) {
-            if (currentAbortController) {
-                currentAbortController.abort();
+        function displayExtractionSuccess(data) {
+            const extractedText = data.fullText || "No substantial text found.";
+            const videoUrls = data.videoUrls || [];
+            const wordCount = extractedText.split(/\s+/).filter(w => w.length > 0).length;
+            const primaryImage = data.primaryImage || null;
+
+            let mediaHtml = '';
+            if (videoUrls.length) {
+                mediaHtml += `<div class="media-section">
+                    <div class="section-title" style="background:none; padding:0 0 0.5rem 0;">🎬 Detected videos (${videoUrls.length})</div>
+                    <ul class="video-list">`;
+                videoUrls.forEach(v => {
+                    mediaHtml += `<li>🎥 <a href="${escapeHtml(v)}" target="_blank">${escapeHtml(v.length > 80 ? v.substring(0,80)+'…' : v)}</a></li>`;
+                });
+                mediaHtml += `</ul></div>`;
+            } else {
+                mediaHtml += `<div class="media-section"><div class="section-title" style="background:none;">🎬 No video embeds found in HTML.</div><small>Videos may be loaded dynamically or behind scripts.</small></div>`;
             }
+            if (primaryImage) {
+                mediaHtml += `<div class="media-section"><div class="section-title" style="background:none;">🖼️ Primary image (og:image)</div><a href="${escapeHtml(primaryImage)}" target="_blank">${escapeHtml(primaryImage.substring(0, 80))}</a></div>`;
+            }
+
+            const safeText = escapeHtml(extractedText).replace(/\n/g, '<br>');
+            extractionArea.innerHTML = `
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.8rem;">
+                        <strong>📑 Loaded Article Text</strong> <span class="success-badge">~${wordCount} words</span>
+                    </div>
+                    <div class="extracted-text">${safeText || '<em>No readable paragraphs. Site may require JS.</em>'}</div>
+                    ${mediaHtml}
+                    <div class="action-bar">
+                        <button id="copyExtractedBtn" class="btn btn-primary">📋 Copy Full Text</button>
+                        <button id="downloadExtractedBtn" class="btn btn-secondary">💾 Download .txt (with videos)</button>
+                    </div>
+                </div>
+            `;
+            statusBadge.innerText = '✅ extracted';
+            statusBadge.style.background = "#dcfce7";
+            statusBadge.style.color = "#166534";
+
+            document.getElementById('copyExtractedBtn')?.addEventListener('click', () => {
+                const exportText = `TITLE: ${articleTitle}\nSOURCE: ${articleUrl}\n\n--- FULL TEXT ---\n\n${extractedText}\n\n--- VIDEOS ---\n${videoUrls.join('\n')}\n\n--- IMAGE ---\n${primaryImage || 'None'}`;
+                copyToClipboard(exportText).then(() => alert('✅ Full article + video list copied'));
+            });
+            document.getElementById('downloadExtractedBtn')?.addEventListener('click', () => {
+                const blob = new Blob([`TITLE: ${articleTitle}\nSOURCE: ${articleUrl}\n\n== TEXT ==\n\n${extractedText}\n\n== VIDEO LINKS ==\n${videoUrls.join('\n')}`], {type: 'text/plain'});
+                const a = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                a.href = url;
+                a.download = `article_${articleTitle.substring(0, 50).replace(/[^\w]/g,'_')}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        function displayExtractionError(errorMsg) {
+            extractionArea.innerHTML = `
+                <div class="error-msg">
+                    <strong>⚠️ Extraction failed</strong><br>${escapeHtml(errorMsg)}
+                    <div class="action-bar" style="margin-top:1rem;">
+                        <button id="retryExtractionBtn" class="btn btn-primary">⟳ Retry extraction</button>
+                        <button id="reloadFullBtn" class="btn btn-secondary">⟳ Reload both</button>
+                    </div>
+                </div>
+            `;
+            statusBadge.innerText = '⚠️ failed';
+            statusBadge.style.background = "#fee2e2";
+            statusBadge.style.color = "#991b1b";
+            document.getElementById('retryExtractionBtn')?.addEventListener('click', () => startFullExtraction(articleUrl));
+            document.getElementById('reloadFullBtn')?.addEventListener('click', () => performFullReload());
+        }
+
+        async function startFullExtraction(url) {
+            if (currentAbortController) currentAbortController.abort();
             const abortCtrl = new AbortController();
             currentAbortController = abortCtrl;
             const signal = abortCtrl.signal;
-
-            extractionDiv.innerHTML = `
-                <div class="loader-box">
-                    <div class="spinner"></div>
-                    <div><strong>🕒 Extracting full article text ... (up to 120 seconds)</strong></div>
-                    <small>Fetching the page, removing clutter, and extracting readable paragraphs.</small>
-                </div>
-            `;
-            statusBadge.innerText = '⏳ extracting';
-            statusBadge.style.background = "#fef9c3";
-            statusBadge.style.color = "#854d0e";
+            setExtractionLoading(true, "Fetching page & extracting full text/videos (120s timeout)");
 
             const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
             let timeoutId = null;
-
             try {
                 const fetchPromise = fetch(proxy, { signal });
                 timeoutId = setTimeout(() => abortCtrl.abort(), 120000);
@@ -364,104 +557,71 @@
                 const html = await resp.text();
                 const doc = new DOMParser().parseFromString(html, 'text/html');
 
-                // Smart text extraction (paragraphs only, no media)
+                // full text extraction
                 let paragraphs = [];
-                const selectors = [
-                    'article p', 'main p', '.article-body p', '.story-body p',
-                    '.post-content p', '.entry-content p', '.content__article p',
-                    '.article__content p', '.single-content p'
-                ];
-                let found = false;
+                const selectors = ['article p', 'main p', '.article-body p', '.story-body p', '.post-content p', '.entry-content p'];
                 for (let sel of selectors) {
                     const items = doc.querySelectorAll(sel);
                     if (items.length > 2) {
-                        items.forEach(p => {
-                            let txt = p.innerText.trim();
-                            if (txt.length > 60) paragraphs.push(txt);
-                        });
-                        if (paragraphs.length >= 5) { found = true; break; }
+                        items.forEach(p => { let t = p.innerText.trim(); if (t.length > 60) paragraphs.push(t); });
+                        if (paragraphs.length > 4) break;
                     }
                 }
-                if (!found || paragraphs.length < 3) {
-                    const allParas = doc.querySelectorAll('p');
-                    allParas.forEach(p => {
-                        let txt = p.innerText.trim();
-                        if (txt.length > 90 && !txt.toLowerCase().includes('cookie') && !txt.toLowerCase().includes('subscribe') && !txt.includes('advertisement')) {
-                            paragraphs.push(txt);
-                        }
+                if (paragraphs.length < 3) {
+                    doc.querySelectorAll('p').forEach(p => {
+                        let t = p.innerText.trim();
+                        if (t.length > 90 && !t.toLowerCase().includes('cookie') && !t.toLowerCase().includes('ad')) paragraphs.push(t);
                     });
                 }
+                let finalText = paragraphs.join('\n\n');
+                if (!finalText || finalText.length < 150) finalText = doc.body.innerText?.slice(0, 8000) || '';
+                if (finalText.length > 15000) finalText = finalText.slice(0, 15000) + "\n\n... (truncated)";
 
-                let fullText = paragraphs.join('\n\n');
-                if (!fullText || fullText.length < 150) {
-                    fullText = doc.body.innerText || '';
-                    fullText = fullText.replace(/\s+/g, ' ').substring(0, 8000);
-                }
-                if (fullText.length > 15000) fullText = fullText.substring(0, 15000) + "\n\n... (truncated for readability)";
-
-                extractedFullText = fullText;
-                const wordCount = fullText.split(/\s+/).filter(w => w.length > 0).length;
-
-                // Display extracted text
-                extractionDiv.innerHTML = `
-                    <div class="extracted-text">${escapeHtml(fullText).replace(/\n/g, '<br>')}</div>
-                    <div class="action-bar">
-                        <button id="copyTextBtn" class="btn btn-primary">📋 Copy Full Text</button>
-                        <button id="downloadTextBtn" class="btn btn-secondary">💾 Download .txt</button>
-                        <button id="openOriginalBtn" class="btn btn-secondary">🔗 Open Original Article</button>
-                    </div>
-                `;
-                statusBadge.innerText = `✅ extracted (${wordCount} words)`;
-                statusBadge.style.background = "#dcfce7";
-                statusBadge.style.color = "#166534";
-
-                document.getElementById('copyTextBtn')?.addEventListener('click', () => {
-                    copyToClipboard(extractedFullText).then(() => alert('✅ Full article text copied!'));
+                // video detection
+                let videoSet = new Set();
+                doc.querySelectorAll('iframe').forEach(ifr => {
+                    let src = ifr.getAttribute('src');
+                    if (src && (src.includes('youtube.com/embed') || src.includes('youtu.be') || src.includes('vimeo.com') || src.includes('dailymotion.com') || src.includes('facebook.com/plugins/video'))) {
+                        try { videoSet.add(new URL(src, url).href); } catch(e) { videoSet.add(src); }
+                    }
                 });
-                document.getElementById('downloadTextBtn')?.addEventListener('click', () => {
-                    const headlineText = document.querySelector('.article-headline')?.innerText || 'Article';
-                    const blob = new Blob([`TITLE: ${headlineText}\nSOURCE: ${url}\n\n--- FULL TEXT ---\n\n${extractedFullText}`], {type: 'text/plain'});
-                    const a = document.createElement('a');
-                    const urlBlob = URL.createObjectURL(blob);
-                    a.href = urlBlob;
-                    a.download = `article_${headlineText.substring(0, 50).replace(/[^\w]/g,'_')}.txt`;
-                    a.click();
-                    URL.revokeObjectURL(urlBlob);
+                doc.querySelectorAll('video').forEach(vid => {
+                    if (vid.src) { try { videoSet.add(new URL(vid.src, url).href); } catch(e) { videoSet.add(vid.src); } }
+                    vid.querySelectorAll('source').forEach(s => { if(s.src) { try { videoSet.add(new URL(s.src, url).href); } catch(e) { videoSet.add(s.src); } } });
                 });
-                document.getElementById('openOriginalBtn')?.addEventListener('click', () => window.open(url, '_blank'));
+                const ogVideo = doc.querySelector('meta[property="og:video"]');
+                if (ogVideo && ogVideo.content) videoSet.add(ogVideo.content);
+                const twitterPlayer = doc.querySelector('meta[name="twitter:player"]');
+                if (twitterPlayer && twitterPlayer.content) videoSet.add(twitterPlayer.content);
 
+                const primaryImage = doc.querySelector('meta[property="og:image"]')?.content || doc.querySelector('meta[name="twitter:image"]')?.content || null;
+
+                displayExtractionSuccess({ fullText: finalText, videoUrls: Array.from(videoSet), primaryImage });
             } catch (err) {
                 clearTimeout(timeoutId);
-                if (err.name === 'AbortError') {
-                    extractionDiv.innerHTML = `<div class="error-box">⏱️ Extraction timed out after 120 seconds. The website may be slow or blocking requests. Try using "Reload Extraction".</div>`;
-                } else {
-                    extractionDiv.innerHTML = `<div class="error-box">❌ Extraction failed: ${escapeHtml(err.message || 'Network error')}<br><button id="retryBtn" class="btn btn-primary" style="margin-top:0.8rem;">⟳ Retry Extraction</button></div>`;
-                    document.getElementById('retryBtn')?.addEventListener('click', () => startFullTextExtraction(url));
-                }
-                statusBadge.innerText = '⚠️ failed';
-                statusBadge.style.background = "#fee2e2";
-                statusBadge.style.color = "#991b1b";
+                if (err.name === 'AbortError') displayExtractionError('Request timed out after 120 seconds. Network may be slow or site is blocking.');
+                else displayExtractionError(err.message || 'Network/proxy failure');
             } finally {
                 if (currentAbortController === abortCtrl) currentAbortController = null;
             }
         }
 
-        // reload function
-        function performReload() {
+        function performFullReload() {
+            reloadIframe();
             if (currentAbortController) currentAbortController.abort();
-            // Reload news card (metadata)
-            loadNewsCard(articleUrl, articleTitle);
-            // Restart extraction
-            startFullTextExtraction(articleUrl);
+            startFullExtraction(articleUrl);
         }
 
-        // Initialize
-        loadNewsCard(articleUrl, articleTitle);
-        startFullTextExtraction(articleUrl);
+        // start deep extraction
+        startFullExtraction(articleUrl);
 
-        // Event listeners
-        reloadBtn?.addEventListener('click', performReload);
+        // event listeners
+        reloadBtn?.addEventListener('click', performFullReload);
         closeBtn?.addEventListener('click', () => window.close());
+        openNewTabBtn?.addEventListener('click', () => window.open(articleUrl, '_blank'));
+        reloadIframeOnly?.addEventListener('click', () => {
+            reloadIframe();
+        });
     })();
 </script>
 </body>
