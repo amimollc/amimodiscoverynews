@@ -61,6 +61,15 @@
 </div>
 
 <footer>🌍 Amimo Discovery News · IP-based local + global sources ·<br>Disclamer: All copy right reserved. No articles shown own our site can be retrived,restore or in any means without permission from both us and the orignal news providing service.<br><b>About Us</b><br>We are a developing,digital news provider. For more info,contact as using<br>Email: amimostudio410@gmail.com<br><i>All right reserved Amimo LLC©2026</i></footer>
-<script src="main.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('SW registered:', reg))
+        .catch(err => console.error('SW registration failed:', err));
+    });
+  }
+        </script>
+    <script src="main.js"></script>
 </body>
 </html>
