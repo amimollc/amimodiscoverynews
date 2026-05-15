@@ -1,0 +1,38 @@
+{
+  "background_color": "#ffffff",
+  "dir": "auto",
+  "display": "fullscreen",
+  "name": "Amimo Discovery",
+  "orientation": "any",
+  "scope": "https://bbc.com/https:cbg.com/https:cnn.com",
+  "short_name": "Amimo Discovery",
+  "start_url": "https://amimollc.github.io/amimodiscoverynews",
+  "theme_color": "#0659ef",
+  "icons": [
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/favicon.png",
+      "type": "image/jpeg",
+      "sizes": "1280x1280",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": true,
+      "width": 1280,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "id": "com.amimonewsbroswer.com",
+  "description": "Discovering and browsing local and world wide news.",
+  "lang": "en",
+  "display_override": [
+    "window-controls-overlay"
+  ],
+  "categories": [
+    "magazines",
+    "news",
+    "sports",
+    "weather"
+  ]
+}
