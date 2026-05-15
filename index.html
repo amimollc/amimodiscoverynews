@@ -1,26 +1,27 @@
-<!-- main.html - Updated Amimo Discovery News (Read More now opens independent page) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Amimo Discovery News | Global · Local · Search</title>
+    <!-- Font Awesome 6 (Free CDN) for online icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="favicon.png">
+    <link rel="icon" type="image/svg+xml" href="https://cdn-icons-png.flaticon.com/512/5968/5968759.png">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
 <div class="top-bar">
     <div class="top-left">
-        <button class="hamburger" id="hamburgerBtn">☰</button>
-        <span class="active-cat-badge" id="activeCatDisplay">🌍 All News</span>
-        <span class="country-badge" id="countryBadge">📍 detecting...</span>
+        <button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
+        <span class="active-cat-badge" id="activeCatDisplay"><i class="fas fa-globe"></i> All News</span>
+        <span class="country-badge" id="countryBadge"><i class="fas fa-map-marker-alt"></i> detecting...</span>
     </div>
-    <div class="logo">🌐 Amimo Discovery</div>
+    <div class="logo"><i class="fas fa-compass"></i> Amimo Discovery</div>
     <div class="search-section">
         <div class="search-input-wrap">
             <input type="text" id="searchInput" placeholder="Search headlines & sources..." />
-            <button id="searchBtn">🔍</button>
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
         </div>
     </div>
 </div>
@@ -29,47 +30,40 @@
 <div class="overlay" id="overlay"></div>
 <div class="side-menu" id="sideMenu">
     <div class="side-menu-header">
-        <h3>📂 Categories</h3>
-        <button class="close-menu" id="closeMenuBtn">✕</button>
+        <h3><i class="fas fa-folder-open"></i> Categories</h3>
+        <button class="close-menu" id="closeMenuBtn"><i class="fas fa-times"></i></button>
     </div>
     <div class="cat-list" id="categoryList">
-        <button class="cat-btn active" data-cat="all">🌍 All News</button>
-        <button class="cat-btn" data-cat="Politics">🏛️ Politics</button>
-        <button class="cat-btn" data-cat="Entertainment">🎭 Entertainment</button>
-        <button class="cat-btn" data-cat="Technology">💻 Technology</button>
-        <button class="cat-btn" data-cat="Sports">⚽ Sports</button>
-        <button class="cat-btn" data-cat="Business">📈 Business</button>
-        <button class="cat-btn" data-cat="Health">❤️ Health</button>
-        <button class="cat-btn" data-cat="Local" id="localCatBtn">📍 Local</button>
+        <button class="cat-btn active" data-cat="all"><i class="fas fa-newspaper"></i> All News</button>
+        <button class="cat-btn" data-cat="Politics"><i class="fas fa-landmark"></i> Politics</button>
+        <button class="cat-btn" data-cat="Entertainment"><i class="fas fa-mask"></i> Entertainment</button>
+        <button class="cat-btn" data-cat="Technology"><i class="fas fa-microchip"></i> Technology</button>
+        <button class="cat-btn" data-cat="Sports"><i class="fas fa-futbol"></i> Sports</button>
+        <button class="cat-btn" data-cat="Business"><i class="fas fa-chart-line"></i> Business</button>
+        <button class="cat-btn" data-cat="Health"><i class="fas fa-heartbeat"></i> Health</button>
+        <button class="cat-btn" data-cat="Local" id="localCatBtn"><i class="fas fa-location-dot"></i> Local</button>
     </div>
     <div class="location-info" id="locationInfo">
-        🌐 Your location: <strong>detecting...</strong>
+        <i class="fas fa-map-pin"></i> Your location: <strong>detecting...</strong>
     </div>
 </div>
 
 <div class="container">
-    <!-- Trending horizontal scroll (smooth auto + free-hand) -->
+    <!-- Trending horizontal scroll -->
     <div class="trending-section">
-        <div class="trending-title">🔥 Trending Now</div>
+        <div class="trending-title"><i class="fas fa-fire"></i> Trending Now</div>
         <div id="trendingContainer" class="trending-scroll">
             <div style="padding:1rem;"><div class="loader"></div> Loading trending...</div>
         </div>
     </div>
 
-    <div id="statusMsg" style="text-align:center; padding:1rem;">📡 Fetching global & local news...</div>
+    <div id="statusMsg" style="text-align:center; padding:1rem;"><i class="fas fa-satellite-dish"></i> 📡 Fetching global & local news...</div>
     <div id="newsFeed" class="news-feed"></div>
+    <div id="loadMoreSentinel" style="height: 20px;"></div>
 </div>
 
-<footer>🌍 Amimo Discovery News · IP-based local + global sources ·<br>Disclamer: All copy right reserved. No articles shown own our site can be retrived,restore or in any means without permission from both us and the orignal news providing service.<br><b>About Us</b><br>We are a developing,digital news provider. For more info,contact as using<br>Email: amimostudio410@gmail.com<br><i>All right reserved Amimo LLC©2026</i></footer>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('SW registered:', reg))
-        .catch(err => console.error('SW registration failed:', err));
-    });
-  }
-        </script>
-    <script src="main.js"></script>
+<footer><i class="fas fa-globe-americas"></i> Amimo Discovery News · IP-based local + global sources ·<br>Disclamer: All copy right reserved. No articles shown own our site can be retrived,restore or in any means without permission from both us and the orignal news providing service.<br><b>About Us</b><br>We are a developing,digital news provider. For more info,contact as using<br>Email: amimostudio410@gmail.com<br><i>All right reserved Amimo LLC©2026</i></footer>
+
+<script src="main.js"></script>
 </body>
-</html>
+                                                          </html>
