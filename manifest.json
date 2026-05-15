@@ -2,37 +2,151 @@
   "background_color": "#ffffff",
   "dir": "auto",
   "display": "fullscreen",
+  "display_override": ["window-controls-overlay"],
   "name": "Amimo Discovery",
-  "orientation": "any",
-  "scope": "https://bbc.com/https:cbg.com/https:cnn.com",
   "short_name": "Amimo Discovery",
-  "start_url": "https://amimollc.github.io/amimodiscoverynews",
+  "description": "Discovering and browsing local and worldwide news.",
+  "lang": "en",
+  "id": "com.amimonewsbroswer.com",
+  "orientation": "any",
   "theme_color": "#0659ef",
+  "categories": ["magazines", "news", "sports", "weather"],
+  "scope": "https://amimollc.github.io/amimodiscoverynews/",
+  "start_url": "https://amimollc.github.io/amimodiscoverynews",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "iarc_rating_id": "rating.pending",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "auto"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "note_taking": {
+    "new_note_url": "/new-note"
+  },
+  "url_handlers": [
+    {
+      "origin": "https://amimollc.github.io",
+      "paths": ["/amimodiscoverynews/*"]
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+amimonews",
+      "url": "/news?article=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/open-news",
+      "accept": {
+        "text/html": [".html", ".htm"],
+        "application/rss+xml": [".rss", ".xml"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "screenshots": [
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Home page"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/screenshot-narrow.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Article view"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Top News",
+      "short_name": "Top",
+      "description": "View the latest headlines",
+      "url": "https://amimollc.github.io/amimodiscoverynews/top",
+      "icons": [
+        {
+          "src": "https://amimollc.github.io/amimodiscoverynews/icon-shortcut.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Saved Articles",
+      "short_name": "Saved",
+      "description": "Your reading list",
+      "url": "https://amimollc.github.io/amimodiscoverynews/saved",
+      "icons": [
+        {
+          "src": "https://amimollc.github.io/amimodiscoverynews/icon-saved.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "https://amimollc.github.io/amimodiscoverynews/favicon.png",
-      "type": "image/jpeg",
       "sizes": "1280x1280",
-      "isSquare": true,
-      "isPng": true,
-      "isWebp": false,
-      "isJpg": true,
-      "width": 1280,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "type": "image/png"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://amimollc.github.io/amimodiscoverynews/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
     }
-  ],
-  "id": "com.amimonewsbroswer.com",
-  "description": "Discovering and browsing local and world wide news.",
-  "lang": "en",
-  "display_override": [
-    "window-controls-overlay"
-  ],
-  "categories": [
-    "magazines",
-    "news",
-    "sports",
-    "weather"
   ]
-}
+  }
