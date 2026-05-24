@@ -3,67 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Amimo Discovery News | Global · Local · Search</title>
-    <!-- Font Awesome 6 (Free CDN) for online icons -->
+    <title>Amimo Discovery</title>
+    <!-- External Styles & Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="https://cdn-icons-png.flaticon.com/512/5968/5968759.png">
-    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest"   href="manifest.html">
 </head>
 <body>
-<div class="top-bar">
-    <div class="top-left">
+
+<div class="main-header">
+    <div class="logo-area">
         <button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
-        <span class="active-cat-badge" id="activeCatDisplay"><i class="fas fa-globe"></i> All News</span>
-        <span class="country-badge" id="countryBadge"><i class="fas fa-map-marker-alt"></i> detecting...</span>
+        <div class="logo"><i class="fas fa-cloud-moon"></i> Amimo Blue</div>
     </div>
-    <div class="logo"><i class="fas fa-compass"></i> Amimo Discovery</div>
-    <div class="search-section">
-        <div class="search-input-wrap">
-            <input type="text" id="searchInput" placeholder="Search headlines & sources..." />
-            <button id="searchBtn"><i class="fas fa-search"></i></button>
-        </div>
-    </div>
+    <div class="location-badge" id="countryBadge"><i class="fas fa-map-marker-alt"></i> locating...</div>
 </div>
 
-<!-- Side Menu Overlay -->
+<div class="search-zone" id="searchZone">
+    <div class="search-wrapper">
+        <i class="fas fa-search" style="color: var(--accent-blue);"></i>
+        <input type="text" id="searchInput" placeholder="Search news... click to float up">
+        <button id="searchBtn"><i class="fas fa-external-link-alt"></i> Search</button>
+    </div>
+</div>
+<div id="loadingProgress" class="loading-progress"></div>
+
+<div class="categories-row" id="categoryScroll">
+    <div class="cat-pill active" data-cat="all"><i class="fas fa-globe"></i> All</div>
+    <div class="cat-pill" data-cat="Politics"><i class="fas fa-landmark"></i> Politics</div>
+    <div class="cat-pill" data-cat="Entertainment"><i class="fas fa-mask"></i> Entertainment</div>
+    <div class="cat-pill" data-cat="Technology"><i class="fas fa-microchip"></i> Tech</div>
+    <div class="cat-pill" data-cat="Sports"><i class="fas fa-futbol"></i> Sports</div>
+    <div class="cat-pill" data-cat="Business"><i class="fas fa-chart-line"></i> Business</div>
+    <div class="cat-pill" data-cat="Health"><i class="fas fa-heartbeat"></i> Health</div>
+    <div class="cat-pill" data-cat="Local"><i class="fas fa-location-dot"></i> Local</div>
+</div>
+
+<div class="ad-banner" id="globalAdBanner"><i class="fas fa-ad"></i> Advertisement · Your banner could be here · Support Amimo</div>
+
+<div class="trending-section" id="trendingSection">
+    <div class="trending-title"><i class="fas fa-fire"></i> Trending Now</div>
+    <div class="trending-carousel" id="trendingCarousel"></div>
+</div>
+
+<div id="newsFeedContainer" style="position: relative;">
+    <div id="statusMsg" style="text-align:center; padding:1rem;"><div class="loader"></div> Loading fresh news...</div>
+    <div id="newsFeed" class="news-feed"></div>
+    <div id="loadSentinel" style="height: 20px;"></div>
+</div>
+
+<footer>
+    <i class="fas fa-bookmark"></i> Offline saved · <span id="savedCounter">0</span> saved · <button id="viewSavedBtn" style="background: none; border: none; color: var(--accent-glow); cursor: pointer;">📚 View saved</button><br>
+    © Amimo Blue · Sticky categories · Infinite scroll
+</footer>
+
 <div class="overlay" id="overlay"></div>
 <div class="side-menu" id="sideMenu">
-    <div class="side-menu-header">
-        <h3><i class="fas fa-folder-open"></i> Categories</h3>
-        <button class="close-menu" id="closeMenuBtn"><i class="fas fa-times"></i></button>
+    <div style="display: flex; justify-content: space-between;">
+        <h3><i class="fas fa-bars"></i> Menu</h3>
+        <button id="closeMenuBtn" style="background:none; border:none; font-size:1.8rem; cursor:pointer;">&times;</button>
     </div>
-    <div class="cat-list" id="categoryList">
-        <button class="cat-btn active" data-cat="all"><i class="fas fa-newspaper"></i> All News</button>
-        <button class="cat-btn" data-cat="Politics"><i class="fas fa-landmark"></i> Politics</button>
-        <button class="cat-btn" data-cat="Entertainment"><i class="fas fa-mask"></i> Entertainment</button>
-        <button class="cat-btn" data-cat="Technology"><i class="fas fa-microchip"></i> Technology</button>
-        <button class="cat-btn" data-cat="Sports"><i class="fas fa-futbol"></i> Sports</button>
-        <button class="cat-btn" data-cat="Business"><i class="fas fa-chart-line"></i> Business</button>
-        <button class="cat-btn" data-cat="Health"><i class="fas fa-heartbeat"></i> Health</button>
-        <button class="cat-btn" data-cat="Local" id="localCatBtn"><i class="fas fa-location-dot"></i> Local</button>
+    <div class="menu-item" id="menuHome"><i class="fas fa-home"></i> Home (All News)</div>
+    <div class="menu-item" id="menuTrending"><i class="fas fa-fire"></i> Trending</div>
+    <div class="menu-item" id="menuNotification"><i class="fas fa-bell"></i> Notifications <span class="notification-badge">3</span></div>
+    <div class="menu-item" id="menuSearch"><i class="fas fa-search"></i> Search Focus</div>
+    <div class="menu-item" id="menuAbout"><i class="fas fa-info-circle"></i> About Amimo</div>
+    <div class="theme-toggle">
+        <span><i class="fas fa-moon"></i> Dark / Light</span>
+        <label><input type="checkbox" id="themeSwitch"> <span style="margin-left:8px;">🌓</span></label>
     </div>
-    <div class="location-info" id="locationInfo">
-        <i class="fas fa-map-pin"></i> Your location: <strong>detecting...</strong>
-    </div>
+    <div class="menu-item" id="menuSaved"><i class="fas fa-database"></i> Saved Articles (offline)</div>
+    <div><small><i class="fas fa-info-circle"></i> Tap "Save" on any article → stored offline.</small></div>
 </div>
 
-<div class="container">
-    <!-- Trending horizontal scroll -->
-    <div class="trending-section">
-        <div class="trending-title"><i class="fas fa-fire"></i> Trending Now</div>
-        <div id="trendingContainer" class="trending-scroll">
-            <div style="padding:1rem;"><div class="loader"></div> Loading trending...</div>
-        </div>
-    </div>
-
-    <div id="statusMsg" style="text-align:center; padding:1rem;"><i class="fas fa-satellite-dish"></i> 📡 Fetching global & local news...</div>
-    <div id="newsFeed" class="news-feed"></div>
-    <div id="loadMoreSentinel" style="height: 20px;"></div>
-</div>
-
-<footer><i class="fas fa-globe-americas"></i> Amimo Discovery News · IP-based local + global sources ·<br>Disclamer: All copy right reserved. No articles shown own our site can be retrived,restore or in any means without permission from both us and the orignal news providing service.<br><b>About Us</b><br>We are a developing,digital news provider. For more info,contact as using<br>Email: amimostudio410@gmail.com<br><i>All right reserved Amimo LLC©2026</i></footer>
-
-<script src="main.js"></script>
+<!-- External JavaScript (loads after DOM is ready) -->
+<script src="script.js"></script>
 </body>
-                                                          </html>
+        </html>
