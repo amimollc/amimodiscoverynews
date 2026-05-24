@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Amimo Search | Home + Search Others + Articles</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #ffffff; }
+        .header { position: sticky; top: 0; background: white; padding: 0.8rem 1rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 1rem; z-index: 10; }
+        .back-arrow { font-size: 1.6rem; cursor: pointer; color: #0046ff; }
+        .tabs { display: flex; gap: 1.5rem; padding: 0.5rem 1rem; border-bottom: 1px solid #e2e8f0; background: white; flex-wrap: wrap; }
+        .tab-btn { background: none; border: none; font-weight: 600; padding: 0.5rem 0; cursor: pointer; color: #475569; transition: 0.2s; font-size: 0.95rem; }
+        .tab-btn.active-tab { color: #0046ff; border-bottom: 2px solid #0046ff; }
+        .marquee-container { background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 40px; margin: 0.75rem 1rem 0 1rem; overflow: hidden; white-space: nowrap; box-shadow: inset 0 0 2px rgba(0,0,0,0.05); }
+        .marquee { display: inline-block; animation: scrollMarquee 20s linear infinite; font-size: 0.8rem; color: #334155; }
+        .marquee i { margin-right: 0.5rem; color: #0046ff; }
+        .marquee span { margin: 0 1.5rem; }
+        @keyframes scrollMarquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .search-bar { display: flex; gap: 0.5rem; margin: 1rem; }
+        .search-bar input { flex: 1; padding: 0.8rem 1rem; border-radius: 60px; border: 1px solid #cbd5e1; font-size: 1rem; outline: none; }
+        .search-bar input:focus { border-color: #0046ff; box-shadow: 0 0 0 2px rgba(0,70,255,0.1); }
+        .search-bar button { background: #0046ff; color: white; border: none; border-radius: 60px; padding: 0 1.5rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .search-bar button:hover { background: #0035cc; }
+        .loading-line { height: 3px; background: #0046ff; width: 0%; transition: width 0.2s; margin-top: -2px; }
+        .results-container { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; max-width: 900px; margin: 0 auto; }
+        .result-card { background: #f8fafc; border-radius: 20px; padding: 1rem; border: 1px solid #eef2ff; transition: 0.2s; }
+        .result-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+        .result-card a { text-decoration: none; color: #0046ff; font-weight: 600; font-size: 1rem; display: block; margin-bottom: 0.25rem; }
+        .result-card a:hover { text-decoration: underline; }
+        .result-meta { font-size: 0.7rem; color: #0046ff; margin: 4px 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+        .result-snippet { font-size: 0.85rem; color: #334155; line-height: 1.4; }
+        .loader-sm { display: inline-block; width: 20px; height: 20px; border: 2px solid #cbd5e1; border-top-color: #0046ff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-msg { text-align: center; color: #64748b; padding: 2rem; }
+        footer { text-align: center; font-size: 0.7rem; padding: 1.5rem; color: #5b6e8c; border-top: 1px solid #e2e8f0; margin-top: 1rem; }
+        .badge { background: #e2e8f0; border-radius: 20px; padding: 0.2rem 0.6rem; font-size: 0.65rem; font-weight: 500; }
+        @media (max-width: 600px) {
+            .tabs { gap: 0.8rem; }
+            .tab-btn { font-size: 0.85rem; }
+            .marquee-container { margin: 0.5rem; }
+            .search-bar { margin: 0.75rem; }
+        }
+        .widget-container { padding: 1rem; background: white; }
+        .hide-widget { display: none; }
+        .hide-custom { display: none; }
+        .gsc-control-cse { padding: 0 !important; border: none !important; background: transparent !important; }
+        .gsc-input-box { border-radius: 60px !important; }
+        .gsc-search-button { border-radius: 60px !important; background: #0046ff !important; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="back-arrow" id="backArrowBtn"><i class="fas fa-arrow-left"></i></div>
+    <div style="font-weight: 800; font-size: 1.3rem; color: #0046ff;"><i class="fas fa-search"></i> Amimo Search</div>
+</div>
+<div class="tabs" id="tabsContainer">
+    <button class="tab-btn active-tab" data-tab="home">🏠 Home</button>
+    <button class="tab-btn" data-tab="searchothers">🔎 Search Others</button>
+    <button class="tab-btn" data-tab="articles">📰 Articles</button>
+</div>
+
+<!-- Home Tab: Google CSE Widget (cx = 45e9a38c4e8a74fe1) -->
+<div id="homeWidget" class="widget-container">
+    <div class="marquee-container">
+        <div class="marquee">
+            <i class="fas fa-comment-dots"></i>
+            <span>🔍 Search topic, top news, politics, technology, sports, business, health...</span>
+            <span>🔥 Trending now: AI revolution | Global elections | Space exploration | Climate action</span>
+            <span>📰 Latest headlines: World news | Entertainment | Finance | Science</span>
+            <i class="fas fa-arrow-right"></i>
+        </div>
+    </div>
+    <div class="gcse-search" id="homeSearchWidget"></div>
+</div>
+
+<!-- Search Others Tab: Second Google CSE Widget (cx = 072cd878c9bc0444c) -->
+<div id="searchOthersWidget" class="widget-container hide-widget">
+    <div class="marquee-container">
+        <div class="marquee">
+            <i class="fas fa-globe"></i>
+            <span>🌐 Search or browse websites | Explore anything | Find answers</span>
+            <span>📚 Wikipedia, news, blogs, forums, documents, images</span>
+            <span>💡 Tip: Use quotes for exact phrases | Advanced search operators</span>
+            <i class="fas fa-search"></i>
+        </div>
+    </div>
+    <div class="gcse-search" id="searchOthersSearchWidget"></div>
+</div>
+
+<!-- Articles Tab: Custom search (Google News + local saved articles) -->
+<div id="articlesCustomArea" class="hide-custom">
+    <div class="marquee-container">
+        <div class="marquee">
+            <i class="fas fa-newspaper"></i>
+            <span>📌 Filter from local saved articles + Google News RSS</span>
+            <span>✍️ Search for recent news, saved stories, or any topic</span>
+            <span>⭐ Your saved articles appear with "Local" badge</span>
+            <i class="fas fa-database"></i>
+        </div>
+    </div>
+    <div class="search-bar">
+        <input type="text" id="searchQueryInput" placeholder="🔎 Search news or your saved articles...">
+        <button id="executeSearchBtn"><i class="fas fa-search"></i> Search</button>
+    </div>
+    <div id="loadingLine" class="loading-line"></div>
+    <div id="resultsArea" class="results-container">
+        <div class="empty-msg">✨ Enter a query. Results combine Google News and your locally saved articles.</div>
+    </div>
+</div>
+
+<footer>Home & Search Others use Google CSE widgets · Articles uses Google News RSS + local storage</footer>
+
+<script>
+    // ==================== CONFIGURATION ====================
+    const HOME_CX = '45e9a38c4e8a74fe1';
+    const SEARCH_OTHERS_CX = '072cd878c9bc0444c';   // Your second search engine ID
+    // ========================================================
+    
+    function loadGoogleCSE(cx, containerId) {
+        const existingScript = document.querySelector(`script[data-cx="${cx}"]`);
+        if (existingScript) return;
+        
+        const script = document.createElement('script');
+        script.src = `https://cse.google.com/cse.js?cx=${cx}`;
+        script.async = true;
+        script.setAttribute('data-cx', cx);
+        document.head.appendChild(script);
+    }
+    
+    let homeLoaded = false;
+    let searchOthersLoaded = false;
+    
+    const tabs = document.querySelectorAll('.tab-btn');
+    const homeWidgetDiv = document.getElementById('homeWidget');
+    const searchOthersWidgetDiv = document.getElementById('searchOthersWidget');
+    const articlesCustomDiv = document.getElementById('articlesCustomArea');
+    let activeTab = 'home';
+    let currentCustomQuery = '';
+    
+    // Load stored articles for Articles tab
+    let storedArticles = [];
+    try {
+        const stored = localStorage.getItem('amimoAllArticles');
+        if (stored) storedArticles = JSON.parse(stored);
+    } catch(e) { storedArticles = []; }
+    
+    function injectQueryIntoWidget(containerId, query) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const input = container.querySelector('input.gsc-input');
+        if (input) {
+            input.value = query;
+            const searchButton = container.querySelector('input.gsc-search-button');
+            if (searchButton) searchButton.click();
+        } else {
+            setTimeout(() => {
+                const retryInput = container.querySelector('input.gsc-input');
+                if (retryInput) {
+                    retryInput.value = query;
+                    const btn = container.querySelector('input.gsc-search-button');
+                    if (btn) btn.click();
+                }
+            }, 300);
+        }
+    }
+    
+    function switchTab(tabId) {
+        activeTab = tabId;
+        tabs.forEach(btn => {
+            if (btn.dataset.tab === tabId) btn.classList.add('active-tab');
+            else btn.classList.remove('active-tab');
+        });
+        
+        if (tabId === 'home') {
+            homeWidgetDiv.classList.remove('hide-widget');
+            searchOthersWidgetDiv.classList.add('hide-widget');
+            articlesCustomDiv.classList.add('hide-custom');
+            if (!homeLoaded) {
+                loadGoogleCSE(HOME_CX, 'homeSearchWidget');
+                homeLoaded = true;
+            }
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryParam = urlParams.get('q');
+            if (queryParam && homeLoaded) {
+                setTimeout(() => injectQueryIntoWidget('homeSearchWidget', decodeURIComponent(queryParam)), 800);
+            }
+        } 
+        else if (tabId === 'searchothers') {
+            homeWidgetDiv.classList.add('hide-widget');
+            searchOthersWidgetDiv.classList.remove('hide-widget');
+            articlesCustomDiv.classList.add('hide-custom');
+            if (!searchOthersLoaded) {
+                loadGoogleCSE(SEARCH_OTHERS_CX, 'searchOthersSearchWidget');
+                searchOthersLoaded = true;
+            }
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryParam = urlParams.get('q');
+            if (queryParam && searchOthersLoaded) {
+                setTimeout(() => injectQueryIntoWidget('searchOthersSearchWidget', decodeURIComponent(queryParam)), 800);
+            }
+        } 
+        else if (tabId === 'articles') {
+            homeWidgetDiv.classList.add('hide-widget');
+            searchOthersWidgetDiv.classList.add('hide-widget');
+            articlesCustomDiv.classList.remove('hide-custom');
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryParam = urlParams.get('q');
+            if (queryParam) {
+                const input = document.getElementById('searchQueryInput');
+                if (input) input.value = decodeURIComponent(queryParam);
+                performCustomSearch(decodeURIComponent(queryParam));
+            }
+        }
+    }
+    
+    async function fetchGoogleNews(query) {
+        try {
+            const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+            const response = await fetch(proxyUrl);
+            const data = await response.json();
+            if (data.status === 'ok' && data.items) {
+                return data.items.slice(0, 25).map(item => ({
+                    title: item.title,
+                    link: item.link,
+                    snippet: (item.description || '').replace(/<[^>]*>/g, '').slice(0, 200),
+                    source: item.author || "Google News",
+                    pubDate: item.pubDate,
+                    type: "news"
+                }));
+            }
+            return [];
+        } catch (err) {
+            console.warn("Google News fetch error:", err);
+            return [];
+        }
+    }
+    
+    async function performCustomSearch(query) {
+        if (!query.trim()) return;
+        currentCustomQuery = query;
+        const resultsArea = document.getElementById('resultsArea');
+        const loadingLine = document.getElementById('loadingLine');
+        loadingLine.style.width = "70%";
+        resultsArea.innerHTML = '<div style="text-align:center;"><div class="loader-sm"></div> Fetching results...</div>';
+        
+        let results = [];
+        let errorMsg = null;
+        
+        try {
+            const newsResults = await fetchGoogleNews(query);
+            const localMatches = storedArticles.filter(art =>
+                art.title.toLowerCase().includes(query.toLowerCase()) ||
+                (art.description && art.description.toLowerCase().includes(query.toLowerCase()))
+            ).slice(0, 20).map(art => ({
+                title: art.title,
+                link: art.link,
+                snippet: (art.description || "Read full article").slice(0, 180),
+                source: art.source || "Amimo Discovery",
+                pubDate: art.savedAt,
+                type: "local"
+            }));
+            const combined = [...newsResults, ...localMatches];
+            const unique = new Map();
+            combined.forEach(item => { if (!unique.has(item.link)) unique.set(item.link, item); });
+            results = Array.from(unique.values());
+            if (results.length === 0) errorMsg = "No matches found in news or local saved articles.";
+        } catch (err) {
+            errorMsg = "Network error. Please check your connection.";
+        } finally {
+            loadingLine.style.width = "100%";
+            setTimeout(() => loadingLine.style.width = "0%", 400);
+            if (errorMsg) {
+                resultsArea.innerHTML = `<div class="empty-msg">😕 ${errorMsg}</div>`;
+            } else {
+                renderCustomResults(results);
+            }
+        }
+    }
+    
+    function renderCustomResults(results) {
+        const resultsArea = document.getElementById('resultsArea');
+        if (!results.length) {
+            resultsArea.innerHTML = '<div class="empty-msg">😕 No results found. Try different keywords.</div>';
+            return;
+        }
+        resultsArea.innerHTML = results.map(res => {
+            let dateHtml = '';
+            if (res.pubDate) {
+                try {
+                    const d = new Date(res.pubDate);
+                    if (!isNaN(d.getTime())) {
+                        dateHtml = `<span class="badge"><i class="far fa-calendar-alt"></i> ${d.toLocaleDateString()}</span>`;
+                    }
+                } catch(e) {}
+            }
+            return `
+            <div class="result-card">
+                <a href="${escapeHtml(res.link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(res.title)}</a>
+                <div class="result-meta">
+                    <span><i class="fas fa-globe"></i> ${escapeHtml(res.source)}</span>
+                    ${dateHtml}
+                    ${res.type === 'local' ? '<span class="badge"><i class="fas fa-database"></i> Local</span>' : ''}
+                </div>
+                <div class="result-snippet">${escapeHtml(res.snippet)}</div>
+            </div>
+        `}).join('');
+    }
+    
+    function escapeHtml(str) { return str?.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m]) || ''; }
+    
+    const searchInput = document.getElementById('searchQueryInput');
+    const searchBtn = document.getElementById('executeSearchBtn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            const q = searchInput.value.trim();
+            if (q) performCustomSearch(q);
+        });
+        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchBtn.click(); });
+    }
+    
+    document.getElementById('backArrowBtn').addEventListener('click', () => { window.history.back(); });
+    
+    tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchTab(btn.dataset.tab);
+        });
+    });
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['home', 'searchothers', 'articles'].includes(tabParam)) {
+        switchTab(tabParam);
+    } else {
+        switchTab('home');
+    }
+    
+    if (urlParams.get('q') && activeTab === 'articles') {
+        const query = decodeURIComponent(urlParams.get('q'));
+        const input = document.getElementById('searchQueryInput');
+        if (input) input.value = query;
+        performCustomSearch(query);
+    }
+</script>
+</body>
+        </html>
