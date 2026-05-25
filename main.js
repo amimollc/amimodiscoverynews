@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery =====================
+// ===================== MAIN.JS - Amimo Discovery (Fully Updated) =====================
 (function() {
     // ---------- GLOBAL DATA ----------
     let allArticles = [];
@@ -11,11 +11,11 @@
     let savedArticles = JSON.parse(localStorage.getItem("amimo_saved") || "[]");
     let scrollObserver = null;
     let sentinelElement = document.getElementById('loadSentinel');
-    let autoScrollActive = true;
     let carouselInterval = null;
-    let currentView = "home";   // home or saved
+    let autoScrollActive = true;
+    let currentView = "home";
 
-    // RSS FEEDS & local map
+    // RSS FEEDS & local map (same as before)
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -59,13 +59,28 @@
     localMap.set("CA", [{ name: "CBC", url: "https://www.cbc.ca/cmlink/rss-topstories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBC" }]);
     localMap.set("AU", [{ name: "ABC Australia", url: "https://www.abc.net.au/news/feed/51120/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ABC+AU" }]);
 
-    // helper functions
+    // Helper functions
     function escapeHtml(str) { return str?.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]) || ''; }
     function generateViews(title) { let h=0; for(let i=0;i<title.length;i++) h=((h<<5)-h)+title.charCodeAt(i); return Math.abs(h)%300000+5000; }
     function formatViews(n){ return n>=1000000?(n/1000000).toFixed(1)+'M':n>=1000?(n/1000).toFixed(1)+'K':n; }
     function getImageUrl(art, cat) { return art.imageUrl && art.imageUrl.startsWith('http') ? art.imageUrl : `https://placehold.co/800x450/3b82f6/white?text=${escapeHtml(art.source||cat)}`; }
-    function showToast(msg) { let t=document.createElement('div'); t.innerText=msg; t.style.position='fixed'; t.style.bottom='90px'; t.style.left='20px'; t.style.background='var(--accent-dark)'; t.style.color='white'; t.style.padding='8px 18px'; t.style.borderRadius='40px'; t.style.zIndex='9999'; document.body.appendChild(t); setTimeout(()=>t.remove(),2000); }
+    function showToast(msg) { 
+        let t=document.createElement('div'); 
+        t.innerText=msg; 
+        t.style.position='fixed'; 
+        t.style.bottom='90px'; 
+        t.style.left='20px'; 
+        t.style.background='var(--accent-dark)'; 
+        t.style.color='white'; 
+        t.style.padding='8px 18px'; 
+        t.style.borderRadius='40px'; 
+        t.style.zIndex='9999'; 
+        t.style.backdropFilter='blur(8px)';
+        document.body.appendChild(t); 
+        setTimeout(()=>t.remove(),2000); 
+    }
     
+    // Fetch RSS feed
     async function fetchFeed(cfg) { 
         try { 
             let resp=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(cfg.url)}`); 
@@ -83,41 +98,53 @@
         } catch(e){ return []; } 
     }
 
+    // Load all feeds
     async function loadAllFeeds() {
         const statusDiv=document.getElementById('statusMsg');
-        statusDiv.innerHTML='<div class="loader"></div> Fetching latest news...';
+        statusDiv.innerHTML='<div class="loader"></div> Fetching latest news from 30+ sources...';
         let allFeeds=[...WORLD_FEEDS, ...(localMap.get(userCountry)||[])];
         let results=await Promise.all(allFeeds.map(f=>fetchFeed(f)));
-        let arts=[]; results.forEach(r=>arts.push(...r));
-        let uniqueMap=new Map(); arts.forEach(a=>{if(!uniqueMap.has(a.link)) uniqueMap.set(a.link,a);});
-        allArticles=Array.from(uniqueMap.values()); allArticles.forEach(a=>{a.views=generateViews(a.title);});
+        let arts=[]; 
+        results.forEach(r=>arts.push(...r));
+        let uniqueMap=new Map(); 
+        arts.forEach(a=>{if(!uniqueMap.has(a.link)) uniqueMap.set(a.link,a);});
+        allArticles=Array.from(uniqueMap.values()); 
+        allArticles.forEach(a=>{a.views=generateViews(a.title);});
         allArticles.sort((a,b)=>new Date(b.pubDate)-new Date(a.pubDate));
         statusDiv.innerHTML=`✅ ${allArticles.length} fresh stories ready`;
         localStorage.setItem('amimoAllArticles', JSON.stringify(allArticles.map(a=>({title:a.title,link:a.link,description:a.description,source:a.source}))));
-        applyCategoryFilter(); renderTrendingCarousel(); updateSavedCounter();
+        applyCategoryFilter(); 
+        renderTrendingCarousel(); 
+        updateSavedCounter();
+        startCarouselAutoScroll();  // start auto-scroll after rendering
     }
     
+    // Category filtering
     function applyCategoryFilter() {
         if(currentCategory==='all') currentFiltered=[...allArticles];
         else if(currentCategory==='Local') currentFiltered=allArticles.filter(a=>a.category==='Local');
         else currentFiltered=allArticles.filter(a=>a.category===currentCategory);
-        displayLimit=30; renderNewsFeed();
+        displayLimit=30; 
+        renderNewsFeed();
     }
     
+    // Render news feed (home)
     function renderNewsFeed() {
         const feedDiv=document.getElementById('newsFeed');
         let toRender=currentFiltered.slice(0,displayLimit);
-        if(!toRender.length){ feedDiv.innerHTML='<div style="padding:2rem;text-align:center;">📭 No articles</div>'; return; }
+        if(!toRender.length){ feedDiv.innerHTML='<div style="padding:2rem;text-align:center;">📭 No articles in this category</div>'; return; }
         let html='';
         toRender.forEach((art,i)=>{
             let savedFlag=savedArticles.some(s=>s.link===art.link);
             let img=getImageUrl(art,art.category);
-            html+=`<div class="news-card"><img class="card-img" src="${img}" onerror="this.src='https://placehold.co/400x300/3b82f6/white?text=News'"><div class="card-body"><div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div><div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>${new Date(art.pubDate).toLocaleDateString()}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div><div class="news-desc">${escapeHtml(art.description)}</div><div class="action-row"><a href="${art.link}" target="_blank" class="btn-primary"><i class="fas fa-external-link-alt"></i> Read</a><button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${img}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${savedFlag?'✅ Saved':'💾 Save Offline'}</button></div></div></div>`;
+            html+=`<div class="news-card"><img class="card-img" src="${img}" onerror="this.src='https://placehold.co/400x300/3b82f6/white?text=News'"><div class="card-body"><div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div><div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>${new Date(art.pubDate).toLocaleDateString()}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div><div class="news-desc">${escapeHtml(art.description)}</div><div class="action-row"><a href="${art.link}" target="_blank" class="btn-primary"><i class="fas fa-external-link-alt"></i> Read Original</a><button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${img}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${savedFlag?'✅ Saved':'💾 Save Offline'}</button></div></div></div>`;
             if((i+1)%5===0 && i+1<toRender.length) html+=`<div class="inline-ad"><i class="fas fa-ad"></i> Advertisement — Support Amimo</div>`;
         });
-        feedDiv.innerHTML=html; attachSaveEvents();
+        feedDiv.innerHTML=html; 
+        attachSaveEvents();
     }
     
+    // Attach save button events
     function attachSaveEvents(){ 
         document.querySelectorAll('.save-btn').forEach(btn=>{ btn.removeEventListener('click',saveHandler); btn.addEventListener('click',saveHandler); }); 
     }
@@ -131,20 +158,28 @@
         } else {
             savedArticles=savedArticles.filter(s=>s.link!==link);
             localStorage.setItem("amimo_saved",JSON.stringify(savedArticles));
-            btn.innerHTML='💾 Save Offline'; btn.style.background='#2563eb'; showToast('Removed from saved');
+            btn.innerHTML='💾 Save Offline'; btn.style.background='var(--accent-dark)'; showToast('Removed from saved');
         }
         updateSavedCounter(); 
         if(currentView==='saved') renderSavedArticles();
     }
     
-    function updateSavedCounter(){ document.getElementById('savedCounter').innerText=savedArticles.length; }
+    function updateSavedCounter(){ 
+        let counterSpan = document.getElementById('savedCounter');
+        if(counterSpan) counterSpan.innerText = savedArticles.length; 
+    }
     
+    // Render saved articles view
     function renderSavedArticles(){
         const savedDiv=document.getElementById('savedFeed');
-        if(!savedArticles.length){ savedDiv.innerHTML='<div style="padding:2rem;text-align:center;background:var(--card-bg);border-radius:32px;"><i class="fas fa-archive"></i> No saved articles yet. Tap 💾 on any news to store offline.</div>'; return; }
+        if(!savedDiv) return;
+        if(!savedArticles.length){ 
+            savedDiv.innerHTML='<div style="padding:2rem;text-align:center;background:var(--card-bg);border-radius:32px;"><i class="fas fa-archive"></i> No saved articles yet. Tap 💾 on any news to store offline.</div>'; 
+            return; 
+        }
         let html='';
         savedArticles.forEach(art=>{
-            html+=`<div class="news-card"><img class="card-img" src="${art.imageUrl||'https://placehold.co/800x450/3b82f6/white?text=Saved'}" onerror="this.src='https://placehold.co/400x300/3b82f6/white?text=News'"><div class="card-body"><div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div><div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>saved offline</span></div><div class="news-desc">${escapeHtml(art.description||'No description')}</div><div class="action-row"><a href="${art.link}" target="_blank" class="btn-primary">Read</a><button class="btn-remove unsave-btn" data-link="${art.link}"><i class="fas fa-trash-alt"></i> Remove</button></div></div></div>`;
+            html+=`<div class="news-card"><img class="card-img" src="${art.imageUrl||'https://placehold.co/800x450/3b82f6/white?text=Saved'}" onerror="this.src='https://placehold.co/400x300/3b82f6/white?text=News'"><div class="card-body"><div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div><div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>saved offline</span></div><div class="news-desc">${escapeHtml(art.description||'No description')}</div><div class="action-row"><a href="${art.link}" target="_blank" class="btn-primary">Read Original</a><button class="btn-remove unsave-btn" data-link="${art.link}"><i class="fas fa-trash-alt"></i> Remove</button></div></div></div>`;
         });
         savedDiv.innerHTML=html;
         document.querySelectorAll('.unsave-btn').forEach(btn=>{
@@ -154,116 +189,256 @@
                 localStorage.setItem("amimo_saved",JSON.stringify(savedArticles));
                 updateSavedCounter();
                 renderSavedArticles();
-                if(currentView==='home') attachSaveEvents();
+                if(currentView==='home') attachSaveEvents(); // refresh home buttons
                 showToast('Article removed from saved');
             });
         });
     }
     
+    // Trending carousel with auto-scroll
     function renderTrendingCarousel(){ 
         let cats=['Politics','Technology','Sports','Entertainment','Business','Health','World','Local'];
         let selected=[]; 
-        for(let cat of cats){ let art=allArticles.filter(a=>a.category===cat).slice(0,2); selected.push(...art); }
+        for(let cat of cats){ 
+            let art=allArticles.filter(a=>a.category===cat).slice(0,2); 
+            selected.push(...art); 
+        }
         let carousel=document.getElementById('trendingCarousel');
-        if(!selected.length){ carousel.innerHTML='<div>No trending</div>'; return; }
-        carousel.innerHTML=selected.map(art=>`<div class="trend-card-full"><img src="${getImageUrl(art,art.category)}" onerror="this.src='https://placehold.co/800x400/3b82f6/white?text=Trend'"><div class="trend-info"><h3><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></h3><div class="trend-meta"><span>${art.source}</span><span>${formatViews(generateViews(art.title))} views</span></div><button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${getImageUrl(art,art.category)}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button></div></div>`).join('');
+        if(!carousel) return;
+        if(!selected.length){ carousel.innerHTML='<div>No trending available</div>'; return; }
+        carousel.innerHTML=selected.map(art=>{
+            let imgSrc = getImageUrl(art, art.category);
+            return `<div class="trend-card-full"><img src="${imgSrc}" onerror="this.src='https://placehold.co/800x400/3b82f6/white?text=Trend'"><div class="trend-info"><h3><a href="${art.link}" target="_blank" style="text-decoration:none;">${escapeHtml(art.title)}</a></h3><div class="trend-meta"><span><i class="fas fa-globe"></i> ${art.source}</span><span><i class="fas fa-eye"></i> ${formatViews(generateViews(art.title))} views</span></div><button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button></div></div>`;
+        }).join('');
+        
+        // Attach save events for trending buttons
         document.querySelectorAll('.save-trend').forEach(btn=>{ 
             btn.addEventListener('click',()=>{ 
                 if(!savedArticles.some(s=>s.link===btn.dataset.link)){ 
-                    savedArticles.push({ title:btn.dataset.title,link:btn.dataset.link,imageUrl:btn.dataset.img,source:btn.dataset.source,description:btn.dataset.desc }); 
+                    savedArticles.push({ title:btn.dataset.title, link:btn.dataset.link, imageUrl:btn.dataset.img, source:btn.dataset.source, description:btn.dataset.desc, savedAt:Date.now() }); 
                     localStorage.setItem("amimo_saved",JSON.stringify(savedArticles)); 
-                    btn.innerHTML='✅ Saved'; updateSavedCounter(); 
+                    btn.innerHTML='✅ Saved'; 
+                    updateSavedCounter(); 
                     if(currentView==='saved') renderSavedArticles(); 
-                } 
+                    showToast('Saved offline');
+                } else {
+                    showToast('Already saved');
+                }
             }); 
         });
     }
     
-    async function fetchMoreForCategory(cat){ /*placeholder for background fetch*/ return 0; }
-    
-    function switchCategory(cat){ 
-        if(currentCategory===cat)return; 
-        currentCategory=cat; 
-        document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active')); 
-        let activePill=Array.from(document.querySelectorAll('.cat-pill')).find(p=>p.dataset.cat===cat); 
-        if(activePill)activePill.classList.add('active'); 
-        applyCategoryFilter(); 
-        window.scrollTo({top:0}); 
+    // Auto-scroll logic for trending carousel
+    function startCarouselAutoScroll() {
+        if(carouselInterval) clearInterval(carouselInterval);
+        const container = document.getElementById('trendingCarousel');
+        if(!container) return;
+        autoScrollActive = true;
+        
+        // Stop auto-scroll on hover, restart on leave
+        container.addEventListener('mouseenter', () => { autoScrollActive = false; });
+        container.addEventListener('mouseleave', () => { autoScrollActive = true; });
+        
+        carouselInterval = setInterval(() => {
+            if(!autoScrollActive) return;
+            if(!container) return;
+            const maxScroll = container.scrollWidth - container.clientWidth;
+            if(maxScroll <= 0) return;
+            let newLeft = container.scrollLeft + (container.clientWidth * 0.8);
+            if(newLeft >= maxScroll) newLeft = 0;
+            container.scrollTo({ left: newLeft, behavior: 'smooth' });
+        }, 6000);
     }
     
+    // Infinite scroll observer
+    function initScrollObserver(){
+        if(scrollObserver) scrollObserver.disconnect();
+        scrollObserver = new IntersectionObserver(async(entries)=>{ 
+            if(entries[0].isIntersecting && !isLoadingMore && currentView==='home') { 
+                if(displayLimit < currentFiltered.length){ 
+                    isLoadingMore = true;
+                    // Simulate loading more from existing articles
+                    setTimeout(() => {
+                        displayLimit = Math.min(displayLimit + 25, currentFiltered.length);
+                        renderNewsFeed();
+                        isLoadingMore = false;
+                    }, 300);
+                } else {
+                    // Optionally fetch more from RSS (background)
+                    if(!isLoadingMore && allArticles.length > 0) {
+                        // background fetch can be added, but not critical for auto-scroll fix
+                    }
+                }
+            } 
+        },{threshold:0.1, rootMargin: "0px 0px 200px 0px"});
+        if(sentinelElement) scrollObserver.observe(sentinelElement);
+    }
+    
+    // Category switching
+    function switchCategory(cat){ 
+        if(currentCategory===cat) return; 
+        currentCategory=cat; 
+        let pills = document.querySelectorAll('.cat-pill');
+        pills.forEach(p=>p.classList.remove('active')); 
+        let activePill = Array.from(pills).find(p=>p.dataset.cat===cat); 
+        if(activePill) activePill.classList.add('active'); 
+        applyCategoryFilter(); 
+        window.scrollTo({top:0, behavior:'smooth'}); 
+    }
+    
+    // Detect user location
     async function detectLocation(){ 
         try{ 
             let res=await fetch('https://ipapi.co/json/'); 
             let d=await res.json(); 
             if(d.country_code){ userCountry=d.country_code; userCountryName=d.country_name||userCountry; } 
-        }catch(e){ userCountry="ZM"; userCountryName="Zambia"; } 
-        document.getElementById('countryBadge').innerHTML=`<i class="fas fa-map-marker-alt"></i> ${userCountryName}`; 
+        } catch(e){ userCountry="ZM"; userCountryName="Zambia"; } 
+        let badge = document.getElementById('countryBadge');
+        if(badge) badge.innerHTML=`<i class="fas fa-map-marker-alt"></i> ${userCountryName}`; 
     }
     
-    // Bottom bar & view toggling
+    // View switching (home / saved)
     function showHomeView(){
         currentView='home';
-        document.getElementById('homeView').style.display='block';
-        document.getElementById('savedView').style.display='none';
-        document.querySelectorAll('.nav-item').forEach(btn=>btn.classList.remove('active'));
-        document.querySelector('.nav-item[data-nav="home"]').classList.add('active');
+        let homeDiv = document.getElementById('homeView');
+        let savedDiv = document.getElementById('savedView');
+        if(homeDiv) homeDiv.style.display = 'block';
+        if(savedDiv) savedDiv.style.display = 'none';
+        let navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(btn=>btn.classList.remove('active'));
+        let homeNav = document.querySelector('.nav-item[data-nav="home"]');
+        if(homeNav) homeNav.classList.add('active');
         if(scrollObserver && sentinelElement) scrollObserver.observe(sentinelElement);
+        // Refresh feed in case articles changed
+        renderNewsFeed();
+        // Restart carousel auto-scroll if visible
+        if(carouselInterval) clearInterval(carouselInterval);
+        startCarouselAutoScroll();
     }
     
     function showSavedView(){
         currentView='saved';
-        document.getElementById('homeView').style.display='none';
-        document.getElementById('savedView').style.display='block';
-        document.querySelectorAll('.nav-item').forEach(btn=>btn.classList.remove('active'));
-        document.querySelector('.nav-item[data-nav="saved"]').classList.add('active');
+        let homeDiv = document.getElementById('homeView');
+        let savedDiv = document.getElementById('savedView');
+        if(homeDiv) homeDiv.style.display = 'none';
+        if(savedDiv) savedDiv.style.display = 'block';
+        let navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(btn=>btn.classList.remove('active'));
+        let savedNav = document.querySelector('.nav-item[data-nav="saved"]');
+        if(savedNav) savedNav.classList.add('active');
         if(scrollObserver) scrollObserver.disconnect();
         renderSavedArticles();
+        // Pause carousel auto-scroll when in saved view
+        if(carouselInterval) clearInterval(carouselInterval);
+        carouselInterval = null;
     }
     
-    function initScrollObserver(){
-        if(scrollObserver) scrollObserver.disconnect();
-        scrollObserver=new IntersectionObserver(async(entries)=>{ 
-            if(entries[0].isIntersecting && !isLoadingMore && currentView==='home') { 
-                if(displayLimit<currentFiltered.length){ 
-                    displayLimit=Math.min(displayLimit+25,currentFiltered.length); 
-                    renderNewsFeed(); 
-                } 
-            } 
-        },{threshold:0.1});
-        if(sentinelElement) scrollObserver.observe(sentinelElement);
-    }
-    
-    // Event binding and initialization
-    window.onload=async ()=>{
-        await detectLocation();
-        await loadAllFeeds();
-        initScrollObserver();
-        
-        document.querySelectorAll('.cat-pill').forEach(p=>p.addEventListener('click',()=>switchCategory(p.dataset.cat)));
-        document.getElementById('searchBtn').addEventListener('click',()=>{ let q=document.getElementById('searchInput').value.trim(); if(q) window.location.href=`seachresult.html?q=${encodeURIComponent(q)}`; });
-        document.getElementById('searchInput').addEventListener('keypress',e=>{if(e.key==='Enter')document.getElementById('searchBtn').click();});
-        document.getElementById('themeSwitch').addEventListener('change',e=>{ if(e.target.checked) document.body.classList.add('dark'); else document.body.classList.remove('dark'); localStorage.setItem('blue_theme',e.target.checked?'dark':'light'); });
-        if(localStorage.getItem('blue_theme')==='dark'){ document.body.classList.add('dark'); document.getElementById('themeSwitch').checked=true; }
-        
-        document.getElementById('hamburgerBtn').onclick=()=>{ document.getElementById('sideMenu').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
-        document.getElementById('closeMenuBtn').onclick=()=>{ document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); };
-        document.getElementById('overlay').onclick=()=>{ document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); };
-        document.getElementById('menuHome').onclick=()=>{ showHomeView(); switchCategory('all'); closeMenu(); };
-        document.getElementById('menuSaved').onclick=()=>{ showSavedView(); closeMenu(); };
-        document.getElementById('viewSavedBtn').onclick=()=>showSavedView();
-        
-        document.querySelectorAll('.nav-item').forEach(btn=>{ btn.addEventListener('click',()=>{ if(btn.dataset.nav==='home') showHomeView(); else showSavedView(); }); });
-        
-        function closeMenu(){ document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        
+    // Floating search bar
+    function initFloatingSearch() {
         const searchZone = document.getElementById('searchZone');
+        const searchInput = document.getElementById('searchInput');
+        if(!searchZone || !searchInput) return;
         function enableFloating() {
             searchZone.classList.add('floating-top');
             document.body.style.paddingTop = '80px';
-            const removeFloat = (e) => { if(!searchZone.contains(e.target)) { searchZone.classList.remove('floating-top'); document.body.style.paddingTop = '0px'; document.removeEventListener('click', removeFloat); } };
+            const removeFloat = (e) => { 
+                if(!searchZone.contains(e.target)) { 
+                    searchZone.classList.remove('floating-top'); 
+                    document.body.style.paddingTop = '0px'; 
+                    document.removeEventListener('click', removeFloat); 
+                } 
+            };
             setTimeout(() => document.addEventListener('click', removeFloat), 50);
-            document.getElementById('searchInput').focus();
+            searchInput.focus();
         }
-        document.getElementById('searchInput').addEventListener('focus', enableFloating);
+        searchInput.addEventListener('focus', enableFloating);
+    }
+    
+    // ---- Event Listeners & Initialization ----
+    window.onload = async () => {
+        await detectLocation();
+        await loadAllFeeds();
+        initScrollObserver();
+        initFloatingSearch();
+        
+        // Category pills
+        document.querySelectorAll('.cat-pill').forEach(pill => {
+            pill.addEventListener('click', () => switchCategory(pill.dataset.cat));
+        });
+        
+        // Search
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        if(searchBtn) {
+            searchBtn.addEventListener('click', () => { 
+                let q = searchInput.value.trim(); 
+                if(q) window.location.href = `seachresult.html?q=${encodeURIComponent(q)}`; 
+            });
+        }
+        if(searchInput) {
+            searchInput.addEventListener('keypress', e => { if(e.key === 'Enter') searchBtn.click(); });
+        }
+        
+        // Dark mode
+        const themeSwitch = document.getElementById('themeSwitch');
+        if(themeSwitch) {
+            themeSwitch.addEventListener('change', e => { 
+                if(e.target.checked) document.body.classList.add('dark'); 
+                else document.body.classList.remove('dark'); 
+                localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light'); 
+            });
+            if(localStorage.getItem('blue_theme') === 'dark') { 
+                document.body.classList.add('dark'); 
+                themeSwitch.checked = true; 
+            }
+        }
+        
+        // Side menu
+        const hamburger = document.getElementById('hamburgerBtn');
+        const sideMenu = document.getElementById('sideMenu');
+        const overlay = document.getElementById('overlay');
+        const closeMenuBtn = document.getElementById('closeMenuBtn');
+        function closeMenu() { 
+            if(sideMenu) sideMenu.classList.remove('open'); 
+            if(overlay) overlay.classList.remove('show'); 
+        }
+        if(hamburger) {
+            hamburger.onclick = () => { 
+                if(sideMenu) sideMenu.classList.add('open'); 
+                if(overlay) overlay.classList.add('show'); 
+            };
+        }
+        if(closeMenuBtn) closeMenuBtn.onclick = closeMenu;
+        if(overlay) overlay.onclick = closeMenu;
+        
+        // Menu items
+        const menuHome = document.getElementById('menuHome');
+        const menuSaved = document.getElementById('menuSaved');
+        const menuTrending = document.getElementById('menuTrending');
+        const menuNotification = document.getElementById('menuNotification');
+        const menuSearch = document.getElementById('menuSearch');
+        const menuAbout = document.getElementById('menuAbout');
+        const viewSavedBtn = document.getElementById('viewSavedBtn');
+        
+        if(menuHome) menuHome.onclick = () => { showHomeView(); switchCategory('all'); closeMenu(); };
+        if(menuSaved) menuSaved.onclick = () => { showSavedView(); closeMenu(); };
+        if(menuTrending) menuTrending.onclick = () => { 
+            const trendingSec = document.getElementById('trendingSection');
+            if(trendingSec) trendingSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            closeMenu(); 
+        };
+        if(menuNotification) menuNotification.onclick = () => { alert("🔔 Notifications coming soon."); closeMenu(); };
+        if(menuSearch) menuSearch.onclick = () => { closeMenu(); if(searchInput) searchInput.focus(); };
+        if(menuAbout) menuAbout.onclick = () => { alert("Amimo Blue v10.0\nTrending with auto-scroll\nSaved articles offline\nInfinite scroll enabled"); closeMenu(); };
+        if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
+        
+        // Bottom navigation
+        const bottomNavHome = document.querySelector('.nav-item[data-nav="home"]');
+        const bottomNavSaved = document.querySelector('.nav-item[data-nav="saved"]');
+        if(bottomNavHome) bottomNavHome.addEventListener('click', () => showHomeView());
+        if(bottomNavSaved) bottomNavSaved.addEventListener('click', () => showSavedView());
+        
+        // Additional: if already in saved view on load (should not happen)
+        showHomeView();
     };
 })();
