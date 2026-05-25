@@ -83,32 +83,7 @@
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(item.source || category)}`;
     }
 
-    function saveCurrentState() {
-        sessionStorage.setItem('amimo_saved_state', JSON.stringify({ allArticles, currentCategory, scrollY: window.scrollY, displayLimit }));
-    }
-    function restoreSavedState() {
-        const saved = sessionStorage.getItem('amimo_saved_state');
-        if (saved) {
-            try {
-                const state = JSON.parse(saved);
-                if (state.allArticles && state.allArticles.length) {
-                    allArticles = state.allArticles;
-                    currentCategory = state.currentCategory || "all";
-                    displayLimit = state.displayLimit || 30;
-                    document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
-                    const activePill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === currentCategory);
-                    if (activePill) activePill.classList.add('active');
-                    applyCategoryFilter();
-                    renderTrendingCarousel();
-                    updateSavedCounter();
-                    setTimeout(() => window.scrollTo(0, state.scrollY || 0), 100);
-                    document.getElementById('statusMsg').innerHTML = `✅ ${allArticles.length} stories ready (cached)`;
-                    return true;
-                }
-            } catch(e) {}
-        }
-        return false;
-    }
+    // Removed saveCurrentState and restoreSavedState to prevent stale feed cache
 
     async function fetchFeed(feedCfg) {
         try {
@@ -155,7 +130,6 @@
             allArticles = [...uniqueNew, ...allArticles];
             allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
             storeAllArticlesForSearch();
-            saveCurrentState();
         }
         return uniqueNew.length;
     }
@@ -169,14 +143,13 @@
 
     function redirectToSearchPage(query) {
         if (!query.trim()) return;
-        saveCurrentState();
         storeAllArticlesForSearch();
         window.location.href = `seachresult.html?q=${encodeURIComponent(query)}`;
     }
 
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
-        statusDiv.innerHTML = '<div class="loader"></div> Fetching from 30+ providers...';
+        statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 30+ providers...';
         const allFeeds = [...WORLD_FEEDS, ...(localMap.get(userCountry) || [])];
         const results = await Promise.all(allFeeds.map(f => fetchFeed(f)));
         let arts = [];
@@ -186,9 +159,8 @@
         allArticles = Array.from(uniqueMap.values());
         allArticles.forEach(a => { a.views = generateViews(a.title); });
         allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-        statusDiv.innerHTML = `✅ ${allArticles.length} stories ready`;
+        statusDiv.innerHTML = `✅ ${allArticles.length} fresh stories ready`;
         storeAllArticlesForSearch();
-        saveCurrentState();
         applyCategoryFilter();
         renderTrendingCarousel();
         updateSavedCounter();
@@ -370,7 +342,6 @@
         if(activePill) activePill.classList.add('active');
         clearRetryButton();
         applyCategoryFilter();
-        saveCurrentState();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -418,9 +389,8 @@
     searchInput.addEventListener('focus', enableFloating);
 
     // ========== INIT ==========
+    // Always fetch fresh articles on load/reload – no cached feed data
     detectLocation().then(() => {
-        const restored = restoreSavedState();
-        if (!restored) loadAllFeeds().then(() => initScrollObserver());
-        else { initScrollObserver(); setTimeout(() => attemptBackgroundFetch(), 2000); }
+        loadAllFeeds().then(() => initScrollObserver());
     });
 })();
