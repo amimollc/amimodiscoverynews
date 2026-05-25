@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - Amimo Discovery (Fully Restored + Bottom Bar) =====================
+// ===================== MAIN.JS - Amimo Discovery (Updated: Button Gap, Endless Load, More Feeds) =====================
 (function() {
-    // ========== RSS FEEDS (original, unchanged) ==========
+    // ========== RSS FEEDS (EXPANDED - More international & local feeds including sports) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -9,41 +9,105 @@
         { name: "The Guardian", url: "https://www.theguardian.com/world/rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian" },
         { name: "France 24", url: "https://www.france24.com/en/rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=France24" },
         { name: "Deutsche Welle", url: "https://rss.dw.com/rdf/rss-en-top", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=DW" },
+        { name: "ABC News (AU)", url: "https://www.abc.net.au/news/feed/51120/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ABC+AU" },
+        { name: "CBC News", url: "https://www.cbc.ca/cmlink/rss-topstories", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBC" },
+        { name: "NDTV World", url: "https://feeds.feedburner.com/ndtvnews-world-news", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" },
+        { name: "South China Morning Post", url: "https://www.scmp.com/rss/2/feed", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SCMP" },
+        { name: "The Japan Times", url: "https://www.japantimes.co.jp/feed/", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=JapanTimes" },
+        
+        // Technology
         { name: "TechCrunch", url: "https://techcrunch.com/feed/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TechCrunch" },
         { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Verge" },
         { name: "Wired", url: "https://www.wired.com/feed/rss", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Wired" },
         { name: "Ars Technica", url: "https://feeds.feedburner.com/arstechnica/index", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Ars" },
         { name: "ZDNet", url: "https://www.zdnet.com/news/rss.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ZDNet" },
         { name: "CNET", url: "https://www.cnet.com/rss/news/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNET" },
+        
+        // Sports
         { name: "ESPN", url: "https://www.espn.com/espn/rss/news", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN" },
         { name: "Sky Sports", url: "https://www.skysports.com/rss/12040", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SkySports" },
         { name: "Bleacher Report", url: "https://bleacherreport.com/articles/feed", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bleacher" },
         { name: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/rss.xml", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBCSport" },
         { name: "The Athletic", url: "https://theathletic.com/feed/", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Athletic" },
+        { name: "FOX Sports", url: "https://www.foxsports.com/rss", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FOXSports" },
+        { name: "CBS Sports", url: "https://www.cbssports.com/rss/headlines", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBSSports" },
+        
+        // Entertainment
         { name: "Variety", url: "https://variety.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Variety" },
         { name: "Hollywood Reporter", url: "https://www.hollywoodreporter.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=THR" },
         { name: "Deadline", url: "https://deadline.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Deadline" },
         { name: "Entertainment Weekly", url: "https://ew.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=EW" },
+        
+        // Politics
         { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politics" },
         { name: "Politico", url: "https://www.politico.com/rss/politics.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politico" },
         { name: "The Hill", url: "https://thehill.com/feed/", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TheHill" },
+        
+        // Business
         { name: "Bloomberg", url: "https://feeds.bloomberg.com/markets/news.rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bloomberg" },
         { name: "CNBC", url: "https://www.cnbc.com/id/100003114/device/rss/rss.html", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNBC" },
         { name: "Financial Times", url: "https://www.ft.com/?format=rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FT" },
         { name: "Business Insider", url: "https://www.businessinsider.com/rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BI" },
+        
+        // Health
         { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Health" },
         { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WebMD" },
         { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=MNT" },
         { name: "Healthline", url: "https://www.healthline.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Healthline" }
     ];
 
+    // EXPANDED LOCAL FEEDS with more countries and sports
     const localMap = new Map();
-    localMap.set("ZM", [{ name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" }]);
-    localMap.set("US", [{ name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" }, { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" }, { name: "LA Times", url: "https://www.latimes.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=LAT" }]);
-    localMap.set("GB", [{ name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+UK" }, { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian" }]);
-    localMap.set("IN", [{ name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TOI" }, { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" }]);
-    localMap.set("CA", [{ name: "CBC", url: "https://www.cbc.ca/cmlink/rss-topstories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBC" }]);
-    localMap.set("AU", [{ name: "ABC Australia", url: "https://www.abc.net.au/news/feed/51120/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ABC+AU" }]);
+    localMap.set("ZM", [ 
+        { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
+        { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" },
+        { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" }
+    ]);
+    localMap.set("US", [ 
+        { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" }, 
+        { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" }, 
+        { name: "LA Times", url: "https://www.latimes.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=LAT" },
+        { name: "USA Today", url: "https://www.usatoday.com/rss/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=USA+Today" },
+        { name: "NBC News", url: "https://feeds.nbcnews.com/nbcnews/public/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NBC" },
+        { name: "ESPN US", url: "https://www.espn.com/espn/rss/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN+US" }
+    ]);
+    localMap.set("GB", [ 
+        { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+UK" }, 
+        { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian" },
+        { name: "Sky News UK", url: "https://news.sky.com/feeds/rss/uk", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sky+UK" },
+        { name: "BBC Sport UK", url: "https://feeds.bbci.co.uk/sport/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+Sport+UK" }
+    ]);
+    localMap.set("IN", [ 
+        { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TOI" }, 
+        { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" },
+        { name: "The Hindu", url: "https://www.thehindu.com/news/feeder/default.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Hindu" },
+        { name: "Indian Express", url: "https://indianexpress.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Indian+Express" },
+        { name: "Sportskeeda", url: "https://www.sportskeeda.com/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sportskeeda" }
+    ]);
+    localMap.set("CA", [ 
+        { name: "CBC", url: "https://www.cbc.ca/cmlink/rss-topstories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBC" },
+        { name: "Toronto Star", url: "https://www.thestar.com/content/thestar/feed.RSS", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Toronto+Star" },
+        { name: "TSN Sports", url: "https://www.tsn.ca/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TSN+Sports" }
+    ]);
+    localMap.set("AU", [ 
+        { name: "ABC Australia", url: "https://www.abc.net.au/news/feed/51120/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ABC+AU" },
+        { name: "Sydney Morning Herald", url: "https://www.smh.com.au/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SMH" },
+        { name: "Fox Sports AU", url: "https://www.foxsports.com.au/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Fox+Sports+AU" }
+    ]);
+    localMap.set("NG", [ 
+        { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Pulse+NG" },
+        { name: "The Guardian NG", url: "https://guardian.ng/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian+NG" },
+        { name: "Complete Sports", url: "https://www.completesports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Complete+Sports" }
+    ]);
+    localMap.set("ZA", [ 
+        { name: "News24", url: "https://www.news24.com/feeds", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News24" },
+        { name: "IOL", url: "https://www.iol.co.za/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=IOL" },
+        { name: "KickOff", url: "https://www.kickoff.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=KickOff" }
+    ]);
+    localMap.set("KE", [ 
+        { name: "Daily Nation", url: "https://www.nation.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Daily+Nation" },
+        { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Star" }
+    ]);
 
     // ========== GLOBALS ==========
     let allArticles = [];
@@ -53,15 +117,17 @@
     let currentFiltered = [];
     let displayLimit = 30;
     let isLoadingMore = false;
+    let isLoadingEndless = false;
     let savedArticles = JSON.parse(localStorage.getItem("amimo_saved") || "[]");
     let scrollObserver = null;
     let sentinelElement = document.getElementById('loadSentinel');
     let retryContainer = null;
     let carouselInterval = null;
     let autoScrollActive = true;
-    let currentView = "home";   // "home" or "saved"
+    let currentView = "home";
+    let hasMoreArticles = true;
 
-    // ========== HELPER FUNCTIONS (original) ==========
+    // ========== HELPER FUNCTIONS ==========
     function generateViews(title) {
         let hash = 0;
         for(let i=0;i<title.length;i++) hash = ((hash<<5)-hash)+title.charCodeAt(i);
@@ -75,6 +141,7 @@
         t.style.position = 'fixed'; t.style.bottom = '70px'; t.style.left = '20px';
         t.style.background = 'var(--accent-dark)'; t.style.color = 'white';
         t.style.padding = '8px 18px'; t.style.borderRadius = '40px'; t.style.zIndex = '9999';
+        t.style.backdropFilter = 'blur(8px)';
         document.body.appendChild(t);
         setTimeout(()=>t.remove(),2000);
     }
@@ -85,7 +152,7 @@
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(item.source || category)}`;
     }
 
-    // ========== FETCH FUNCTIONS (original, including full auto-load) ==========
+    // ========== FETCH FUNCTIONS ==========
     async function fetchFeed(feedCfg) {
         try {
             const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
@@ -119,7 +186,7 @@
         } else {
             feedsToFetch = WORLD_FEEDS.filter(f => f.category === category);
         }
-        if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0,10);
+        if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
         
         const results = await Promise.all(feedsToFetch.slice(0, 15).map(f => fetchFeed(f)));
         let newArticles = [];
@@ -131,6 +198,9 @@
             allArticles = [...uniqueNew, ...allArticles];
             allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
             storeAllArticlesForSearch();
+            hasMoreArticles = true;
+        } else {
+            hasMoreArticles = false;
         }
         return uniqueNew.length;
     }
@@ -150,7 +220,7 @@
 
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
-        statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 30+ providers...';
+        statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
         const allFeeds = [...WORLD_FEEDS, ...(localMap.get(userCountry) || [])];
         const results = await Promise.all(allFeeds.map(f => fetchFeed(f)));
         let arts = [];
@@ -167,14 +237,15 @@
         updateSavedCounter();
     }
 
-    // ========== RENDER FUNCTIONS (original) ==========
+    // ========== RENDER FUNCTIONS ==========
     function applyCategoryFilter() {
         if (currentCategory === 'all') currentFiltered = [...allArticles];
         else if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
         else currentFiltered = allArticles.filter(a => a.category === currentCategory);
         displayLimit = 30;
         renderNewsFeed();
-        if (currentFiltered.length < 40 && !isLoadingMore) setTimeout(() => attemptBackgroundFetch(), 500);
+        // Auto-trigger background fetch if we have few articles
+        if (currentFiltered.length < 30 && !isLoadingMore) setTimeout(() => attemptBackgroundFetch(), 300);
     }
 
     async function attemptBackgroundFetch() {
@@ -182,15 +253,22 @@
         isLoadingMore = true;
         try {
             const newCount = await fetchMoreForCategory(currentCategory);
-            if (newCount > 0) applyCategoryFilter();
+            if (newCount > 0) {
+                applyCategoryFilter();
+                showToast(`✨ ${newCount} new articles loaded`);
+            }
         } catch(e) { console.warn(e); }
         isLoadingMore = false;
     }
 
+    // Added gap between buttons with margin-right
     function renderNewsFeed() {
         const feedDiv = document.getElementById('newsFeed');
         const toRender = currentFiltered.slice(0, displayLimit);
-        if(toRender.length === 0) { feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles in this category</div>'; return; }
+        if(toRender.length === 0) { 
+            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles in this category. Pull to refresh or check back later.</div>'; 
+            return; 
+        }
         let html = '';
         for(let i=0; i<toRender.length; i++) {
             const art = toRender[i];
@@ -203,7 +281,10 @@
                     <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                     <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
                     <div class="news-desc">${escapeHtml(art.description)}</div>
-                    <div class="action-row"><a href="${art.link}" target="_blank" class="btn-primary" style="text-decoration:none;"><i class="fas fa-external-link-alt"></i> Read Original</a><button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save Offline'}</button></div>
+                    <div class="action-row" style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+                        <a href="${art.link}" target="_blank" class="btn-primary" style="text-decoration:none; margin-right: 0.5rem;"><i class="fas fa-external-link-alt"></i> Read Original</a>
+                        <button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save Offline'}</button>
+                    </div>
                 </div>
             </div>`;
             if((i+1) % 5 === 0 && i+1 < toRender.length) html += `<div class="inline-ad"><i class="fas fa-ad"></i> Advertisement — Support our journalism</div>`;
@@ -215,6 +296,7 @@
     function attachSaveEvents() {
         document.querySelectorAll('.save-btn').forEach(btn => { btn.removeEventListener('click', saveHandler); btn.addEventListener('click', saveHandler); });
     }
+    
     function saveHandler(e) {
         const btn = e.currentTarget; const link = btn.dataset.link;
         if(!savedArticles.some(s => s.link === link)) {
@@ -229,7 +311,11 @@
         updateSavedCounter();
         if (currentView === 'saved') renderSavedArticles();
     }
-    function updateSavedCounter() { document.getElementById('savedCounter').innerText = savedArticles.length; }
+    
+    function updateSavedCounter() { 
+        const counter = document.getElementById('savedCounter');
+        if(counter) counter.innerText = savedArticles.length; 
+    }
 
     function renderTrendingCarousel() {
         const categories = ['Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health', 'World', 'Local'];
@@ -256,17 +342,20 @@
             btn.addEventListener('click', () => {
                 const link = btn.dataset.link;
                 if(!savedArticles.some(s=>s.link===link)) {
-                    savedArticles.push({ title: btn.dataset.title, link, imageUrl: btn.dataset.img, source: btn.dataset.source, description: btn.dataset.desc });
+                    savedArticles.push({ title: btn.dataset.title, link, imageUrl: btn.dataset.img, source: btn.dataset.source, description: btn.dataset.desc, savedAt: Date.now() });
                     localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
                     btn.innerHTML = '✅ Saved'; updateSavedCounter();
                     if (currentView === 'saved') renderSavedArticles();
+                    showToast('Saved offline');
+                } else {
+                    showToast('Already saved');
                 }
             });
         });
-        startCarouselScroll();  // start auto-scroll after rendering
+        startCarouselScroll();
     }
 
-    // FIXED: auto-scroll for trending carousel
+    // Auto-scroll for trending carousel
     function startCarouselScroll() {
         if(carouselInterval) clearInterval(carouselInterval);
         const container = document.getElementById('trendingCarousel');
@@ -284,47 +373,71 @@
         }, 6000);
     }
 
-    // ========== RETRY & INFINITE SCROLL (original) ==========
+    // ========== ENDLESS AUTO-LOAD (FIXED - loads more when reaching end) ==========
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
+    
     function showRetryButton(message, retryCallback) {
         clearRetryButton();
         const wrapper = document.createElement('div');
         wrapper.className = 'end-loader';
-        wrapper.innerHTML = `<div><i class="fas fa-exclamation-triangle"></i> ${message}</div><button class="retry-button"><i class="fas fa-sync-alt"></i> Reload</button>`;
+        wrapper.innerHTML = `<div><i class="fas fa-exclamation-triangle"></i> ${message}</div><button class="retry-button"><i class="fas fa-sync-alt"></i> Reload More</button>`;
         wrapper.querySelector('.retry-button').onclick = async () => {
             wrapper.innerHTML = '<div class="loader"></div> Fetching...';
             const newCount = await retryCallback();
             if(newCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${newCount} new articles`); }
-            else wrapper.innerHTML = `<div>No new articles. <button class="retry-button">Retry</button></div>`;
+            else wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
         };
-        sentinelElement.parentNode.insertBefore(wrapper, sentinelElement);
-        retryContainer = wrapper;
+        if(sentinelElement && sentinelElement.parentNode) {
+            sentinelElement.parentNode.insertBefore(wrapper, sentinelElement);
+            retryContainer = wrapper;
+        }
     }
 
     async function attemptLoadMore() {
-        if(isLoadingMore) return false;
-        isLoadingMore = true;
+        if(isLoadingMore || isLoadingEndless) return false;
+        isLoadingEndless = true;
         showEndSpinner(true);
         let newCount = 0;
         try {
             newCount = await fetchMoreForCategory(currentCategory);
-            if(newCount > 0) { applyCategoryFilter(); window.scrollBy({ top: 60, behavior: 'smooth' }); clearRetryButton(); }
-            else showRetryButton("No more articles. Tap to reload.", async () => await fetchMoreForCategory(currentCategory));
-        } catch(err) { showRetryButton("Failed to load. Tap to retry.", async () => await fetchMoreForCategory(currentCategory)); }
-        finally { isLoadingMore = false; showEndSpinner(false); }
+            if(newCount > 0) { 
+                applyCategoryFilter(); 
+                window.scrollBy({ top: 60, behavior: 'smooth' }); 
+                clearRetryButton();
+                showToast(`✨ ${newCount} more articles loaded`);
+            } else if (hasMoreArticles === false) {
+                showRetryButton("End of content. Tap to check for new articles.", async () => await fetchMoreForCategory(currentCategory));
+            } else {
+                showRetryButton("No more articles at the moment. Tap to refresh.", async () => await fetchMoreForCategory(currentCategory));
+            }
+        } catch(err) { 
+            showRetryButton("Failed to load more. Tap to retry.", async () => await fetchMoreForCategory(currentCategory)); 
+        }
+        finally { 
+            isLoadingEndless = false; 
+            showEndSpinner(false); 
+        }
         return newCount > 0;
     }
 
     function showEndSpinner(show) {
         let spinner = document.getElementById('endSpinner');
-        if(show && !spinner) { spinner = document.createElement('div'); spinner.id = "endSpinner"; spinner.className = "end-loader"; spinner.innerHTML = '<div class="loader"></div> Loading more...'; sentinelElement.parentNode.insertBefore(spinner, sentinelElement); }
-        else if(!show && spinner) spinner.remove();
+        if(show && !spinner) { 
+            spinner = document.createElement('div'); 
+            spinner.id = "endSpinner"; 
+            spinner.className = "end-loader"; 
+            spinner.innerHTML = '<div class="loader"></div> Loading more articles...'; 
+            if(sentinelElement && sentinelElement.parentNode) {
+                sentinelElement.parentNode.insertBefore(spinner, sentinelElement); 
+            }
+        } else if(!show && spinner) spinner.remove();
     }
 
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver(async (entries) => {
-            if(entries[0].isIntersecting && !isLoadingMore && currentView === 'home') {
+            if(entries[0].isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home') {
+                // Case 1: We have more articles in current filtered array to display
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
@@ -333,11 +446,18 @@
                         renderNewsFeed();
                         isLoadingMore = false;
                         showEndSpinner(false);
-                        if (displayLimit + 15 >= currentFiltered.length) setTimeout(() => attemptBackgroundFetch(), 200);
-                    }, 100);
-                } else if(!isLoadingMore) await attemptLoadMore();
+                        // If we're close to the end of cached articles, fetch more from RSS
+                        if (displayLimit + 10 >= currentFiltered.length) {
+                            setTimeout(() => attemptBackgroundFetch(), 200);
+                        }
+                    }, 150);
+                } 
+                // Case 2: Reached end of current articles - auto-load more from RSS (endless)
+                else if (displayLimit >= currentFiltered.length && !isLoadingEndless) {
+                    await attemptLoadMore();
+                }
             }
-        }, { threshold: 0.1, rootMargin: "0px 0px 1200px 0px" });
+        }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
         if(sentinelElement) scrollObserver.observe(sentinelElement);
     }
 
@@ -349,6 +469,7 @@
         const activePill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
         if(activePill) activePill.classList.add('active');
         clearRetryButton();
+        hasMoreArticles = true;
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -357,12 +478,16 @@
         try {
             const res = await fetch('https://ipapi.co/json/');
             const d = await res.json();
-            if(d.country_code) { userCountry = d.country_code; userCountryName = d.country_name || userCountry; }
+            if(d.country_code) { 
+                userCountry = d.country_code; 
+                userCountryName = d.country_name || userCountry; 
+            }
         } catch(e) { userCountry="ZM"; userCountryName="Zambia"; }
-        document.getElementById('countryBadge').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
+        const badge = document.getElementById('countryBadge');
+        if(badge) badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
     }
 
-    // ========== SAVED VIEW (separate view for bottom bar) ==========
+    // ========== SAVED VIEW ==========
     function renderSavedArticles() {
         const savedDiv = document.getElementById('savedFeed');
         if(!savedDiv) return;
@@ -378,7 +503,10 @@
                     <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                     <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>saved offline</span></div>
                     <div class="news-desc">${escapeHtml(art.description || 'No description')}</div>
-                    <div class="action-row"><a href="${art.link}" target="_blank" class="btn-primary">Read Original</a><button class="btn-remove unsave-btn" data-link="${art.link}"><i class="fas fa-trash-alt"></i> Remove</button></div>
+                    <div class="action-row" style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+                        <a href="${art.link}" target="_blank" class="btn-primary" style="margin-right: 0.5rem;">Read Original</a>
+                        <button class="btn-remove unsave-btn" data-link="${art.link}"><i class="fas fa-trash-alt"></i> Remove</button>
+                    </div>
                 </div>
             </div>`;
         });
@@ -390,35 +518,38 @@
                 localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
                 updateSavedCounter();
                 renderSavedArticles();
-                if (currentView === 'home') attachSaveEvents(); // refresh home buttons
+                if (currentView === 'home') attachSaveEvents();
                 showToast('Article removed from saved');
             });
         });
     }
 
-    // ========== VIEW SWITCHING (home / saved) ==========
+    // ========== VIEW SWITCHING ==========
     function showHomeView() {
         currentView = 'home';
-        document.getElementById('homeView').style.display = 'block';
-        document.getElementById('savedView').style.display = 'none';
+        const homeDiv = document.getElementById('homeView');
+        const savedDiv = document.getElementById('savedView');
+        if(homeDiv) homeDiv.style.display = 'block';
+        if(savedDiv) savedDiv.style.display = 'none';
         document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-        document.querySelector('.nav-item[data-nav="home"]').classList.add('active');
+        const homeNav = document.querySelector('.nav-item[data-nav="home"]');
+        if(homeNav) homeNav.classList.add('active');
         if (scrollObserver && sentinelElement) scrollObserver.observe(sentinelElement);
-        // restart carousel scroll
         if (carouselInterval) clearInterval(carouselInterval);
         startCarouselScroll();
-        // refresh feed in case saved changed something
         renderNewsFeed();
     }
 
     function showSavedView() {
         currentView = 'saved';
-        document.getElementById('homeView').style.display = 'none';
-        document.getElementById('savedView').style.display = 'block';
+        const homeDiv = document.getElementById('homeView');
+        const savedDiv = document.getElementById('savedView');
+        if(homeDiv) homeDiv.style.display = 'none';
+        if(savedDiv) savedDiv.style.display = 'block';
         document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-        document.querySelector('.nav-item[data-nav="saved"]').classList.add('active');
+        const savedNav = document.querySelector('.nav-item[data-nav="saved"]');
+        if(savedNav) savedNav.classList.add('active');
         if (scrollObserver) scrollObserver.disconnect();
-        // pause carousel when in saved view
         if (carouselInterval) clearInterval(carouselInterval);
         carouselInterval = null;
         renderSavedArticles();
@@ -426,43 +557,74 @@
 
     // ========== EVENT LISTENERS ==========
     document.querySelectorAll('.cat-pill').forEach(pill => pill.addEventListener('click', () => switchCategory(pill.dataset.cat)));
+    
     const themeSwitch = document.getElementById('themeSwitch');
-    themeSwitch.addEventListener('change', (e) => { if(e.target.checked) document.body.classList.add('dark'); else document.body.classList.remove('dark'); localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light'); });
-    if(localStorage.getItem('blue_theme') === 'dark') { document.body.classList.add('dark'); themeSwitch.checked = true; }
+    if(themeSwitch) {
+        themeSwitch.addEventListener('change', (e) => { 
+            if(e.target.checked) document.body.classList.add('dark'); 
+            else document.body.classList.remove('dark'); 
+            localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light'); 
+        });
+        if(localStorage.getItem('blue_theme') === 'dark') { 
+            document.body.classList.add('dark'); 
+            themeSwitch.checked = true; 
+        }
+    }
 
     const sideMenu = document.getElementById('sideMenu'), overlayDiv = document.getElementById('overlay');
-    function closeMenu() { sideMenu.classList.remove('open'); overlayDiv.classList.remove('show'); }
-    document.getElementById('hamburgerBtn').onclick = () => { sideMenu.classList.add('open'); overlayDiv.classList.add('show'); };
-    document.getElementById('closeMenuBtn').onclick = closeMenu;
-    overlayDiv.onclick = closeMenu;
-    document.getElementById('menuHome').addEventListener('click', () => { showHomeView(); switchCategory('all'); closeMenu(); });
-    document.getElementById('menuTrending').addEventListener('click', () => { document.getElementById('trendingCarousel').scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
-    document.getElementById('menuNotification').addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
-    document.getElementById('menuSearch').addEventListener('click', () => { closeMenu(); document.getElementById('searchInput').focus(); });
-    document.getElementById('menuAbout').addEventListener('click', () => { alert("Amimo Blue v10.0\nTrending shows 2 per category, local in All, fast infinite scroll."); closeMenu(); });
-    document.getElementById('menuSaved').addEventListener('click', () => { showSavedView(); closeMenu(); });
-    document.getElementById('viewSavedBtn').onclick = () => showSavedView();
+    function closeMenu() { 
+        if(sideMenu) sideMenu.classList.remove('open'); 
+        if(overlayDiv) overlayDiv.classList.remove('show'); 
+    }
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    if(hamburgerBtn) hamburgerBtn.onclick = () => { if(sideMenu) sideMenu.classList.add('open'); if(overlayDiv) overlayDiv.classList.add('show'); };
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+    if(closeMenuBtn) closeMenuBtn.onclick = closeMenu;
+    if(overlayDiv) overlayDiv.onclick = closeMenu;
+    
+    const menuHome = document.getElementById('menuHome');
+    const menuTrending = document.getElementById('menuTrending');
+    const menuNotification = document.getElementById('menuNotification');
+    const menuSearch = document.getElementById('menuSearch');
+    const menuAbout = document.getElementById('menuAbout');
+    const menuSaved = document.getElementById('menuSaved');
+    const viewSavedBtn = document.getElementById('viewSavedBtn');
+    
+    if(menuHome) menuHome.addEventListener('click', () => { showHomeView(); switchCategory('all'); closeMenu(); });
+    if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
+    if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
+    if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v11.0\n✨ Endless auto-load\n🌍 50+ news sources\n⚡ Gap between buttons\n🏆 Local sports included"); closeMenu(); });
+    if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
+    if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
-    searchBtn.addEventListener('click', () => { const q = searchInput.value.trim(); if(q) redirectToSearchPage(q); });
-    searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') searchBtn.click(); });
+    if(searchBtn) searchBtn.addEventListener('click', () => { const q = searchInput.value.trim(); if(q) redirectToSearchPage(q); });
+    if(searchInput) searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && searchBtn) searchBtn.click(); });
 
     const searchZone = document.getElementById('searchZone');
     function enableFloating() {
+        if(!searchZone) return;
         searchZone.classList.add('floating-top');
         document.body.style.paddingTop = '80px';
-        const removeFloat = (e) => { if(!searchZone.contains(e.target)) { searchZone.classList.remove('floating-top'); document.body.style.paddingTop = '0px'; document.removeEventListener('click', removeFloat); } };
+        const removeFloat = (e) => { 
+            if(!searchZone.contains(e.target)) { 
+                searchZone.classList.remove('floating-top'); 
+                document.body.style.paddingTop = '0px'; 
+                document.removeEventListener('click', removeFloat); 
+            } 
+        };
         setTimeout(() => document.addEventListener('click', removeFloat), 50);
-        searchInput.focus();
+        if(searchInput) searchInput.focus();
     }
-    searchInput.addEventListener('focus', enableFloating);
+    if(searchInput) searchInput.addEventListener('focus', enableFloating);
 
-    // bottom bar navigation
+    // Bottom bar navigation
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.dataset.nav === 'home') showHomeView();
-            else showSavedView();
+            else if (btn.dataset.nav === 'saved') showSavedView();
         });
     });
 
