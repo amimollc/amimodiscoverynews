@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Amimo Discovery</title>
-    <!-- External Styles & Fonts -->
+    <title>Amimo Discovery • Blue Horizon</title>
+    <!-- External Fonts & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest"   href="manifest.json">
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="favicon.png">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -29,34 +30,50 @@
 </div>
 <div id="loadingProgress" class="loading-progress"></div>
 
-<div class="categories-row" id="categoryScroll">
-    <div class="cat-pill active" data-cat="all"><i class="fas fa-globe"></i> All</div>
-    <div class="cat-pill" data-cat="Politics"><i class="fas fa-landmark"></i> Politics</div>
-    <div class="cat-pill" data-cat="Entertainment"><i class="fas fa-mask"></i> Entertainment</div>
-    <div class="cat-pill" data-cat="Technology"><i class="fas fa-microchip"></i> Tech</div>
-    <div class="cat-pill" data-cat="Sports"><i class="fas fa-futbol"></i> Sports</div>
-    <div class="cat-pill" data-cat="Business"><i class="fas fa-chart-line"></i> Business</div>
-    <div class="cat-pill" data-cat="Health"><i class="fas fa-heartbeat"></i> Health</div>
-    <div class="cat-pill" data-cat="Local"><i class="fas fa-location-dot"></i> Local</div>
+<!-- HOME VIEW (entire website content) -->
+<div id="homeView">
+    <div class="categories-row" id="categoryScroll">
+        <div class="cat-pill active" data-cat="all"><i class="fas fa-globe"></i> All</div>
+        <div class="cat-pill" data-cat="Politics"><i class="fas fa-landmark"></i> Politics</div>
+        <div class="cat-pill" data-cat="Entertainment"><i class="fas fa-mask"></i> Entertainment</div>
+        <div class="cat-pill" data-cat="Technology"><i class="fas fa-microchip"></i> Tech</div>
+        <div class="cat-pill" data-cat="Sports"><i class="fas fa-futbol"></i> Sports</div>
+        <div class="cat-pill" data-cat="Business"><i class="fas fa-chart-line"></i> Business</div>
+        <div class="cat-pill" data-cat="Health"><i class="fas fa-heartbeat"></i> Health</div>
+        <div class="cat-pill" data-cat="Local"><i class="fas fa-location-dot"></i> Local</div>
+    </div>
+    <div class="ad-banner" id="globalAdBanner"><i class="fas fa-ad"></i> Advertisement · Your banner could be here · Support Amimo</div>
+    <div class="trending-section" id="trendingSection">
+        <div class="trending-title"><i class="fas fa-fire"></i> Trending Now</div>
+        <div class="trending-carousel" id="trendingCarousel"></div>
+    </div>
+    <div id="newsFeedContainer" style="position: relative;">
+        <div id="statusMsg" style="text-align:center; padding:1rem;"><div class="loader"></div> Loading fresh news...</div>
+        <div id="newsFeed" class="news-feed"></div>
+        <div id="loadSentinel" style="height: 20px;"></div>
+    </div>
 </div>
 
-<div class="ad-banner" id="globalAdBanner"><i class="fas fa-ad"></i> Advertisement · Your banner could be here · Support Amimo</div>
-
-<div class="trending-section" id="trendingSection">
-    <div class="trending-title"><i class="fas fa-fire"></i> Trending Now</div>
-    <div class="trending-carousel" id="trendingCarousel"></div>
-</div>
-
-<div id="newsFeedContainer" style="position: relative;">
-    <div id="statusMsg" style="text-align:center; padding:1rem;"><div class="loader"></div> Loading fresh news...</div>
-    <div id="newsFeed" class="news-feed"></div>
-    <div id="loadSentinel" style="height: 20px;"></div>
+<!-- SAVED VIEW (only cached articles) -->
+<div id="savedView" style="display: none;">
+    <div style="padding: 1rem; background: var(--card-bg); margin: 1rem 1.2rem; border-radius: 32px; text-align: center;">
+        <i class="fas fa-bookmark"></i> <strong>Your offline library</strong> — articles stored locally
+    </div>
+    <div id="savedFeedContainer">
+        <div id="savedFeed" class="saved-feed"></div>
+    </div>
 </div>
 
 <footer>
     <i class="fas fa-bookmark"></i> Offline saved · <span id="savedCounter">0</span> saved · <button id="viewSavedBtn" style="background: none; border: none; color: var(--accent-glow); cursor: pointer;">📚 View saved</button><br>
     © Amimo Blue · Sticky categories · Infinite scroll
 </footer>
+
+<!-- BOTTOM TAB BAR (home & saved) -->
+<div class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-nav="home"><i class="fas fa-home"></i><span>Home</span></button>
+    <button class="nav-item" data-nav="saved"><i class="fas fa-save"></i><span>Saved</span></button>
+</div>
 
 <div class="overlay" id="overlay"></div>
 <div class="side-menu" id="sideMenu">
@@ -77,38 +94,19 @@
     <div><small><i class="fas fa-info-circle"></i> Tap "Save" on any article → stored offline.</small></div>
 </div>
 
-<!-- External JavaScript (loads after DOM is ready) -->
+<!-- Main JavaScript -->
 <script src="main.js"></script>
-    <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-      try {
-        const registration = await navigator.serviceWorker.register('sw.js');
-        console.log('SW registered:', registration);
-
-        // Request notification permission
-        if ('Notification' in window) {
-          const permission = await Notification.requestPermission();
-          if (permission === 'granted') {
-            // Subscribe to push (you'll need VAPID keys from your server)
-            // await registration.pushManager.subscribe({...});
-          }
-        }
-
-        // Register background sync
-        if ('sync' in registration) {
-          try {
-            await registration.sync.register('sync-news');
-            console.log('Background sync registered');
-          } catch (err) {
-            console.log('Background sync failed:', err);
-          }
-        }
-      } catch (err) {
-        console.error('SW registration failed:', err);
-      }
-    });
-  }
-                            </script>
+<script>
+    // Service Worker registration (preserved)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+            try {
+                const registration = await navigator.serviceWorker.register('sw.js');
+                console.log('SW registered');
+                if ('Notification' in window) await Notification.requestPermission();
+            } catch(err) { console.log('SW failed', err); }
+        });
+    }
+</script>
 </body>
-        </html>
+    </html>
