@@ -1,186 +1,19 @@
 {
-  "background_color": "#ffffff",
-  "dir": "auto",
-  "display": "fullscreen",
-  "display_override": ["window-controls-overlay", "tabbed"],
   "name": "Amimo Discovery",
-  "short_name": "Amimo Discovery",
+  "short_name": "Amimo News",
   "description": "Discovering and browsing local and worldwide news.",
-  "lang": "en",
-  "id": "com.amimonewsbroswer.com",
-  "orientation": "any",
+  "start_url": "/amimodiscoverynews/",
+  "scope": "/amimodiscoverynews/",
+  "display": "standalone",
+  "background_color": "#ffffff",
   "theme_color": "#0659ef",
-  "categories": ["magazines", "news", "sports", "weather"],
-  "scope": "https://amimollc.github.io/amimodiscoverynews/",
-  "start_url": "https://amimollc.github.io/amimodiscoverynews",
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "iarc_rating_id": "rating.pending",
-  "handle_links": "preferred",
-  "launch_handler": {
-    "client_mode": "auto"
-  },
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "note_taking": {
-    "new_note_url": "new-note"
-  },
-  "url_handlers": [
-    {
-      "origin": "https://amimollc.github.io",
-      "paths": ["amimodiscoverynews/*"]
-    }
-  ],
-  "protocol_handlers": [
-    {
-      "protocol": "web+amimonews",
-      "url": "news?article=%s"
-    }
-  ],
-  "file_handlers": [
-    {
-      "action": "open-news",
-      "accept": {
-        "text/html": [".html", ".htm"],
-        "application/rss+xml": [".rss", ".xml"]
-      }
-    }
-  ],
-  "share_target": {
-    "action": "share",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
-  "screenshots": [
-    {
-      "src": "screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Home page"
-    },
-    {
-      "src": "screenshot-narrow.png",
-      "sizes": "720x1280",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Article view"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Top News",
-      "short_name": "Top",
-      "description": "View the latest headlines",
-      "url": "top",
-      "icons": [
-        {
-          "src": "favicon.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Saved Articles",
-      "short_name": "Saved",
-      "description": "Your reading list",
-      "url": "saved",
-      "icons": [
-        {
-          "src": "favicon.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
+  "orientation": "any",
+  "lang": "en",
   "icons": [
-    {
-      "src": "favicon.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "256x256",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "favicon.png",
-      "sizes": "1280x1280",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    { "src": "/amimodiscoverynews/favicon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/amimodiscoverynews/favicon.png", "sizes": "512x512", "type": "image/png" }
   ],
-  "tab_strip": {
-    "home_tab": "auto"
-  },
-  "widgets": [
-    {
-      "name": "Amimo News Widget",
-      "description": "Latest headlines from Amimo Discovery",
-      "tag": "news-widget",
-      "screenshots": [
-        {
-          "src": "widget-preview.png",
-          "sizes": "512x512",
-          "type": "image/png"
-        }
-      ],
-      "data": {
-        "url": "widget-data.json"
-      },
-      "icons": [
-        {
-          "src": "favicon.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    }
-  ]
-  }
+  "screenshots": [],
+  "shortcuts": [],
+  "categories": ["news"]
+}
