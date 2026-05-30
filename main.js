@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - Amimo Discovery (Fixed Infinite Scroll & Auto-Load) =====================
+// ===================== MAIN.JS - Amimo Discovery (Final: Infinite Scroll + Top News) =====================
 (function() {
-    // ========== RSS FEEDS (EXPANDED - same as before) ==========
+    // ========== RSS FEEDS (EXPANDED) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -114,6 +114,27 @@
     let currentView = "home";
     let hasMoreArticles = true;
 
+    // Top News specific variables
+    let topNewsFeeds = [
+        { name: "Google News Top Stories", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
+        { name: "Yahoo News", url: "https://www.yahoo.com/news/rss", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Yahoo+News" },
+        { name: "Fox News", url: "https://moxie.foxnews.com/google-publisher/latest.xml", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Fox+News" },
+        { name: "NPR", url: "https://feeds.npr.org/1001/rss.xml", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=NPR" },
+        { name: "ABC News", url: "https://abcnews.go.com/abcnews/topstories", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=ABC+News" },
+        { name: "CBS News", url: "https://www.cbsnews.com/latest/rss/main", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=CBS+News" },
+        { name: "NBC News", url: "https://feeds.nbcnews.com/nbcnews/public/news", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=NBC+News" },
+        { name: "USA Today", url: "https://www.usatoday.com/rss/news", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=USA+Today" },
+        { name: "The Guardian Top Stories", url: "https://www.theguardian.com/world/rss", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Guardian" },
+        { name: "Reuters Top News", url: "https://www.reutersagency.com/feed/?best-topics=top-news&post_type=best", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Reuters" },
+        { name: "Al Jazeera Top", url: "https://www.aljazeera.com/xml/rss/all.xml", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Al+Jazeera" },
+        { name: "BBC Top Stories", url: "https://feeds.bbci.co.uk/news/rss.xml", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=BBC+Top" }
+    ];
+    let topNewsArticles = [];
+    let topNewsLimit = 5;
+    let isLoadingTopNews = false;
+    let topNewsObserver = null;
+    let topNewsLoadMoreSentinel = null;
+
     // ========== HELPER FUNCTIONS ==========
     function generateViews(title) {
         let hash = 0;
@@ -134,7 +155,7 @@
     }
     function getImageUrl(item, category) {
         if (item.imageUrl && item.imageUrl.startsWith('http')) return item.imageUrl;
-        const categoryColors = { 'Politics':'1e3a8a', 'Technology':'0f172a', 'Sports':'b91c1c', 'Entertainment':'831843', 'Business':'065f46', 'Health':'0e7c7c', 'Local':'4c1d95', 'World':'1e40af' };
+        const categoryColors = { 'Politics':'1e3a8a', 'Technology':'0f172a', 'Sports':'b91c1c', 'Entertainment':'831843', 'Business':'065f46', 'Health':'0e7c7c', 'Local':'4c1d95', 'World':'1e40af', 'Top':'f59e0b' };
         const color = categoryColors[category] || '3b82f6';
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(item.source || category)}`;
     }
@@ -154,7 +175,6 @@
     // ========== FETCH FUNCTIONS – UPDATED TO AVOID CACHING ==========
     async function fetchFeed(feedCfg) {
         try {
-            // Add cache-busting timestamp to the rss_url parameter
             const cacheBuster = `_cb=${Date.now()}`;
             const separator = feedCfg.url.includes('?') ? '&' : '?';
             const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
@@ -183,6 +203,123 @@
         } catch(e) { return []; }
     }
 
+    // Top News fetch (separate)
+    async function fetchTopNewsFeed(feedCfg) {
+        try {
+            const cacheBuster = `_cb=${Date.now()}`;
+            const separator = feedCfg.url.includes('?') ? '&' : '?';
+            const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&${cacheBuster}`;
+            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } });
+            const data = await resp.json();
+            if(data.status !== 'ok') return [];
+            return data.items.slice(0, 10).map(item => {
+                let img = feedCfg.imgFallback;
+                if(item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
+                else if(item.enclosure && item.enclosure.link) img = item.enclosure.link;
+                else if(item.description) {
+                    const match = item.description.match(/<img[^>]+src="([^">]+)"/);
+                    if(match && match[1].startsWith('http')) img = match[1];
+                }
+                return {
+                    title: item.title, link: item.link, pubDate: item.pubDate,
+                    description: (item.description||"").replace(/<[^>]*>/g, '').substring(0, 200),
+                    source: feedCfg.name, category: "Top", imageUrl: img,
+                    views: generateViews(item.title)
+                };
+            });
+        } catch(e) { return []; }
+    }
+
+    async function loadTopNews(loadMore = false) {
+        if (isLoadingTopNews) return;
+        isLoadingTopNews = true;
+        const container = document.getElementById('topNewsContainer');
+        if (!container) { isLoadingTopNews = false; return; }
+        
+        if (!loadMore) {
+            // First load: fetch fresh top news
+            topNewsArticles = [];
+            const results = await Promise.all(topNewsFeeds.map(f => fetchTopNewsFeed(f)));
+            results.forEach(r => topNewsArticles.push(...r));
+            // Remove duplicates by link
+            const uniqueMap = new Map();
+            topNewsArticles.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
+            topNewsArticles = Array.from(uniqueMap.values());
+            topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+            topNewsLimit = 5;
+        } else {
+            topNewsLimit += 5;
+        }
+        
+        renderTopNews();
+        isLoadingTopNews = false;
+        
+        // Re-attach infinite scroll observer for Top News "Load More" button
+        setupTopNewsInfiniteScroll();
+    }
+
+    function renderTopNews() {
+        const container = document.getElementById('topNewsContainer');
+        if (!container) return;
+        if (!topNewsArticles.length) {
+            container.style.display = 'none';
+            return;
+        }
+        container.style.display = 'block';
+        const toShow = topNewsArticles.slice(0, topNewsLimit);
+        let html = `<div class="top-news-section">
+                        <div class="top-news-title"><i class="fas fa-chart-line"></i> 🔥 Top News</div>
+                        <div class="top-news-grid" id="topNewsGrid">`;
+        toShow.forEach(art => {
+            const isSaved = savedArticles.some(s => s.link === art.link);
+            const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+            const imgSrc = getImageUrl(art, art.category);
+            html += `<div class="news-card">
+                        <img class="card-img" src="${imgSrc}" onerror="this.src='https://placehold.co/400x300/f59e0b/white?text=Top'">
+                        <div class="card-body">
+                            <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
+                            <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
+                            <div class="news-desc">${escapeHtml(art.description)}</div>
+                            <div class="action-row">
+                                <a href="${art.link}" target="_blank" class="btn-primary"><i class="fas fa-external-link-alt"></i> Read</a>
+                                <button class="btn-save save-top-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save'}</button>
+                                <button class="btn-share share-top-btn" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button>
+                            </div>
+                        </div>
+                    </div>`;
+        });
+        html += `</div>`;
+        if (topNewsLimit < topNewsArticles.length) {
+            html += `<div id="topNewsLoadMoreSentinel" style="height: 10px; margin: 10px 0;"></div>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        // Attach save events
+        document.querySelectorAll('.save-top-btn').forEach(btn => {
+            btn.removeEventListener('click', saveHandler);
+            btn.addEventListener('click', saveHandler);
+        });
+        // Attach share events
+        document.querySelectorAll('.share-top-btn').forEach(btn => {
+            btn.removeEventListener('click', shareHandler);
+            btn.addEventListener('click', shareHandler);
+        });
+    }
+
+    function setupTopNewsInfiniteScroll() {
+        if (topNewsObserver) topNewsObserver.disconnect();
+        const sentinel = document.getElementById('topNewsLoadMoreSentinel');
+        if (!sentinel) return;
+        topNewsObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoadingTopNews && topNewsLimit < topNewsArticles.length) {
+                loadTopNews(true);
+            }
+        }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
+        topNewsObserver.observe(sentinel);
+    }
+
     async function fetchMoreForCategory(category) {
         let feedsToFetch = [];
         if (category === 'all') {
@@ -196,7 +333,6 @@
         }
         if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
         
-        // Fetch up to 15 feeds, but each feed returns up to 12 articles, so potential 180 new articles
         const results = await Promise.all(feedsToFetch.slice(0, 15).map(f => fetchFeed(f)));
         let newArticles = [];
         results.forEach(r => newArticles.push(...r));
@@ -204,7 +340,6 @@
         const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
         if (uniqueNew.length) {
             uniqueNew.forEach(a => { a.views = generateViews(a.title); });
-            // Add new articles to the beginning (most recent first)
             allArticles = [...uniqueNew, ...allArticles];
             allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
             storeAllArticlesForSearch();
@@ -253,7 +388,20 @@
         if (currentCategory === 'all') {
             renderAllCategoryGrouped();
             if (scrollObserver) scrollObserver.disconnect();
+            // Show and load top news if not already
+            const topContainer = document.getElementById('topNewsContainer');
+            if (topContainer) {
+                if (topNewsArticles.length === 0) loadTopNews(false);
+                else {
+                    topContainer.style.display = 'block';
+                    renderTopNews();
+                    setupTopNewsInfiniteScroll();
+                }
+            }
         } else {
+            // Hide top news container when not in All category
+            const topContainer = document.getElementById('topNewsContainer');
+            if (topContainer) topContainer.style.display = 'none';
             if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
             else currentFiltered = allArticles.filter(a => a.category === currentCategory);
             displayLimit = 30;
@@ -262,7 +410,6 @@
                 scrollObserver.disconnect();
                 scrollObserver.observe(sentinelElement);
             }
-            // If we have very few articles, try to fetch more automatically
             if (currentFiltered.length < 20 && !isLoadingMore) {
                 setTimeout(() => attemptBackgroundFetch(), 500);
             }
@@ -404,7 +551,11 @@
         }
         updateSavedCounter();
         if (currentView === 'saved') renderSavedArticles();
-        if (currentCategory === 'all' && currentView === 'home') renderAllCategoryGrouped();
+        if (currentCategory === 'all' && currentView === 'home') {
+            renderAllCategoryGrouped();
+            // Also refresh top news save status
+            if (topNewsArticles.length) renderTopNews();
+        }
     }
     
     function updateSavedCounter() { 
@@ -497,7 +648,6 @@
                 showToast(`✅ ${newCount} new articles`); 
             } else {
                 wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
-                // Re-attach the event to the new button
                 const newBtn = wrapper.querySelector('.retry-button');
                 if(newBtn) {
                     newBtn.onclick = async () => {
@@ -528,7 +678,6 @@
                 clearRetryButton();
                 showToast(`✨ ${newCount} more articles loaded`);
             } else {
-                // No new articles, but we might still have more in the existing pool? No, display limit already at max.
                 showRetryButton("End of content. Tap to check for new articles.", async () => await fetchMoreForCategory(currentCategory));
             }
         } catch(err) { 
@@ -560,7 +709,6 @@
         scrollObserver = new IntersectionObserver(async (entries) => {
             const entry = entries[0];
             if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
-                // Case: we have more articles in currentFiltered to display
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
@@ -569,18 +717,16 @@
                         renderNewsFeed();
                         isLoadingMore = false;
                         showEndSpinner(false);
-                        // If we're close to the end, pre-fetch more in background
                         if (displayLimit + 10 >= currentFiltered.length) {
                             setTimeout(() => attemptBackgroundFetch(), 200);
                         }
                     }, 150);
                 } 
-                // Case: no more articles in currentFiltered, we need to fetch from RSS
                 else if (displayLimit >= currentFiltered.length && !isLoadingEndless) {
                     await attemptLoadMore();
                 }
             }
-        }, { threshold: 0.1, rootMargin: "0px 0px 300px 0px" }); // Increased rootMargin to trigger earlier
+        }, { threshold: 0.1, rootMargin: "0px 0px 300px 0px" });
         if(sentinelElement && currentCategory !== 'all') scrollObserver.observe(sentinelElement);
     }
 
@@ -646,8 +792,10 @@
                 updateSavedCounter();
                 renderSavedArticles();
                 if (currentView === 'home') {
-                    if (currentCategory === 'all') renderAllCategoryGrouped();
-                    else renderNewsFeed();
+                    if (currentCategory === 'all') {
+                        renderAllCategoryGrouped();
+                        if (topNewsArticles.length) renderTopNews();
+                    } else renderNewsFeed();
                 }
                 showToast('Article removed from saved');
             });
@@ -728,7 +876,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v12.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v13.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first\n🔥 Top News with infinite scroll"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
