@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Final: Fresh Load + Infinite Scroll for ALL Categories) =====================
+// ===================== MAIN.JS - Amimo Discovery (Working: Infinite Scroll for ALL Categories) =====================
 (function() {
     // ========== RSS FEEDS (EXPANDED) ==========
     const WORLD_FEEDS = [
@@ -114,7 +114,7 @@
     let currentView = "home";
     let hasMoreArticles = true;
 
-    // Top News specific variables
+    // Top News specific variables (unchanged)
     let topNewsFeeds = [
         { name: "Google News Top Stories", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
         { name: "Yahoo News", url: "https://www.yahoo.com/news/rss", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Yahoo+News" },
@@ -133,7 +133,6 @@
     let topNewsLimit = 5;
     let isLoadingTopNews = false;
     let topNewsObserver = null;
-    let topNewsLoadMoreSentinel = null;
 
     // ========== HELPER FUNCTIONS ==========
     function generateViews(title) {
@@ -160,7 +159,6 @@
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(item.source || category)}`;
     }
 
-    // Share function
     async function shareArticle(title, url) {
         if (navigator.share) {
             try {
@@ -172,15 +170,13 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS – AGGRESSIVE CACHE-BUSTING ==========
+    // ========== FETCH FUNCTIONS (cache-busting) ==========
     async function fetchFeed(feedCfg) {
         try {
-            // Double cache-bust: timestamp + random
-            const cacheBuster = `_cb=${Date.now()}_r=${Math.random()}`;
+            const cacheBuster = `_cb=${Date.now()}`;
             const separator = feedCfg.url.includes('?') ? '&' : '?';
             const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
             const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&_ts=${Date.now()}`;
-            
             const resp = await fetch(proxyUrl, {
                 cache: 'no-store',
                 headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
@@ -204,14 +200,13 @@
         } catch(e) { return []; }
     }
 
-    // Top News fetch (separate)
     async function fetchTopNewsFeed(feedCfg) {
         try {
-            const cacheBuster = `_cb=${Date.now()}_r=${Math.random()}`;
+            const cacheBuster = `_cb=${Date.now()}`;
             const separator = feedCfg.url.includes('?') ? '&' : '?';
             const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
             const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&_ts=${Date.now()}`;
-            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' } });
+            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 10).map(item => {
@@ -239,11 +234,9 @@
         if (!container) { isLoadingTopNews = false; return; }
         
         if (!loadMore) {
-            // First load: fetch fresh top news
             topNewsArticles = [];
             const results = await Promise.all(topNewsFeeds.map(f => fetchTopNewsFeed(f)));
             results.forEach(r => topNewsArticles.push(...r));
-            // Remove duplicates by link
             const uniqueMap = new Map();
             topNewsArticles.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
             topNewsArticles = Array.from(uniqueMap.values());
@@ -255,8 +248,6 @@
         
         renderTopNews();
         isLoadingTopNews = false;
-        
-        // Re-attach infinite scroll observer for Top News "Load More" button
         setupTopNewsInfiniteScroll();
     }
 
@@ -297,12 +288,10 @@
         html += `</div>`;
         container.innerHTML = html;
         
-        // Attach save events
         document.querySelectorAll('.save-top-btn').forEach(btn => {
             btn.removeEventListener('click', saveHandler);
             btn.addEventListener('click', saveHandler);
         });
-        // Attach share events
         document.querySelectorAll('.share-top-btn').forEach(btn => {
             btn.removeEventListener('click', shareHandler);
             btn.addEventListener('click', shareHandler);
@@ -368,7 +357,7 @@
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
-        // Ensure fresh start: clear allArticles
+        // Clear previous data to ensure fresh load
         allArticles = [];
         const allFeeds = [...WORLD_FEEDS, ...(localMap.get(userCountry) || [])];
         const results = await Promise.all(allFeeds.map(f => fetchFeed(f)));
@@ -401,17 +390,15 @@
                 }
             }
         } else {
-            // Hide top news container when not in All category
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'none';
             if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
             else currentFiltered = allArticles.filter(a => a.category === currentCategory);
-            displayLimit = 30;  // reset display limit when switching category
+            displayLimit = 30;
             renderNewsFeed();
-            // IMPORTANT: re-initialize scroll observer for this category
+            // Initialize scroll observer for this non-all category (if not already)
             if (currentView === 'home') {
-                if (scrollObserver) scrollObserver.disconnect();
-                initScrollObserver();  // start fresh observer for non-all category
+                initScrollObserver();
             }
             if (currentFiltered.length < 20 && !isLoadingMore) {
                 setTimeout(() => attemptBackgroundFetch(), 500);
@@ -633,7 +620,7 @@
         isLoadingMore = false;
     }
 
-    // ========== INFINITE SCROLL & RETRY (FIXED FOR ALL CATEGORIES) ==========
+    // ========== INFINITE SCROLL & RETRY ==========
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
     
     function showRetryButton(message, retryCallback) {
@@ -644,22 +631,8 @@
         wrapper.querySelector('.retry-button').onclick = async () => {
             wrapper.innerHTML = '<div class="loader"></div> Fetching...';
             const newCount = await retryCallback();
-            if(newCount > 0) { 
-                clearRetryButton(); 
-                applyCategoryFilter(); 
-                showToast(`✅ ${newCount} new articles`); 
-            } else {
-                wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
-                const newBtn = wrapper.querySelector('.retry-button');
-                if(newBtn) {
-                    newBtn.onclick = async () => {
-                        wrapper.innerHTML = '<div class="loader"></div> Fetching...';
-                        const retryCount = await retryCallback();
-                        if(retryCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${retryCount} new articles`); }
-                        else wrapper.innerHTML = `<div>No new articles. <button class="retry-button">Retry</button></div>`;
-                    };
-                }
-            }
+            if(newCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${newCount} new articles`); }
+            else wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
         };
         if(sentinelElement && sentinelElement.parentNode) {
             sentinelElement.parentNode.insertBefore(wrapper, sentinelElement);
@@ -683,7 +656,6 @@
                 showRetryButton("End of content. Tap to check for new articles.", async () => await fetchMoreForCategory(currentCategory));
             }
         } catch(err) { 
-            console.error('Load more error:', err);
             showRetryButton("Failed to load more. Tap to retry.", async () => await fetchMoreForCategory(currentCategory)); 
         }
         finally { 
@@ -709,9 +681,7 @@
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver(async (entries) => {
-            const entry = entries[0];
-            // Only trigger for non-all categories and when home view is active
-            if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
+            if(entries[0].isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
@@ -744,11 +714,9 @@
         if(activePill) activePill.classList.add('active');
         clearRetryButton();
         hasMoreArticles = true;
-        // Reset display limit for the new category
-        displayLimit = 30;
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        // For non-all categories, ensure observer is active
+        // For non-all categories, ensure the observer is active
         if (cat !== 'all') {
             initScrollObserver();
         }
@@ -921,10 +889,7 @@
     // ========== INIT ==========
     detectLocation().then(() => {
         loadAllFeeds().then(() => {
-            // Only init observer for non-all categories; 'all' uses grouped view without scroll
-            if (currentCategory !== 'all') {
-                initScrollObserver();
-            }
+            // No initial observer call needed; will be set by applyCategoryFilter if needed
         });
     });
 })();
