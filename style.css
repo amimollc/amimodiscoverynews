@@ -482,14 +482,13 @@ footer {
 /* BOTTOM NAVIGATION BAR - SHINING BORDER RADIUS DESIGN */
 .bottom-nav {
     position: fixed;
-    bottom: 12px;
-    left: 50%;
+    bottom: 0px;
     transform: translateX(-50%);
-    width: 90%;
+    width: 100%;
     max-width: 400px;
     background: var(--bottom-nav-bg);
     backdrop-filter: blur(20px);
-    border-radius: 48px;
+    border-radius: 5px ;
     display: flex;
     justify-content: space-around;
     align-items: center;
