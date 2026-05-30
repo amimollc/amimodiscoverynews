@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Stable + Infinite Scroll in All Categories) =====================
+// ===================== MAIN.JS - Amimo Discovery (Stable + Infinite Scroll in ALL Categories) =====================
 (function() {
     // ========== RSS FEEDS (EXPANDED - same as before) ==========
     const WORLD_FEEDS = [
@@ -46,10 +46,16 @@
 
     const localMap = new Map();
     localMap.set("ZM", [ 
-        { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
-        { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" },
-        { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" }
-    ]);
+    { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka+Times" },
+    { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Daily+Mail" },
+    { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambian+Football" },
+    { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambian+Observer" },
+    { name: "Mwebantu", url: "https://mwebantu.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Mwebantu" },
+    { name: "Zambia Business Times", url: "https://zambiabusinesstimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Business" },
+    { name: "News Diggers Zambia", url: "https://newsdiggers.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News+Diggers" },
+    { name: "Zambia Reports", url: "https://zambiareports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Reports" },
+    { name: "ZNBC (Zambia National Broadcasting Corporation)", url: "https://www.znbc.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ZNBC" }
+]);
     localMap.set("US", [ 
         { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" }, 
         { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" }, 
@@ -102,7 +108,7 @@
     let userCountry = "ZM";
     let userCountryName = "World";
     let currentFiltered = [];
-    let displayLimit = 30;
+    let displayLimit = 20;          // start with 20 articles, then increase by 15 each scroll
     let isLoadingMore = false;
     let isLoadingEndless = false;
     let savedArticles = JSON.parse(localStorage.getItem("amimo_saved") || "[]");
@@ -170,7 +176,7 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS (ORIGINAL RELIABLE VERSION) ==========
+    // ========== FETCH FUNCTIONS (original, reliable) ==========
     async function fetchFeed(feedCfg) {
         try {
             const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
@@ -193,7 +199,6 @@
         } catch(e) { return []; }
     }
 
-    // Top News fetch (same reliable pattern)
     async function fetchTopNewsFeed(feedCfg) {
         try {
             const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
@@ -313,7 +318,6 @@
         }
         if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
         
-        // Fetch in smaller batches to avoid overwhelming the API
         let newArticles = [];
         const batchSize = 5;
         for (let i = 0; i < feedsToFetch.length; i += batchSize) {
@@ -354,14 +358,12 @@
         statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
         const allFeeds = [...WORLD_FEEDS, ...(localMap.get(userCountry) || [])];
         
-        // Fetch feeds in batches to prevent rate limiting / timeouts
         let allArts = [];
         const batchSize = 8;
         for (let i = 0; i < allFeeds.length; i += batchSize) {
             const batch = allFeeds.slice(i, i + batchSize);
             const results = await Promise.all(batch.map(f => fetchFeed(f)));
             results.forEach(r => allArts.push(...r));
-            // Small delay to be gentle on the API
             await new Promise(r => setTimeout(r, 100));
         }
         
@@ -396,13 +398,10 @@
             if (topContainer) topContainer.style.display = 'none';
             if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
             else currentFiltered = allArticles.filter(a => a.category === currentCategory);
-            displayLimit = 30;
+            displayLimit = 20;   // start with 20 articles for smooth infinite scroll
             renderNewsFeed();
-            // Initialize scroll observer for this non-all category
+            // Re-attach scroll observer for this category
             initScrollObserver();
-            if (currentFiltered.length < 20 && !isLoadingMore) {
-                setTimeout(() => attemptBackgroundFetch(), 500);
-            }
         }
     }
 
@@ -620,7 +619,7 @@
         isLoadingMore = false;
     }
 
-    // ========== INFINITE SCROLL & RETRY ==========
+    // ========== INFINITE SCROLL & RETRY (FIXED) ==========
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
     
     function showRetryButton(message, retryCallback) {
@@ -681,25 +680,31 @@
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver(async (entries) => {
-            if(entries[0].isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
+            const entry = entries[0];
+            if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
+                // If there are more articles already in currentFiltered, increase displayLimit
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
                     setTimeout(() => {
-                        displayLimit = Math.min(displayLimit + 25, currentFiltered.length);
+                        // Increase by 15 each time
+                        displayLimit = Math.min(displayLimit + 15, currentFiltered.length);
                         renderNewsFeed();
                         isLoadingMore = false;
                         showEndSpinner(false);
-                        if (displayLimit + 10 >= currentFiltered.length) {
+                        // Pre-fetch more from RSS if we're near the end of the existing list
+                        if (displayLimit + 5 >= currentFiltered.length) {
                             setTimeout(() => attemptBackgroundFetch(), 200);
                         }
                     }, 150);
                 } 
+                // No more articles in currentFiltered => fetch fresh from RSS
                 else if (displayLimit >= currentFiltered.length && !isLoadingEndless) {
                     await attemptLoadMore();
                 }
             }
-        }, { threshold: 0.1, rootMargin: "0px 0px 300px 0px" });
+        }, { threshold: 0.1, rootMargin: "0px 0px 400px 0px" }); // larger margin for earlier trigger
+        
         if(sentinelElement && currentCategory !== 'all') {
             scrollObserver.observe(sentinelElement);
         }
@@ -716,8 +721,10 @@
         hasMoreArticles = true;
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        // For non-all categories, ensure observer is reinitialised after rendering
         if (cat !== 'all') {
-            initScrollObserver();
+            // Slight delay to ensure DOM has updated
+            setTimeout(() => initScrollObserver(), 100);
         }
     }
 
@@ -851,7 +858,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v13.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first\n🔥 Top News with infinite scroll\n♾️ Infinite scroll works in all categories"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v14.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first\n🔥 Top News with infinite scroll\n♾️ Infinite scroll works in all categories (fixed)"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
