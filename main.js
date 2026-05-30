@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - Amimo Discovery (Updated: Button Gap, Endless Load, More Feeds) =====================
+// ===================== MAIN.JS - Amimo Discovery (Updated: Grouped All View, Share Icon, Reduced Card Height) =====================
 (function() {
-    // ========== RSS FEEDS (EXPANDED - More international & local feeds including sports) ==========
+    // ========== RSS FEEDS (EXPANDED - same as before) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -14,16 +14,12 @@
         { name: "NDTV World", url: "https://feeds.feedburner.com/ndtvnews-world-news", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" },
         { name: "South China Morning Post", url: "https://www.scmp.com/rss/2/feed", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SCMP" },
         { name: "The Japan Times", url: "https://www.japantimes.co.jp/feed/", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=JapanTimes" },
-        
-        // Technology
         { name: "TechCrunch", url: "https://techcrunch.com/feed/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TechCrunch" },
         { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Verge" },
         { name: "Wired", url: "https://www.wired.com/feed/rss", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Wired" },
         { name: "Ars Technica", url: "https://feeds.feedburner.com/arstechnica/index", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Ars" },
         { name: "ZDNet", url: "https://www.zdnet.com/news/rss.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ZDNet" },
         { name: "CNET", url: "https://www.cnet.com/rss/news/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNET" },
-        
-        // Sports
         { name: "ESPN", url: "https://www.espn.com/espn/rss/news", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN" },
         { name: "Sky Sports", url: "https://www.skysports.com/rss/12040", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SkySports" },
         { name: "Bleacher Report", url: "https://bleacherreport.com/articles/feed", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bleacher" },
@@ -31,32 +27,23 @@
         { name: "The Athletic", url: "https://theathletic.com/feed/", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Athletic" },
         { name: "FOX Sports", url: "https://www.foxsports.com/rss", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FOXSports" },
         { name: "CBS Sports", url: "https://www.cbssports.com/rss/headlines", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBSSports" },
-        
-        // Entertainment
         { name: "Variety", url: "https://variety.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Variety" },
         { name: "Hollywood Reporter", url: "https://www.hollywoodreporter.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=THR" },
         { name: "Deadline", url: "https://deadline.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Deadline" },
         { name: "Entertainment Weekly", url: "https://ew.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=EW" },
-        
-        // Politics
         { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politics" },
         { name: "Politico", url: "https://www.politico.com/rss/politics.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politico" },
         { name: "The Hill", url: "https://thehill.com/feed/", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TheHill" },
-        
-        // Business
         { name: "Bloomberg", url: "https://feeds.bloomberg.com/markets/news.rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bloomberg" },
         { name: "CNBC", url: "https://www.cnbc.com/id/100003114/device/rss/rss.html", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNBC" },
         { name: "Financial Times", url: "https://www.ft.com/?format=rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FT" },
         { name: "Business Insider", url: "https://www.businessinsider.com/rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BI" },
-        
-        // Health
         { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Health" },
         { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WebMD" },
         { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=MNT" },
         { name: "Healthline", url: "https://www.healthline.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Healthline" }
     ];
 
-    // EXPANDED LOCAL FEEDS with more countries and sports
     const localMap = new Map();
     localMap.set("ZM", [ 
         { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
@@ -152,6 +139,18 @@
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(item.source || category)}`;
     }
 
+    // Share function
+    async function shareArticle(title, url) {
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: title, url: url });
+            } catch (err) { console.log('Share cancelled'); }
+        } else {
+            navigator.clipboard.writeText(url);
+            showToast('Link copied to clipboard!');
+        }
+    }
+
     // ========== FETCH FUNCTIONS ==========
     async function fetchFeed(feedCfg) {
         try {
@@ -239,30 +238,125 @@
 
     // ========== RENDER FUNCTIONS ==========
     function applyCategoryFilter() {
-        if (currentCategory === 'all') currentFiltered = [...allArticles];
-        else if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
-        else currentFiltered = allArticles.filter(a => a.category === currentCategory);
-        displayLimit = 30;
-        renderNewsFeed();
-        // Auto-trigger background fetch if we have few articles
-        if (currentFiltered.length < 30 && !isLoadingMore) setTimeout(() => attemptBackgroundFetch(), 300);
-    }
-
-    async function attemptBackgroundFetch() {
-        if (isLoadingMore) return;
-        isLoadingMore = true;
-        try {
-            const newCount = await fetchMoreForCategory(currentCategory);
-            if (newCount > 0) {
-                applyCategoryFilter();
-                showToast(`✨ ${newCount} new articles loaded`);
+        if (currentCategory === 'all') {
+            // For "all" category, we don't use simple filtering; we use grouped rendering
+            renderAllCategoryGrouped();
+            if (scrollObserver) scrollObserver.disconnect(); // disable infinite scroll for all view
+        } else {
+            // Normal category filtering
+            if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
+            else currentFiltered = allArticles.filter(a => a.category === currentCategory);
+            displayLimit = 30;
+            renderNewsFeed();
+            // Re-enable infinite scroll observer for non-all categories
+            if (scrollObserver && sentinelElement && currentView === 'home') {
+                scrollObserver.disconnect();
+                scrollObserver.observe(sentinelElement);
             }
-        } catch(e) { console.warn(e); }
-        isLoadingMore = false;
+            if (currentFiltered.length < 40 && !isLoadingMore) setTimeout(() => attemptBackgroundFetch(), 500);
+        }
     }
 
-    // Added gap between buttons with margin-right
+    // New grouped rendering for "all" category
+    function renderAllCategoryGrouped() {
+        const feedDiv = document.getElementById('newsFeed');
+        if (!allArticles.length) {
+            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles available</div>';
+            return;
+        }
+
+        // Define categories order (excluding "Local" because we handle it first)
+        const categoriesOrder = ['World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
+        
+        // Helper to get articles by category (limit)
+        function getArticlesByCategory(cat, limit) {
+            return allArticles.filter(a => a.category === cat).slice(0, limit);
+        }
+
+        let html = '';
+
+        // 1. Local section: 3 articles + Show More button
+        const localArticles = getArticlesByCategory('Local', 3);
+        if (localArticles.length) {
+            html += `<div class="category-section" data-cat="Local">
+                        <div class="category-section-title"><i class="fas fa-location-dot"></i> Local News</div>`;
+            localArticles.forEach(art => {
+                html += renderArticleCard(art);
+            });
+            html += `<button class="show-more-btn" data-target-cat="Local"><i class="fas fa-chevron-right"></i> Show More Local News</button>
+                    </div>`;
+        }
+
+        // 2. For each other category: 2-5 articles (random between 2 and 5) + Show More button
+        for (let cat of categoriesOrder) {
+            const articleCount = Math.floor(Math.random() * 4) + 2; // 2 to 5
+            const catArticles = getArticlesByCategory(cat, articleCount);
+            if (catArticles.length) {
+                html += `<div class="category-section" data-cat="${cat}">
+                            <div class="category-section-title"><i class="fas ${getCategoryIcon(cat)}"></i> ${cat}</div>`;
+                catArticles.forEach(art => {
+                    html += renderArticleCard(art);
+                });
+                html += `<button class="show-more-btn" data-target-cat="${cat}"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
+                        </div>`;
+            }
+        }
+
+        feedDiv.innerHTML = html;
+        
+        // Attach event listeners to "Show More" buttons
+        document.querySelectorAll('.show-more-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetCat = btn.dataset.targetCat;
+                if (targetCat) {
+                    switchCategory(targetCat);
+                }
+            });
+        });
+        
+        // Attach save and share events for all cards
+        attachSaveEvents();
+        attachShareEvents();
+    }
+
+    function getCategoryIcon(cat) {
+        const icons = {
+            'World': 'fa-globe',
+            'Politics': 'fa-landmark',
+            'Technology': 'fa-microchip',
+            'Sports': 'fa-futbol',
+            'Entertainment': 'fa-mask',
+            'Business': 'fa-chart-line',
+            'Health': 'fa-heartbeat',
+            'Local': 'fa-location-dot'
+        };
+        return icons[cat] || 'fa-newspaper';
+    }
+
+    function renderArticleCard(art) {
+        const isSaved = savedArticles.some(s => s.link === art.link);
+        const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        const imgSrc = getImageUrl(art, art.category);
+        return `<div class="news-card">
+            <img class="card-img" src="${imgSrc}" onerror="this.src='https://placehold.co/400x300/3b82f6/white?text=News'">
+            <div class="card-body">
+                <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
+                <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
+                <div class="news-desc">${escapeHtml(art.description)}</div>
+                <div class="action-row">
+                    <a href="${art.link}" target="_blank" class="btn-primary" style="text-decoration:none;"><i class="fas fa-external-link-alt"></i> Read</a>
+                    <button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save'}</button>
+                    <button class="btn-share share-btn" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button>
+                </div>
+            </div>
+        </div>`;
+    }
+
     function renderNewsFeed() {
+        if (currentCategory === 'all') {
+            renderAllCategoryGrouped();
+            return;
+        }
         const feedDiv = document.getElementById('newsFeed');
         const toRender = currentFiltered.slice(0, displayLimit);
         if(toRender.length === 0) { 
@@ -272,29 +366,30 @@
         let html = '';
         for(let i=0; i<toRender.length; i++) {
             const art = toRender[i];
-            const isSaved = savedArticles.some(s => s.link === art.link);
-            const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-            const imgSrc = getImageUrl(art, art.category);
-            html += `<div class="news-card">
-                <img class="card-img" src="${imgSrc}" onerror="this.src='https://placehold.co/400x300/3b82f6/white?text=News'">
-                <div class="card-body">
-                    <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
-                    <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
-                    <div class="news-desc">${escapeHtml(art.description)}</div>
-                    <div class="action-row" style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
-                        <a href="${art.link}" target="_blank" class="btn-primary" style="text-decoration:none; margin-right: 0.5rem;"><i class="fas fa-external-link-alt"></i> Read Original</a>
-                        <button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save Offline'}</button>
-                    </div>
-                </div>
-            </div>`;
+            html += renderArticleCard(art);
             if((i+1) % 5 === 0 && i+1 < toRender.length) html += `<div class="inline-ad"><i class="fas fa-ad"></i> Advertisement — Support our journalism</div>`;
         }
         feedDiv.innerHTML = html;
         attachSaveEvents();
+        attachShareEvents();
     }
 
     function attachSaveEvents() {
         document.querySelectorAll('.save-btn').forEach(btn => { btn.removeEventListener('click', saveHandler); btn.addEventListener('click', saveHandler); });
+    }
+    
+    function attachShareEvents() {
+        document.querySelectorAll('.share-btn').forEach(btn => {
+            btn.removeEventListener('click', shareHandler);
+            btn.addEventListener('click', shareHandler);
+        });
+    }
+    
+    function shareHandler(e) {
+        const btn = e.currentTarget;
+        const url = btn.dataset.url;
+        const title = btn.dataset.title;
+        shareArticle(title, url);
     }
     
     function saveHandler(e) {
@@ -306,10 +401,12 @@
         } else {
             savedArticles = savedArticles.filter(s => s.link !== link);
             localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
-            btn.innerHTML = '💾 Save Offline'; btn.style.background = '#2563eb'; showToast('Removed from saved');
+            btn.innerHTML = '💾 Save'; btn.style.background = '#2563eb'; showToast('Removed from saved');
         }
         updateSavedCounter();
         if (currentView === 'saved') renderSavedArticles();
+        // Refresh current view if in all category to reflect saved status
+        if (currentCategory === 'all' && currentView === 'home') renderAllCategoryGrouped();
     }
     
     function updateSavedCounter() { 
@@ -355,7 +452,6 @@
         startCarouselScroll();
     }
 
-    // Auto-scroll for trending carousel
     function startCarouselScroll() {
         if(carouselInterval) clearInterval(carouselInterval);
         const container = document.getElementById('trendingCarousel');
@@ -373,7 +469,20 @@
         }, 6000);
     }
 
-    // ========== ENDLESS AUTO-LOAD (FIXED - loads more when reaching end) ==========
+    async function attemptBackgroundFetch() {
+        if (isLoadingMore) return;
+        isLoadingMore = true;
+        try {
+            const newCount = await fetchMoreForCategory(currentCategory);
+            if (newCount > 0) {
+                applyCategoryFilter();
+                showToast(`✨ ${newCount} new articles loaded`);
+            }
+        } catch(e) { console.warn(e); }
+        isLoadingMore = false;
+    }
+
+    // Infinite scroll for non-all categories
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
     
     function showRetryButton(message, retryCallback) {
@@ -394,7 +503,7 @@
     }
 
     async function attemptLoadMore() {
-        if(isLoadingMore || isLoadingEndless) return false;
+        if(isLoadingMore || isLoadingEndless || currentCategory === 'all') return false;
         isLoadingEndless = true;
         showEndSpinner(true);
         let newCount = 0;
@@ -436,8 +545,7 @@
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver(async (entries) => {
-            if(entries[0].isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home') {
-                // Case 1: We have more articles in current filtered array to display
+            if(entries[0].isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
@@ -446,25 +554,24 @@
                         renderNewsFeed();
                         isLoadingMore = false;
                         showEndSpinner(false);
-                        // If we're close to the end of cached articles, fetch more from RSS
                         if (displayLimit + 10 >= currentFiltered.length) {
                             setTimeout(() => attemptBackgroundFetch(), 200);
                         }
                     }, 150);
                 } 
-                // Case 2: Reached end of current articles - auto-load more from RSS (endless)
                 else if (displayLimit >= currentFiltered.length && !isLoadingEndless) {
                     await attemptLoadMore();
                 }
             }
         }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
-        if(sentinelElement) scrollObserver.observe(sentinelElement);
+        if(sentinelElement && currentCategory !== 'all') scrollObserver.observe(sentinelElement);
     }
 
     // ========== CATEGORY & LOCATION ==========
     function switchCategory(cat) {
         if(currentCategory === cat) return;
         currentCategory = cat;
+        // Update active pill
         document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
         const activePill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
         if(activePill) activePill.classList.add('active');
@@ -472,6 +579,10 @@
         hasMoreArticles = true;
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Re-init observer for non-all categories
+        if (cat !== 'all') {
+            initScrollObserver();
+        }
     }
 
     async function detectLocation() {
@@ -506,6 +617,7 @@
                     <div class="action-row" style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
                         <a href="${art.link}" target="_blank" class="btn-primary" style="margin-right: 0.5rem;">Read Original</a>
                         <button class="btn-remove unsave-btn" data-link="${art.link}"><i class="fas fa-trash-alt"></i> Remove</button>
+                        <button class="btn-share share-saved-btn" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button>
                     </div>
                 </div>
             </div>`;
@@ -518,8 +630,16 @@
                 localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
                 updateSavedCounter();
                 renderSavedArticles();
-                if (currentView === 'home') attachSaveEvents();
+                if (currentView === 'home') {
+                    if (currentCategory === 'all') renderAllCategoryGrouped();
+                    else renderNewsFeed();
+                }
                 showToast('Article removed from saved');
+            });
+        });
+        document.querySelectorAll('.share-saved-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                shareArticle(btn.dataset.title, btn.dataset.url);
             });
         });
     }
@@ -534,10 +654,9 @@
         document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
         const homeNav = document.querySelector('.nav-item[data-nav="home"]');
         if(homeNav) homeNav.classList.add('active');
-        if (scrollObserver && sentinelElement) scrollObserver.observe(sentinelElement);
         if (carouselInterval) clearInterval(carouselInterval);
         startCarouselScroll();
-        renderNewsFeed();
+        applyCategoryFilter(); // refresh home view with current category
     }
 
     function showSavedView() {
@@ -594,7 +713,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v11.0\n✨ Endless auto-load\n🌍 50+ news sources\n⚡ Gap between buttons\n🏆 Local sports included"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v12.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -630,6 +749,119 @@
 
     // ========== INIT ==========
     detectLocation().then(() => {
-        loadAllFeeds().then(() => initScrollObserver());
+        loadAllFeeds().then(() => {
+            initScrollObserver();
+        });
     });
-})();
+})();<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Amimo Discovery • Blue Horizon</title>
+    <!-- External Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="favicon.png">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="main-header">
+    <div class="logo-area">
+        <button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
+        <div class="logo"><i class="fas fa-cloud-moon"></i> Amimo Discovery</div>
+    </div>
+    <div class="location-badge" id="countryBadge"><i class="fas fa-map-marker-alt"></i> locating...</div>
+</div>
+
+<div class="search-zone" id="searchZone">
+    <div class="search-wrapper">
+        <i class="fas fa-search" style="color: var(--accent-blue);"></i>
+        <input type="text" id="searchInput" placeholder="Search news... click to float up">
+        <button id="searchBtn"><i class="fas fa-search"></i></button>  <!-- Changed to icon only -->
+    </div>
+</div>
+<div id="loadingProgress" class="loading-progress"></div>
+
+<!-- HOME VIEW (entire website content) -->
+<div id="homeView">
+    <div class="categories-row" id="categoryScroll">
+        <div class="cat-pill active" data-cat="all"><i class="fas fa-globe"></i> All</div>
+        <div class="cat-pill" data-cat="Politics"><i class="fas fa-landmark"></i> Politics</div>
+        <div class="cat-pill" data-cat="Entertainment"><i class="fas fa-mask"></i> Entertainment</div>
+        <div class="cat-pill" data-cat="Technology"><i class="fas fa-microchip"></i> Tech</div>
+        <div class="cat-pill" data-cat="Sports"><i class="fas fa-futbol"></i> Sports</div>
+        <div class="cat-pill" data-cat="Business"><i class="fas fa-chart-line"></i> Business</div>
+        <div class="cat-pill" data-cat="Health"><i class="fas fa-heartbeat"></i> Health</div>
+        <div class="cat-pill" data-cat="Local"><i class="fas fa-location-dot"></i> Local</div>
+    </div>
+    <div class="ad-banner" id="globalAdBanner"><i class="fas fa-ad"></i> Advertisement · Your banner could be here · Support Amimo</div>
+    <div class="trending-section" id="trendingSection">
+        <div class="trending-title"><i class="fas fa-fire"></i> Trending Now</div>
+        <div class="trending-carousel" id="trendingCarousel"></div>
+    </div>
+    <div id="newsFeedContainer" style="position: relative;">
+        <div id="statusMsg" style="text-align:center; padding:1rem;"><div class="loader"></div> Loading fresh news...</div>
+        <div id="newsFeed" class="news-feed"></div>
+        <div id="loadSentinel" style="height: 20px;"></div>
+    </div>
+</div>
+
+<!-- SAVED VIEW (only cached articles) -->
+<div id="savedView" style="display: none;">
+    <div style="padding: 1rem; background: var(--card-bg); margin: 1rem 1.2rem; border-radius: 32px; text-align: center;">
+        <i class="fas fa-bookmark"></i> <strong>Your offline library</strong> — articles stored locally
+    </div>
+    <div id="savedFeedContainer">
+        <div id="savedFeed" class="saved-feed"></div>
+    </div>
+</div>
+
+<footer>
+    <i class="fas fa-bookmark"></i> Offline saved · <span id="savedCounter">0</span> saved · <button id="viewSavedBtn" style="background: none; border: none; color: var(--accent-glow); cursor: pointer;">📚 View saved</button><br>
+    © Amimo Blue · Sticky categories · Infinite scroll
+</footer>
+
+<!-- BOTTOM TAB BAR (home & saved) -->
+<div class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-nav="home"><i class="fas fa-home"></i><span>Home</span></button>
+    <button class="nav-item" data-nav="saved"><i class="fas fa-save"></i><span>Saved</span></button>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="side-menu" id="sideMenu">
+    <div style="display: flex; justify-content: space-between;">
+        <h3><i class="fas fa-bars"></i> Menu</h3>
+        <button id="closeMenuBtn" style="background:none; border:none; font-size:1.8rem; cursor:pointer;">&times;</button>
+    </div>
+    <div class="menu-item" id="menuHome"><i class="fas fa-home"></i> Home (All News)</div>
+    <div class="menu-item" id="menuTrending"><i class="fas fa-fire"></i> Trending</div>
+    <div class="menu-item" id="menuNotification"><i class="fas fa-bell"></i> Notifications <span class="notification-badge">3</span></div>
+    <div class="menu-item" id="menuSearch"><i class="fas fa-search"></i> Search Focus</div>
+    <div class="menu-item" id="menuAbout"><i class="fas fa-info-circle"></i> About Amimo</div>
+    <div class="theme-toggle">
+        <span><i class="fas fa-moon"></i> Dark / Light</span>
+        <label><input type="checkbox" id="themeSwitch"> <span style="margin-left:8px;">🌓</span></label>
+    </div>
+    <div class="menu-item" id="menuSaved"><i class="fas fa-database"></i> Saved Articles (offline)</div>
+    <div><small><i class="fas fa-info-circle"></i> Tap "Save" on any article → stored offline.</small></div>
+</div>
+
+<!-- Main JavaScript -->
+<script src="main.js"></script>
+<script>
+    // Service Worker registration (preserved)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+            try {
+                const registration = await navigator.serviceWorker.register('sw.js');
+                console.log('SW registered');
+                if ('Notification' in window) await Notification.requestPermission();
+            } catch(err) { console.log('SW failed', err); }
+        });
+    }
+</script>
+</body>
+</html>
