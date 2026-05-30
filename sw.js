@@ -1,4 +1,4 @@
-// Amimo Discovery – Full Service Worker
+// Amimo Discovery – Full Service Worker (Updated with Offline Page)
 
 const CACHE_NAME = 'amimo-discovery-v5';
 const OFFLINE_PAGE = '/amimodiscoverynews/offline.html';
@@ -29,7 +29,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ----- Fetch: network-first for navigation, cache-first for assets -----
+// ----- Fetch: network-first for navigation with offline fallback, cache-first for assets -----
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
@@ -37,14 +37,47 @@ self.addEventListener('fetch', (event) => {
   // For navigation (HTML pages) – try network, fallback to offline page
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match(OFFLINE_PAGE))
+      fetch(request)
+        .then(response => {
+          // Cache the fresh page for future offline use
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(request, responseClone);
+          });
+          return response;
+        })
+        .catch(async () => {
+          // Offline fallback: serve the offline page from cache
+          const cachedOffline = await caches.match(OFFLINE_PAGE);
+          if (cachedOffline) return cachedOffline;
+          // If offline page not cached yet, try to fetch it (should be cached from install)
+          return caches.match(OFFLINE_PAGE) || new Response('Offline page not available', { status: 503 });
+        })
     );
     return;
   }
 
-  // For static assets – cache first
+  // For static assets (CSS, JS, images, etc.) – cache first
   event.respondWith(
-    caches.match(request).then(cached => cached || fetch(request))
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+      return fetch(request).then(networkResponse => {
+        // Cache new assets for future offline use
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // Optional: return a default offline image or empty response for images
+        if (request.url.match(/\.(jpg|png|gif|svg|webp)$/)) {
+          return new Response('', { status: 200, headers: { 'Content-Type': 'image/svg+xml' } });
+        }
+        // For other assets, just fail silently
+      });
+    })
   );
 });
 
