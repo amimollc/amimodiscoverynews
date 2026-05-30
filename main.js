@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - Amimo Discovery (Working: Infinite Scroll for ALL Categories) =====================
+// ===================== MAIN.JS - Amimo Discovery (Stable + Infinite Scroll in All Categories) =====================
 (function() {
-    // ========== RSS FEEDS (EXPANDED) ==========
+    // ========== RSS FEEDS (EXPANDED - same as before) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -114,7 +114,7 @@
     let currentView = "home";
     let hasMoreArticles = true;
 
-    // Top News specific variables (unchanged)
+    // Top News specific variables
     let topNewsFeeds = [
         { name: "Google News Top Stories", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
         { name: "Yahoo News", url: "https://www.yahoo.com/news/rss", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Yahoo+News" },
@@ -170,17 +170,10 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS (cache-busting) ==========
+    // ========== FETCH FUNCTIONS (ORIGINAL RELIABLE VERSION) ==========
     async function fetchFeed(feedCfg) {
         try {
-            const cacheBuster = `_cb=${Date.now()}`;
-            const separator = feedCfg.url.includes('?') ? '&' : '?';
-            const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
-            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&_ts=${Date.now()}`;
-            const resp = await fetch(proxyUrl, {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
-            });
+            const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 12).map(item => {
@@ -200,13 +193,10 @@
         } catch(e) { return []; }
     }
 
+    // Top News fetch (same reliable pattern)
     async function fetchTopNewsFeed(feedCfg) {
         try {
-            const cacheBuster = `_cb=${Date.now()}`;
-            const separator = feedCfg.url.includes('?') ? '&' : '?';
-            const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
-            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&_ts=${Date.now()}`;
-            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } });
+            const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 10).map(item => {
@@ -323,9 +313,14 @@
         }
         if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
         
-        const results = await Promise.all(feedsToFetch.slice(0, 15).map(f => fetchFeed(f)));
+        // Fetch in smaller batches to avoid overwhelming the API
         let newArticles = [];
-        results.forEach(r => newArticles.push(...r));
+        const batchSize = 5;
+        for (let i = 0; i < feedsToFetch.length; i += batchSize) {
+            const batch = feedsToFetch.slice(i, i + batchSize);
+            const results = await Promise.all(batch.map(f => fetchFeed(f)));
+            results.forEach(r => newArticles.push(...r));
+        }
         const existingLinks = new Set(allArticles.map(a => a.link));
         const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
         if (uniqueNew.length) {
@@ -357,14 +352,21 @@
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
-        // Clear previous data to ensure fresh load
-        allArticles = [];
         const allFeeds = [...WORLD_FEEDS, ...(localMap.get(userCountry) || [])];
-        const results = await Promise.all(allFeeds.map(f => fetchFeed(f)));
-        let arts = [];
-        results.forEach(r => arts.push(...r));
+        
+        // Fetch feeds in batches to prevent rate limiting / timeouts
+        let allArts = [];
+        const batchSize = 8;
+        for (let i = 0; i < allFeeds.length; i += batchSize) {
+            const batch = allFeeds.slice(i, i + batchSize);
+            const results = await Promise.all(batch.map(f => fetchFeed(f)));
+            results.forEach(r => allArts.push(...r));
+            // Small delay to be gentle on the API
+            await new Promise(r => setTimeout(r, 100));
+        }
+        
         const uniqueMap = new Map();
-        arts.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
+        allArts.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
         allArticles = Array.from(uniqueMap.values());
         allArticles.forEach(a => { a.views = generateViews(a.title); });
         allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
@@ -396,10 +398,8 @@
             else currentFiltered = allArticles.filter(a => a.category === currentCategory);
             displayLimit = 30;
             renderNewsFeed();
-            // Initialize scroll observer for this non-all category (if not already)
-            if (currentView === 'home') {
-                initScrollObserver();
-            }
+            // Initialize scroll observer for this non-all category
+            initScrollObserver();
             if (currentFiltered.length < 20 && !isLoadingMore) {
                 setTimeout(() => attemptBackgroundFetch(), 500);
             }
@@ -716,7 +716,6 @@
         hasMoreArticles = true;
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        // For non-all categories, ensure the observer is active
         if (cat !== 'all') {
             initScrollObserver();
         }
@@ -889,7 +888,7 @@
     // ========== INIT ==========
     detectLocation().then(() => {
         loadAllFeeds().then(() => {
-            // No initial observer call needed; will be set by applyCategoryFilter if needed
+            // No initial observer for 'all' category; will be set when switching
         });
     });
 })();
