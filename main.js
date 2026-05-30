@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Updated: Grouped All View, Share Icon, Reduced Card Height) =====================
+// ===================== MAIN.JS - Amimo Discovery (Fixed Infinite Scroll & Auto-Load) =====================
 (function() {
     // ========== RSS FEEDS (EXPANDED - same as before) ==========
     const WORLD_FEEDS = [
@@ -151,10 +151,19 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS ==========
+    // ========== FETCH FUNCTIONS – UPDATED TO AVOID CACHING ==========
     async function fetchFeed(feedCfg) {
         try {
-            const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
+            // Add cache-busting timestamp to the rss_url parameter
+            const cacheBuster = `_cb=${Date.now()}`;
+            const separator = feedCfg.url.includes('?') ? '&' : '?';
+            const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&${cacheBuster}`;
+            
+            const resp = await fetch(proxyUrl, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+            });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 12).map(item => {
@@ -187,6 +196,7 @@
         }
         if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
         
+        // Fetch up to 15 feeds, but each feed returns up to 12 articles, so potential 180 new articles
         const results = await Promise.all(feedsToFetch.slice(0, 15).map(f => fetchFeed(f)));
         let newArticles = [];
         results.forEach(r => newArticles.push(...r));
@@ -194,14 +204,16 @@
         const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
         if (uniqueNew.length) {
             uniqueNew.forEach(a => { a.views = generateViews(a.title); });
+            // Add new articles to the beginning (most recent first)
             allArticles = [...uniqueNew, ...allArticles];
             allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
             storeAllArticlesForSearch();
             hasMoreArticles = true;
+            return uniqueNew.length;
         } else {
             hasMoreArticles = false;
+            return 0;
         }
-        return uniqueNew.length;
     }
 
     function storeAllArticlesForSearch() {
@@ -239,25 +251,24 @@
     // ========== RENDER FUNCTIONS ==========
     function applyCategoryFilter() {
         if (currentCategory === 'all') {
-            // For "all" category, we don't use simple filtering; we use grouped rendering
             renderAllCategoryGrouped();
-            if (scrollObserver) scrollObserver.disconnect(); // disable infinite scroll for all view
+            if (scrollObserver) scrollObserver.disconnect();
         } else {
-            // Normal category filtering
             if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
             else currentFiltered = allArticles.filter(a => a.category === currentCategory);
             displayLimit = 30;
             renderNewsFeed();
-            // Re-enable infinite scroll observer for non-all categories
             if (scrollObserver && sentinelElement && currentView === 'home') {
                 scrollObserver.disconnect();
                 scrollObserver.observe(sentinelElement);
             }
-            if (currentFiltered.length < 40 && !isLoadingMore) setTimeout(() => attemptBackgroundFetch(), 500);
+            // If we have very few articles, try to fetch more automatically
+            if (currentFiltered.length < 20 && !isLoadingMore) {
+                setTimeout(() => attemptBackgroundFetch(), 500);
+            }
         }
     }
 
-    // New grouped rendering for "all" category
     function renderAllCategoryGrouped() {
         const feedDiv = document.getElementById('newsFeed');
         if (!allArticles.length) {
@@ -265,38 +276,30 @@
             return;
         }
 
-        // Define categories order (excluding "Local" because we handle it first)
         const categoriesOrder = ['World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
         
-        // Helper to get articles by category (limit)
         function getArticlesByCategory(cat, limit) {
             return allArticles.filter(a => a.category === cat).slice(0, limit);
         }
 
         let html = '';
 
-        // 1. Local section: 3 articles + Show More button
         const localArticles = getArticlesByCategory('Local', 3);
         if (localArticles.length) {
             html += `<div class="category-section" data-cat="Local">
                         <div class="category-section-title"><i class="fas fa-location-dot"></i> Local News</div>`;
-            localArticles.forEach(art => {
-                html += renderArticleCard(art);
-            });
+            localArticles.forEach(art => { html += renderArticleCard(art); });
             html += `<button class="show-more-btn" data-target-cat="Local"><i class="fas fa-chevron-right"></i> Show More Local News</button>
                     </div>`;
         }
 
-        // 2. For each other category: 2-5 articles (random between 2 and 5) + Show More button
         for (let cat of categoriesOrder) {
-            const articleCount = Math.floor(Math.random() * 4) + 2; // 2 to 5
+            const articleCount = Math.floor(Math.random() * 4) + 2;
             const catArticles = getArticlesByCategory(cat, articleCount);
             if (catArticles.length) {
                 html += `<div class="category-section" data-cat="${cat}">
                             <div class="category-section-title"><i class="fas ${getCategoryIcon(cat)}"></i> ${cat}</div>`;
-                catArticles.forEach(art => {
-                    html += renderArticleCard(art);
-                });
+                catArticles.forEach(art => { html += renderArticleCard(art); });
                 html += `<button class="show-more-btn" data-target-cat="${cat}"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
                         </div>`;
             }
@@ -304,17 +307,13 @@
 
         feedDiv.innerHTML = html;
         
-        // Attach event listeners to "Show More" buttons
         document.querySelectorAll('.show-more-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetCat = btn.dataset.targetCat;
-                if (targetCat) {
-                    switchCategory(targetCat);
-                }
+                if (targetCat) switchCategory(targetCat);
             });
         });
         
-        // Attach save and share events for all cards
         attachSaveEvents();
         attachShareEvents();
     }
@@ -405,7 +404,6 @@
         }
         updateSavedCounter();
         if (currentView === 'saved') renderSavedArticles();
-        // Refresh current view if in all category to reflect saved status
         if (currentCategory === 'all' && currentView === 'home') renderAllCategoryGrouped();
     }
     
@@ -482,7 +480,7 @@
         isLoadingMore = false;
     }
 
-    // Infinite scroll for non-all categories
+    // ========== INFINITE SCROLL & RETRY (FIXED) ==========
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
     
     function showRetryButton(message, retryCallback) {
@@ -493,8 +491,23 @@
         wrapper.querySelector('.retry-button').onclick = async () => {
             wrapper.innerHTML = '<div class="loader"></div> Fetching...';
             const newCount = await retryCallback();
-            if(newCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${newCount} new articles`); }
-            else wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
+            if(newCount > 0) { 
+                clearRetryButton(); 
+                applyCategoryFilter(); 
+                showToast(`✅ ${newCount} new articles`); 
+            } else {
+                wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
+                // Re-attach the event to the new button
+                const newBtn = wrapper.querySelector('.retry-button');
+                if(newBtn) {
+                    newBtn.onclick = async () => {
+                        wrapper.innerHTML = '<div class="loader"></div> Fetching...';
+                        const retryCount = await retryCallback();
+                        if(retryCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${retryCount} new articles`); }
+                        else wrapper.innerHTML = `<div>No new articles. <button class="retry-button">Retry</button></div>`;
+                    };
+                }
+            }
         };
         if(sentinelElement && sentinelElement.parentNode) {
             sentinelElement.parentNode.insertBefore(wrapper, sentinelElement);
@@ -514,12 +527,12 @@
                 window.scrollBy({ top: 60, behavior: 'smooth' }); 
                 clearRetryButton();
                 showToast(`✨ ${newCount} more articles loaded`);
-            } else if (hasMoreArticles === false) {
-                showRetryButton("End of content. Tap to check for new articles.", async () => await fetchMoreForCategory(currentCategory));
             } else {
-                showRetryButton("No more articles at the moment. Tap to refresh.", async () => await fetchMoreForCategory(currentCategory));
+                // No new articles, but we might still have more in the existing pool? No, display limit already at max.
+                showRetryButton("End of content. Tap to check for new articles.", async () => await fetchMoreForCategory(currentCategory));
             }
         } catch(err) { 
+            console.error('Load more error:', err);
             showRetryButton("Failed to load more. Tap to retry.", async () => await fetchMoreForCategory(currentCategory)); 
         }
         finally { 
@@ -545,7 +558,9 @@
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver(async (entries) => {
-            if(entries[0].isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
+            const entry = entries[0];
+            if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
+                // Case: we have more articles in currentFiltered to display
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
@@ -554,16 +569,18 @@
                         renderNewsFeed();
                         isLoadingMore = false;
                         showEndSpinner(false);
+                        // If we're close to the end, pre-fetch more in background
                         if (displayLimit + 10 >= currentFiltered.length) {
                             setTimeout(() => attemptBackgroundFetch(), 200);
                         }
                     }, 150);
                 } 
+                // Case: no more articles in currentFiltered, we need to fetch from RSS
                 else if (displayLimit >= currentFiltered.length && !isLoadingEndless) {
                     await attemptLoadMore();
                 }
             }
-        }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
+        }, { threshold: 0.1, rootMargin: "0px 0px 300px 0px" }); // Increased rootMargin to trigger earlier
         if(sentinelElement && currentCategory !== 'all') scrollObserver.observe(sentinelElement);
     }
 
@@ -571,7 +588,6 @@
     function switchCategory(cat) {
         if(currentCategory === cat) return;
         currentCategory = cat;
-        // Update active pill
         document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
         const activePill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
         if(activePill) activePill.classList.add('active');
@@ -579,7 +595,6 @@
         hasMoreArticles = true;
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        // Re-init observer for non-all categories
         if (cat !== 'all') {
             initScrollObserver();
         }
@@ -656,7 +671,7 @@
         if(homeNav) homeNav.classList.add('active');
         if (carouselInterval) clearInterval(carouselInterval);
         startCarouselScroll();
-        applyCategoryFilter(); // refresh home view with current category
+        applyCategoryFilter();
     }
 
     function showSavedView() {
