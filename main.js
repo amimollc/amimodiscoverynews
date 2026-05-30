@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Final: Infinite Scroll + Top News) =====================
+// ===================== MAIN.JS - Amimo Discovery (Final: Fresh Load + Infinite Scroll for ALL Categories) =====================
 (function() {
     // ========== RSS FEEDS (EXPANDED) ==========
     const WORLD_FEEDS = [
@@ -172,17 +172,18 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS – UPDATED TO AVOID CACHING ==========
+    // ========== FETCH FUNCTIONS – AGGRESSIVE CACHE-BUSTING ==========
     async function fetchFeed(feedCfg) {
         try {
-            const cacheBuster = `_cb=${Date.now()}`;
+            // Double cache-bust: timestamp + random
+            const cacheBuster = `_cb=${Date.now()}_r=${Math.random()}`;
             const separator = feedCfg.url.includes('?') ? '&' : '?';
             const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
-            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&${cacheBuster}`;
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&_ts=${Date.now()}`;
             
             const resp = await fetch(proxyUrl, {
                 cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
             });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
@@ -206,11 +207,11 @@
     // Top News fetch (separate)
     async function fetchTopNewsFeed(feedCfg) {
         try {
-            const cacheBuster = `_cb=${Date.now()}`;
+            const cacheBuster = `_cb=${Date.now()}_r=${Math.random()}`;
             const separator = feedCfg.url.includes('?') ? '&' : '?';
             const urlWithCacheBust = feedCfg.url + separator + cacheBuster;
-            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&${cacheBuster}`;
-            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } });
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlWithCacheBust)}&_ts=${Date.now()}`;
+            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' } });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 10).map(item => {
@@ -367,6 +368,8 @@
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
+        // Ensure fresh start: clear allArticles
+        allArticles = [];
         const allFeeds = [...WORLD_FEEDS, ...(localMap.get(userCountry) || [])];
         const results = await Promise.all(allFeeds.map(f => fetchFeed(f)));
         let arts = [];
@@ -388,7 +391,6 @@
         if (currentCategory === 'all') {
             renderAllCategoryGrouped();
             if (scrollObserver) scrollObserver.disconnect();
-            // Show and load top news if not already
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) {
                 if (topNewsArticles.length === 0) loadTopNews(false);
@@ -404,11 +406,12 @@
             if (topContainer) topContainer.style.display = 'none';
             if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
             else currentFiltered = allArticles.filter(a => a.category === currentCategory);
-            displayLimit = 30;
+            displayLimit = 30;  // reset display limit when switching category
             renderNewsFeed();
-            if (scrollObserver && sentinelElement && currentView === 'home') {
-                scrollObserver.disconnect();
-                scrollObserver.observe(sentinelElement);
+            // IMPORTANT: re-initialize scroll observer for this category
+            if (currentView === 'home') {
+                if (scrollObserver) scrollObserver.disconnect();
+                initScrollObserver();  // start fresh observer for non-all category
             }
             if (currentFiltered.length < 20 && !isLoadingMore) {
                 setTimeout(() => attemptBackgroundFetch(), 500);
@@ -553,7 +556,6 @@
         if (currentView === 'saved') renderSavedArticles();
         if (currentCategory === 'all' && currentView === 'home') {
             renderAllCategoryGrouped();
-            // Also refresh top news save status
             if (topNewsArticles.length) renderTopNews();
         }
     }
@@ -631,7 +633,7 @@
         isLoadingMore = false;
     }
 
-    // ========== INFINITE SCROLL & RETRY (FIXED) ==========
+    // ========== INFINITE SCROLL & RETRY (FIXED FOR ALL CATEGORIES) ==========
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
     
     function showRetryButton(message, retryCallback) {
@@ -708,6 +710,7 @@
         if(scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver(async (entries) => {
             const entry = entries[0];
+            // Only trigger for non-all categories and when home view is active
             if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
@@ -727,7 +730,9 @@
                 }
             }
         }, { threshold: 0.1, rootMargin: "0px 0px 300px 0px" });
-        if(sentinelElement && currentCategory !== 'all') scrollObserver.observe(sentinelElement);
+        if(sentinelElement && currentCategory !== 'all') {
+            scrollObserver.observe(sentinelElement);
+        }
     }
 
     // ========== CATEGORY & LOCATION ==========
@@ -739,8 +744,11 @@
         if(activePill) activePill.classList.add('active');
         clearRetryButton();
         hasMoreArticles = true;
+        // Reset display limit for the new category
+        displayLimit = 30;
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        // For non-all categories, ensure observer is active
         if (cat !== 'all') {
             initScrollObserver();
         }
@@ -876,7 +884,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v13.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first\n🔥 Top News with infinite scroll"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v13.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first\n🔥 Top News with infinite scroll\n♾️ Infinite scroll works in all categories"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -913,7 +921,10 @@
     // ========== INIT ==========
     detectLocation().then(() => {
         loadAllFeeds().then(() => {
-            initScrollObserver();
+            // Only init observer for non-all categories; 'all' uses grouped view without scroll
+            if (currentCategory !== 'all') {
+                initScrollObserver();
+            }
         });
     });
 })();
