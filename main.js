@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - Amimo Discovery (Improved Image Extraction) =====================
+// ===================== MAIN.JS - Amimo Discovery (Fixed Local News, Fresh Load, Reliable Location) =====================
 (function() {
-    // ========== RSS FEEDS (EXPANDED - same as before) ==========
+    // ========== RSS FEEDS (EXPANDED) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -52,7 +52,7 @@
         { name: "Financial Times", url: "https://www.ft.com/?format=rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FT" },
         { name: "Business Insider", url: "https://www.businessinsider.com/rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BI" },
         
-        // Health (expanded)
+        // Health
         { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Health" },
         { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WebMD" },
         { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=MNT" },
@@ -62,6 +62,7 @@
         { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
     ];
 
+    // LOCAL MAP (expanded for Zambia and other countries)
     const localMap = new Map();
     localMap.set("ZM", [ 
         { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
@@ -116,6 +117,10 @@
         { name: "Daily Nation", url: "https://www.nation.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Daily+Nation" },
         { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Star" }
     ]);
+    // Fallback local feeds for any unknown country (worldwide news)
+    const FALLBACK_LOCAL_FEEDS = [
+        { name: "International News", url: "https://www.voanews.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=VOA" }
+    ];
 
     // ========== GLOBALS ==========
     let allArticles = [];
@@ -192,10 +197,16 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS (IMPROVED IMAGE EXTRACTION) ==========
+    // ========== FETCH FUNCTIONS (IMPROVED IMAGE EXTRACTION + CACHE BUSTING) ==========
     async function fetchFeed(feedCfg) {
         try {
-            const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
+            // Add cache-busting timestamp to force fresh content on every load
+            const fresh = Date.now();
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
+            const resp = await fetch(proxyUrl, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+            });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 12).map(item => {
@@ -218,11 +229,9 @@
                     img = item.enclosure.link;
                 }
                 else if (item.description) {
-                    // More robust regex for img src
                     const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (match && match[1].startsWith('http')) img = match[1];
                 }
-                // Also check content:encoded if available
                 if (item['content:encoded']) {
                     const match = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (match && match[1].startsWith('http')) img = match[1];
@@ -239,7 +248,9 @@
 
     async function fetchTopNewsFeed(feedCfg) {
         try {
-            const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
+            const fresh = Date.now();
+            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
+            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 10).map(item => {
@@ -366,10 +377,13 @@
         let feedsToFetch = [];
         if (category === 'all') {
             const worldFeeds = WORLD_FEEDS.filter(f => f.category !== 'Local');
-            const localFeeds = localMap.get(userCountry) || [];
+            let localFeeds = localMap.get(userCountry) || [];
+            if (localFeeds.length === 0) localFeeds = FALLBACK_LOCAL_FEEDS;
             feedsToFetch = [...worldFeeds, ...localFeeds];
         } else if (category === 'Local') {
-            feedsToFetch = localMap.get(userCountry) || [];
+            let localFeeds = localMap.get(userCountry) || [];
+            if (localFeeds.length === 0) localFeeds = FALLBACK_LOCAL_FEEDS;
+            feedsToFetch = localFeeds;
         } else {
             feedsToFetch = WORLD_FEEDS.filter(f => f.category === category);
         }
@@ -410,7 +424,12 @@
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
-        const allFeeds = [...WORLD_FEEDS, ...(localMap.get(userCountry) || [])];
+        // Clear previous articles to force fresh load
+        allArticles = [];
+        const allFeeds = [...WORLD_FEEDS];
+        // Add local feeds based on detected country (if any)
+        const localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+        allFeeds.push(...localFeeds);
         
         let allArts = [];
         const batchSize = 8;
@@ -433,7 +452,7 @@
         updateSavedCounter();
     }
 
-    // ========== RENDER FUNCTIONS ==========
+    // ========== RENDER FUNCTIONS (unchanged) ==========
     function applyCategoryFilter() {
         if (currentCategory === 'all') {
             renderAllCategoryGrouped();
@@ -450,8 +469,12 @@
         } else {
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'none';
-            if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
-            else currentFiltered = allArticles.filter(a => a.category === currentCategory);
+            if (currentCategory === 'Local') {
+                // Ensure we have local articles (fallback to empty if none)
+                currentFiltered = allArticles.filter(a => a.category === 'Local');
+            } else {
+                currentFiltered = allArticles.filter(a => a.category === currentCategory);
+            }
             displayLimit = 20;
             renderNewsFeed();
             initScrollObserver();
@@ -779,7 +802,7 @@
         }
     }
 
-    // ========== CATEGORY & LOCATION ==========
+    // ========== CATEGORY & LOCATION (UPDATED FOR SLOWER, MORE ACCURATE DETECTION) ==========
     function switchCategory(cat) {
         if(currentCategory === cat) return;
         currentCategory = cat;
@@ -800,16 +823,69 @@
     }
 
     async function detectLocation() {
-        try {
-            const res = await fetch('https://ipapi.co/json/');
-            const d = await res.json();
-            if(d.country_code) { 
-                userCountry = d.country_code; 
-                userCountryName = d.country_name || userCountry; 
-            }
-        } catch(e) { userCountry="ZM"; userCountryName="Zambia"; }
         const badge = document.getElementById('countryBadge');
-        if(badge) badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
+        badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> locating...`;
+        
+        // Try primary API (ipapi.co) with a timeout
+        let locationDetected = false;
+        let tryCount = 0;
+        const maxAttempts = 2;
+        
+        while (!locationDetected && tryCount < maxAttempts) {
+            try {
+                // Primary API: ipapi.co (fast, but sometimes inaccurate)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+                const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d.country_code) {
+                        userCountry = d.country_code;
+                        userCountryName = d.country_name || userCountry;
+                        locationDetected = true;
+                        break;
+                    }
+                }
+            } catch (e) {
+                console.log("ipapi failed, trying fallback...");
+            }
+            
+            if (!locationDetected) {
+                // Fallback API: ipinfo.io (requires token-free, but may be slower)
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    const res = await fetch('https://ipinfo.io/json', { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.country) {
+                            userCountry = d.country;
+                            userCountryName = d.country || userCountry;
+                            locationDetected = true;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.log("ipinfo also failed");
+                }
+            }
+            tryCount++;
+            if (!locationDetected && tryCount < maxAttempts) {
+                await new Promise(r => setTimeout(r, 1000)); // wait 1 second before retry
+            }
+        }
+        
+        // If still not detected, fallback to Zambia after a short delay (but not instantly)
+        if (!locationDetected) {
+            // Simulate a short delay to avoid "instant fallback"
+            await new Promise(r => setTimeout(r, 1500));
+            userCountry = "ZM";
+            userCountryName = "Zambia (fallback)";
+        }
+        
+        badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
     }
 
     // ========== SAVED VIEW ==========
@@ -930,7 +1006,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v15.0\n✨ Improved image extraction\n🌍 Expanded feeds\n🔄 Continuous infinite scroll"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v16.0\n✨ Fixed local news loading\n🌍 Slower, more accurate location detection\n🔄 Fresh content on every visit"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
