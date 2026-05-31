@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Stable + Infinite Scroll in ALL Categories) =====================
+// ===================== MAIN.JS - Amimo Discovery (Improved Image Extraction) =====================
 (function() {
     // ========== RSS FEEDS (EXPANDED - same as before) ==========
     const WORLD_FEEDS = [
@@ -14,12 +14,19 @@
         { name: "NDTV World", url: "https://feeds.feedburner.com/ndtvnews-world-news", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" },
         { name: "South China Morning Post", url: "https://www.scmp.com/rss/2/feed", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SCMP" },
         { name: "The Japan Times", url: "https://www.japantimes.co.jp/feed/", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=JapanTimes" },
+        { name: "Euronews", url: "https://www.euronews.com/rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Euronews" },
+        { name: "The New York Times World", url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT+World" },
+        { name: "The Washington Post World", url: "https://feeds.washingtonpost.com/rss/world", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WaPo+World" },
+        
+        // Technology
         { name: "TechCrunch", url: "https://techcrunch.com/feed/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TechCrunch" },
         { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Verge" },
         { name: "Wired", url: "https://www.wired.com/feed/rss", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Wired" },
         { name: "Ars Technica", url: "https://feeds.feedburner.com/arstechnica/index", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Ars" },
         { name: "ZDNet", url: "https://www.zdnet.com/news/rss.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ZDNet" },
         { name: "CNET", url: "https://www.cnet.com/rss/news/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNET" },
+        
+        // Sports
         { name: "ESPN", url: "https://www.espn.com/espn/rss/news", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN" },
         { name: "Sky Sports", url: "https://www.skysports.com/rss/12040", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SkySports" },
         { name: "Bleacher Report", url: "https://bleacherreport.com/articles/feed", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bleacher" },
@@ -27,35 +34,43 @@
         { name: "The Athletic", url: "https://theathletic.com/feed/", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Athletic" },
         { name: "FOX Sports", url: "https://www.foxsports.com/rss", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FOXSports" },
         { name: "CBS Sports", url: "https://www.cbssports.com/rss/headlines", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBSSports" },
+        
+        // Entertainment
         { name: "Variety", url: "https://variety.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Variety" },
         { name: "Hollywood Reporter", url: "https://www.hollywoodreporter.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=THR" },
         { name: "Deadline", url: "https://deadline.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Deadline" },
         { name: "Entertainment Weekly", url: "https://ew.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=EW" },
+        
+        // Politics
         { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politics" },
         { name: "Politico", url: "https://www.politico.com/rss/politics.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politico" },
         { name: "The Hill", url: "https://thehill.com/feed/", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TheHill" },
+        
+        // Business
         { name: "Bloomberg", url: "https://feeds.bloomberg.com/markets/news.rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bloomberg" },
         { name: "CNBC", url: "https://www.cnbc.com/id/100003114/device/rss/rss.html", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNBC" },
         { name: "Financial Times", url: "https://www.ft.com/?format=rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FT" },
         { name: "Business Insider", url: "https://www.businessinsider.com/rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BI" },
+        
+        // Health (expanded)
         { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Health" },
         { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WebMD" },
         { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=MNT" },
-        { name: "Healthline", url: "https://www.healthline.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Healthline" }
+        { name: "Healthline", url: "https://www.healthline.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Healthline" },
+        { name: "WHO News", url: "https://www.who.int/rss-feeds/news-english.xml", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WHO" },
+        { name: "Harvard Health", url: "https://www.health.harvard.edu/feed", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Harvard+Health" },
+        { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
     ];
 
     const localMap = new Map();
     localMap.set("ZM", [ 
-    { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka+Times" },
-    { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Daily+Mail" },
-    { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambian+Football" },
-    { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambian+Observer" },
-    { name: "Mwebantu", url: "https://mwebantu.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Mwebantu" },
-    { name: "Zambia Business Times", url: "https://zambiabusinesstimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Business" },
-    { name: "News Diggers Zambia", url: "https://newsdiggers.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News+Diggers" },
-    { name: "Zambia Reports", url: "https://zambiareports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Reports" },
-    { name: "ZNBC (Zambia National Broadcasting Corporation)", url: "https://www.znbc.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ZNBC" }
-]);
+        { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
+        { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" },
+        { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" },
+        { name: "Zambia Reports", url: "https://zambiareports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Reports" },
+        { name: "News Diggers Zambia", url: "https://diggers.news/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News+Diggers" },
+        { name: "Mwebantu", url: "https://mwebantu.news/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Mwebantu" }
+    ]);
     localMap.set("US", [ 
         { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" }, 
         { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" }, 
@@ -108,7 +123,7 @@
     let userCountry = "ZM";
     let userCountryName = "World";
     let currentFiltered = [];
-    let displayLimit = 20;          // start with 20 articles, then increase by 15 each scroll
+    let displayLimit = 20;
     let isLoadingMore = false;
     let isLoadingEndless = false;
     let savedArticles = JSON.parse(localStorage.getItem("amimo_saved") || "[]");
@@ -119,6 +134,7 @@
     let autoScrollActive = true;
     let currentView = "home";
     let hasMoreArticles = true;
+    let infiniteScrollTimer = null;
 
     // Top News specific variables
     let topNewsFeeds = [
@@ -176,7 +192,7 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS (original, reliable) ==========
+    // ========== FETCH FUNCTIONS (IMPROVED IMAGE EXTRACTION) ==========
     async function fetchFeed(feedCfg) {
         try {
             const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}`);
@@ -184,12 +200,34 @@
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 12).map(item => {
                 let img = feedCfg.imgFallback;
-                if(item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
-                else if(item.enclosure && item.enclosure.link) img = item.enclosure.link;
-                else if(item.description) {
-                    const match = item.description.match(/<img[^>]+src="([^">]+)"/);
-                    if(match && match[1].startsWith('http')) img = match[1];
+                
+                // Try multiple possible image sources
+                if (item.thumbnail && item.thumbnail.startsWith('http')) {
+                    img = item.thumbnail;
+                } 
+                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) {
+                    img = item.media.thumbnail.url;
                 }
+                else if (item['media:thumbnail'] && item['media:thumbnail'].url) {
+                    img = item['media:thumbnail'].url;
+                }
+                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) {
+                    img = item.enclosure.link;
+                }
+                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
+                    img = item.enclosure.link;
+                }
+                else if (item.description) {
+                    // More robust regex for img src
+                    const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (match && match[1].startsWith('http')) img = match[1];
+                }
+                // Also check content:encoded if available
+                if (item['content:encoded']) {
+                    const match = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (match && match[1].startsWith('http')) img = match[1];
+                }
+                
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
                     description: (item.description||"").replace(/<[^>]*>/g, '').substring(0, 200),
@@ -206,12 +244,31 @@
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 10).map(item => {
                 let img = feedCfg.imgFallback;
-                if(item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
-                else if(item.enclosure && item.enclosure.link) img = item.enclosure.link;
-                else if(item.description) {
-                    const match = item.description.match(/<img[^>]+src="([^">]+)"/);
-                    if(match && match[1].startsWith('http')) img = match[1];
+                
+                if (item.thumbnail && item.thumbnail.startsWith('http')) {
+                    img = item.thumbnail;
+                } 
+                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) {
+                    img = item.media.thumbnail.url;
                 }
+                else if (item['media:thumbnail'] && item['media:thumbnail'].url) {
+                    img = item['media:thumbnail'].url;
+                }
+                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) {
+                    img = item.enclosure.link;
+                }
+                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
+                    img = item.enclosure.link;
+                }
+                else if (item.description) {
+                    const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (match && match[1].startsWith('http')) img = match[1];
+                }
+                if (item['content:encoded']) {
+                    const match = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (match && match[1].startsWith('http')) img = match[1];
+                }
+                
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
                     description: (item.description||"").replace(/<[^>]*>/g, '').substring(0, 200),
@@ -319,12 +376,9 @@
         if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
         
         let newArticles = [];
-        const batchSize = 5;
-        for (let i = 0; i < feedsToFetch.length; i += batchSize) {
-            const batch = feedsToFetch.slice(i, i + batchSize);
-            const results = await Promise.all(batch.map(f => fetchFeed(f)));
-            results.forEach(r => newArticles.push(...r));
-        }
+        const limitedFeeds = feedsToFetch.slice(0, 5);
+        const results = await Promise.all(limitedFeeds.map(f => fetchFeed(f)));
+        results.forEach(r => newArticles.push(...r));
         const existingLinks = new Set(allArticles.map(a => a.link));
         const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
         if (uniqueNew.length) {
@@ -398,9 +452,8 @@
             if (topContainer) topContainer.style.display = 'none';
             if (currentCategory === 'Local') currentFiltered = allArticles.filter(a => a.category === 'Local');
             else currentFiltered = allArticles.filter(a => a.category === currentCategory);
-            displayLimit = 20;   // start with 20 articles for smooth infinite scroll
+            displayLimit = 20;
             renderNewsFeed();
-            // Re-attach scroll observer for this category
             initScrollObserver();
         }
     }
@@ -619,7 +672,7 @@
         isLoadingMore = false;
     }
 
-    // ========== INFINITE SCROLL & RETRY (FIXED) ==========
+    // ========== INFINITE SCROLL & RETRY ==========
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
     
     function showRetryButton(message, retryCallback) {
@@ -651,17 +704,19 @@
                 window.scrollBy({ top: 60, behavior: 'smooth' }); 
                 clearRetryButton();
                 showToast(`✨ ${newCount} more articles loaded`);
+                return true;
             } else {
                 showRetryButton("End of content. Tap to check for new articles.", async () => await fetchMoreForCategory(currentCategory));
+                return false;
             }
         } catch(err) { 
             showRetryButton("Failed to load more. Tap to retry.", async () => await fetchMoreForCategory(currentCategory)); 
+            return false;
         }
         finally { 
             isLoadingEndless = false; 
             showEndSpinner(false); 
         }
-        return newCount > 0;
     }
 
     function showEndSpinner(show) {
@@ -679,31 +734,45 @@
 
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
+        if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
+        
         scrollObserver = new IntersectionObserver(async (entries) => {
             const entry = entries[0];
             if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
-                // If there are more articles already in currentFiltered, increase displayLimit
                 if(displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
                     setTimeout(() => {
-                        // Increase by 15 each time
-                        displayLimit = Math.min(displayLimit + 15, currentFiltered.length);
+                        displayLimit = Math.min(displayLimit + 5, currentFiltered.length);
                         renderNewsFeed();
                         isLoadingMore = false;
                         showEndSpinner(false);
-                        // Pre-fetch more from RSS if we're near the end of the existing list
                         if (displayLimit + 5 >= currentFiltered.length) {
                             setTimeout(() => attemptBackgroundFetch(), 200);
                         }
-                    }, 150);
+                    }, 300);
                 } 
-                // No more articles in currentFiltered => fetch fresh from RSS
-                else if (displayLimit >= currentFiltered.length && !isLoadingEndless) {
-                    await attemptLoadMore();
+                else if (displayLimit >= currentFiltered.length && !isLoadingEndless && hasMoreArticles !== false) {
+                    if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
+                    attemptLoadMore();
+                    infiniteScrollTimer = setInterval(async () => {
+                        if(!isLoadingEndless && !isLoadingMore && currentCategory !== 'all' && hasMoreArticles !== false) {
+                            const success = await attemptLoadMore();
+                            if(!success || hasMoreArticles === false) {
+                                clearInterval(infiniteScrollTimer);
+                                infiniteScrollTimer = null;
+                            }
+                        } else if(hasMoreArticles === false) {
+                            clearInterval(infiniteScrollTimer);
+                            infiniteScrollTimer = null;
+                        }
+                    }, 3000);
                 }
+            } else if(!entry.isIntersecting && infiniteScrollTimer) {
+                clearInterval(infiniteScrollTimer);
+                infiniteScrollTimer = null;
             }
-        }, { threshold: 0.1, rootMargin: "0px 0px 400px 0px" }); // larger margin for earlier trigger
+        }, { threshold: 0.2, rootMargin: "0px 0px 300px 0px" });
         
         if(sentinelElement && currentCategory !== 'all') {
             scrollObserver.observe(sentinelElement);
@@ -719,11 +788,13 @@
         if(activePill) activePill.classList.add('active');
         clearRetryButton();
         hasMoreArticles = true;
+        if(infiniteScrollTimer) {
+            clearInterval(infiniteScrollTimer);
+            infiniteScrollTimer = null;
+        }
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        // For non-all categories, ensure observer is reinitialised after rendering
         if (cat !== 'all') {
-            // Slight delay to ensure DOM has updated
             setTimeout(() => initScrollObserver(), 100);
         }
     }
@@ -814,6 +885,7 @@
         const savedNav = document.querySelector('.nav-item[data-nav="saved"]');
         if(savedNav) savedNav.classList.add('active');
         if (scrollObserver) scrollObserver.disconnect();
+        if (infiniteScrollTimer) clearInterval(infiniteScrollTimer);
         if (carouselInterval) clearInterval(carouselInterval);
         carouselInterval = null;
         renderSavedArticles();
@@ -858,7 +930,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v14.0\n✨ Grouped All view\n🔁 Show More buttons\n📱 Share icon on cards\n🏆 Local first\n🔥 Top News with infinite scroll\n♾️ Infinite scroll works in all categories (fixed)"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v15.0\n✨ Improved image extraction\n🌍 Expanded feeds\n🔄 Continuous infinite scroll"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
