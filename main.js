@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - Amimo Discovery (Fixed Local News, Fresh Load, Reliable Location) =====================
+// ===================== MAIN.JS - Amimo Discovery (Local News Fixed + Reload Working) =====================
 (function() {
-    // ========== RSS FEEDS (EXPANDED) ==========
+    // ========== RSS FEEDS (EXPANDED - same as before) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -62,7 +62,6 @@
         { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
     ];
 
-    // LOCAL MAP (expanded for Zambia and other countries)
     const localMap = new Map();
     localMap.set("ZM", [ 
         { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
@@ -117,9 +116,9 @@
         { name: "Daily Nation", url: "https://www.nation.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Daily+Nation" },
         { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Star" }
     ]);
-    // Fallback local feeds for any unknown country (worldwide news)
+    // Fallback local feeds for unknown countries
     const FALLBACK_LOCAL_FEEDS = [
-        { name: "International News", url: "https://www.voanews.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=VOA" }
+        { name: "World News (VOA)", url: "https://www.voanews.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=World+News" }
     ];
 
     // ========== GLOBALS ==========
@@ -197,10 +196,9 @@
         }
     }
 
-    // ========== FETCH FUNCTIONS (IMPROVED IMAGE EXTRACTION + CACHE BUSTING) ==========
+    // ========== FETCH FUNCTIONS (with cache busting) ==========
     async function fetchFeed(feedCfg) {
         try {
-            // Add cache-busting timestamp to force fresh content on every load
             const fresh = Date.now();
             const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
             const resp = await fetch(proxyUrl, {
@@ -211,23 +209,11 @@
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 12).map(item => {
                 let img = feedCfg.imgFallback;
-                
-                // Try multiple possible image sources
-                if (item.thumbnail && item.thumbnail.startsWith('http')) {
-                    img = item.thumbnail;
-                } 
-                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) {
-                    img = item.media.thumbnail.url;
-                }
-                else if (item['media:thumbnail'] && item['media:thumbnail'].url) {
-                    img = item['media:thumbnail'].url;
-                }
-                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) {
-                    img = item.enclosure.link;
-                }
-                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
-                    img = item.enclosure.link;
-                }
+                if (item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
+                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) img = item.media.thumbnail.url;
+                else if (item['media:thumbnail'] && item['media:thumbnail'].url) img = item['media:thumbnail'].url;
+                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) img = item.enclosure.link;
+                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) img = item.enclosure.link;
                 else if (item.description) {
                     const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (match && match[1].startsWith('http')) img = match[1];
@@ -236,7 +222,6 @@
                     const match = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (match && match[1].startsWith('http')) img = match[1];
                 }
-                
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
                     description: (item.description||"").replace(/<[^>]*>/g, '').substring(0, 200),
@@ -255,22 +240,11 @@
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 10).map(item => {
                 let img = feedCfg.imgFallback;
-                
-                if (item.thumbnail && item.thumbnail.startsWith('http')) {
-                    img = item.thumbnail;
-                } 
-                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) {
-                    img = item.media.thumbnail.url;
-                }
-                else if (item['media:thumbnail'] && item['media:thumbnail'].url) {
-                    img = item['media:thumbnail'].url;
-                }
-                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) {
-                    img = item.enclosure.link;
-                }
-                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
-                    img = item.enclosure.link;
-                }
+                if (item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
+                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) img = item.media.thumbnail.url;
+                else if (item['media:thumbnail'] && item['media:thumbnail'].url) img = item['media:thumbnail'].url;
+                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) img = item.enclosure.link;
+                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) img = item.enclosure.link;
                 else if (item.description) {
                     const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (match && match[1].startsWith('http')) img = match[1];
@@ -279,7 +253,6 @@
                     const match = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (match && match[1].startsWith('http')) img = match[1];
                 }
-                
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
                     description: (item.description||"").replace(/<[^>]*>/g, '').substring(0, 200),
@@ -308,7 +281,6 @@
         } else {
             topNewsLimit += 5;
         }
-        
         renderTopNews();
         isLoadingTopNews = false;
         setupTopNewsInfiniteScroll();
@@ -424,11 +396,9 @@
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
-        // Clear previous articles to force fresh load
         allArticles = [];
         const allFeeds = [...WORLD_FEEDS];
-        // Add local feeds based on detected country (if any)
-        const localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+        let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
         allFeeds.push(...localFeeds);
         
         let allArts = [];
@@ -452,7 +422,7 @@
         updateSavedCounter();
     }
 
-    // ========== RENDER FUNCTIONS (unchanged) ==========
+    // ========== RENDER FUNCTIONS ==========
     function applyCategoryFilter() {
         if (currentCategory === 'all') {
             renderAllCategoryGrouped();
@@ -470,8 +440,8 @@
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'none';
             if (currentCategory === 'Local') {
-                // Ensure we have local articles (fallback to empty if none)
-                currentFiltered = allArticles.filter(a => a.category === 'Local');
+                let localArticles = allArticles.filter(a => a.category === 'Local');
+                currentFiltered = localArticles;
             } else {
                 currentFiltered = allArticles.filter(a => a.category === currentCategory);
             }
@@ -487,15 +457,11 @@
             feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles available</div>';
             return;
         }
-
         const categoriesOrder = ['World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
-        
         function getArticlesByCategory(cat, limit) {
             return allArticles.filter(a => a.category === cat).slice(0, limit);
         }
-
         let html = '';
-
         const localArticles = getArticlesByCategory('Local', 3);
         if (localArticles.length) {
             html += `<div class="category-section" data-cat="Local">
@@ -504,7 +470,6 @@
             html += `<button class="show-more-btn" data-target-cat="Local"><i class="fas fa-chevron-right"></i> Show More Local News</button>
                     </div>`;
         }
-
         for (let cat of categoriesOrder) {
             const articleCount = Math.floor(Math.random() * 4) + 2;
             const catArticles = getArticlesByCategory(cat, articleCount);
@@ -516,16 +481,13 @@
                         </div>`;
             }
         }
-
         feedDiv.innerHTML = html;
-        
         document.querySelectorAll('.show-more-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetCat = btn.dataset.targetCat;
                 if (targetCat) switchCategory(targetCat);
             });
         });
-        
         attachSaveEvents();
         attachShareEvents();
     }
@@ -695,7 +657,7 @@
         isLoadingMore = false;
     }
 
-    // ========== INFINITE SCROLL & RETRY ==========
+    // ========== INFINITE SCROLL & RETRY (with working reload) ==========
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
     
     function showRetryButton(message, retryCallback) {
@@ -703,11 +665,26 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'end-loader';
         wrapper.innerHTML = `<div><i class="fas fa-exclamation-triangle"></i> ${message}</div><button class="retry-button"><i class="fas fa-sync-alt"></i> Reload More</button>`;
-        wrapper.querySelector('.retry-button').onclick = async () => {
+        const retryBtn = wrapper.querySelector('.retry-button');
+        retryBtn.onclick = async () => {
             wrapper.innerHTML = '<div class="loader"></div> Fetching...';
             const newCount = await retryCallback();
-            if(newCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${newCount} new articles`); }
-            else wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
+            if(newCount > 0) { 
+                clearRetryButton(); 
+                applyCategoryFilter(); 
+                showToast(`✅ ${newCount} new articles`); 
+            } else {
+                wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
+                const newBtn = wrapper.querySelector('.retry-button');
+                if(newBtn) {
+                    newBtn.onclick = async () => {
+                        wrapper.innerHTML = '<div class="loader"></div> Fetching...';
+                        const retryCount = await retryCallback();
+                        if(retryCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${retryCount} new articles`); }
+                        else wrapper.innerHTML = `<div>No new articles. <button class="retry-button">Retry</button></div>`;
+                    };
+                }
+            }
         };
         if(sentinelElement && sentinelElement.parentNode) {
             sentinelElement.parentNode.insertBefore(wrapper, sentinelElement);
@@ -758,7 +735,6 @@
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
-        
         scrollObserver = new IntersectionObserver(async (entries) => {
             const entry = entries[0];
             if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
@@ -796,13 +772,12 @@
                 infiniteScrollTimer = null;
             }
         }, { threshold: 0.2, rootMargin: "0px 0px 300px 0px" });
-        
         if(sentinelElement && currentCategory !== 'all') {
             scrollObserver.observe(sentinelElement);
         }
     }
 
-    // ========== CATEGORY & LOCATION (UPDATED FOR SLOWER, MORE ACCURATE DETECTION) ==========
+    // ========== CATEGORY & LOCATION ==========
     function switchCategory(cat) {
         if(currentCategory === cat) return;
         currentCategory = cat;
@@ -811,31 +786,21 @@
         if(activePill) activePill.classList.add('active');
         clearRetryButton();
         hasMoreArticles = true;
-        if(infiniteScrollTimer) {
-            clearInterval(infiniteScrollTimer);
-            infiniteScrollTimer = null;
-        }
+        if(infiniteScrollTimer) { clearInterval(infiniteScrollTimer); infiniteScrollTimer = null; }
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (cat !== 'all') {
-            setTimeout(() => initScrollObserver(), 100);
-        }
+        if (cat !== 'all') { setTimeout(() => initScrollObserver(), 100); }
     }
 
     async function detectLocation() {
         const badge = document.getElementById('countryBadge');
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> locating...`;
-        
-        // Try primary API (ipapi.co) with a timeout
         let locationDetected = false;
         let tryCount = 0;
-        const maxAttempts = 2;
-        
-        while (!locationDetected && tryCount < maxAttempts) {
+        while (!locationDetected && tryCount < 2) {
             try {
-                // Primary API: ipapi.co (fast, but sometimes inaccurate)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
                 const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
                 clearTimeout(timeoutId);
                 if (res.ok) {
@@ -847,12 +812,8 @@
                         break;
                     }
                 }
-            } catch (e) {
-                console.log("ipapi failed, trying fallback...");
-            }
-            
+            } catch(e) { console.log("ipapi failed"); }
             if (!locationDetected) {
-                // Fallback API: ipinfo.io (requires token-free, but may be slower)
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -867,24 +828,16 @@
                             break;
                         }
                     }
-                } catch (e) {
-                    console.log("ipinfo also failed");
-                }
+                } catch(e) { console.log("ipinfo failed"); }
             }
             tryCount++;
-            if (!locationDetected && tryCount < maxAttempts) {
-                await new Promise(r => setTimeout(r, 1000)); // wait 1 second before retry
-            }
+            if (!locationDetected && tryCount < 2) await new Promise(r => setTimeout(r, 1000));
         }
-        
-        // If still not detected, fallback to Zambia after a short delay (but not instantly)
         if (!locationDetected) {
-            // Simulate a short delay to avoid "instant fallback"
             await new Promise(r => setTimeout(r, 1500));
             userCountry = "ZM";
             userCountryName = "Zambia (fallback)";
         }
-        
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
     }
 
@@ -921,18 +874,14 @@
                 updateSavedCounter();
                 renderSavedArticles();
                 if (currentView === 'home') {
-                    if (currentCategory === 'all') {
-                        renderAllCategoryGrouped();
-                        if (topNewsArticles.length) renderTopNews();
-                    } else renderNewsFeed();
+                    if (currentCategory === 'all') { renderAllCategoryGrouped(); if (topNewsArticles.length) renderTopNews(); }
+                    else renderNewsFeed();
                 }
                 showToast('Article removed from saved');
             });
         });
         document.querySelectorAll('.share-saved-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                shareArticle(btn.dataset.title, btn.dataset.url);
-            });
+            btn.addEventListener('click', () => { shareArticle(btn.dataset.title, btn.dataset.url); });
         });
     }
 
@@ -977,17 +926,11 @@
             else document.body.classList.remove('dark'); 
             localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light'); 
         });
-        if(localStorage.getItem('blue_theme') === 'dark') { 
-            document.body.classList.add('dark'); 
-            themeSwitch.checked = true; 
-        }
+        if(localStorage.getItem('blue_theme') === 'dark') { document.body.classList.add('dark'); themeSwitch.checked = true; }
     }
 
     const sideMenu = document.getElementById('sideMenu'), overlayDiv = document.getElementById('overlay');
-    function closeMenu() { 
-        if(sideMenu) sideMenu.classList.remove('open'); 
-        if(overlayDiv) overlayDiv.classList.remove('show'); 
-    }
+    function closeMenu() { if(sideMenu) sideMenu.classList.remove('open'); if(overlayDiv) overlayDiv.classList.remove('show'); }
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     if(hamburgerBtn) hamburgerBtn.onclick = () => { if(sideMenu) sideMenu.classList.add('open'); if(overlayDiv) overlayDiv.classList.add('show'); };
     const closeMenuBtn = document.getElementById('closeMenuBtn');
@@ -1006,7 +949,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v16.0\n✨ Fixed local news loading\n🌍 Slower, more accurate location detection\n🔄 Fresh content on every visit"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v17.0\n✅ Local news fixed\n🔄 Reload button works\n📱 Continuous infinite scroll"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -1020,30 +963,16 @@
         if(!searchZone) return;
         searchZone.classList.add('floating-top');
         document.body.style.paddingTop = '80px';
-        const removeFloat = (e) => { 
-            if(!searchZone.contains(e.target)) { 
-                searchZone.classList.remove('floating-top'); 
-                document.body.style.paddingTop = '0px'; 
-                document.removeEventListener('click', removeFloat); 
-            } 
-        };
+        const removeFloat = (e) => { if(!searchZone.contains(e.target)) { searchZone.classList.remove('floating-top'); document.body.style.paddingTop = '0px'; document.removeEventListener('click', removeFloat); } };
         setTimeout(() => document.addEventListener('click', removeFloat), 50);
         if(searchInput) searchInput.focus();
     }
     if(searchInput) searchInput.addEventListener('focus', enableFloating);
 
-    // Bottom bar navigation
     document.querySelectorAll('.nav-item').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (btn.dataset.nav === 'home') showHomeView();
-            else if (btn.dataset.nav === 'saved') showSavedView();
-        });
+        btn.addEventListener('click', () => { if (btn.dataset.nav === 'home') showHomeView(); else if (btn.dataset.nav === 'saved') showSavedView(); });
     });
 
     // ========== INIT ==========
-    detectLocation().then(() => {
-        loadAllFeeds().then(() => {
-            // No initial observer for 'all' category; will be set when switching
-        });
-    });
+    detectLocation().then(() => { loadAllFeeds(); });
 })();
