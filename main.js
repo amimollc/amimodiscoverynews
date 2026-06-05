@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Fixed Infinite Scroll + Local News) =====================
+// ===================== MAIN.JS - Amimo Discovery (All Category: 10 per group + infinite scroll) =====================
 (function() {
     // ========== RSS FEEDS ==========
     const WORLD_FEEDS = [
@@ -55,7 +55,7 @@
         { name: "Harvard Health", url: "https://www.health.harvard.edu/feed", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Harvard+Health" }
     ];
 
-    // Local feeds (predefined for some countries)
+    // Local feeds
     const localMap = new Map();
     localMap.set("ZM", [
         { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
@@ -73,7 +73,7 @@
     ]);
 
     // ========== GLOBALS ==========
-    let allArticles = [];           // all articles ever loaded (for current category)
+    let allArticles = [];
     let currentCategory = "all";
     let userCountry = null;
     let userCountryName = "World";
@@ -84,12 +84,16 @@
     let autoScrollActive = true;
     let currentView = "home";
     let isLoading = false;
-    let currentFeedIndex = 0;       // index of next feed to fetch
-    let currentFeedsList = [];      // list of feed configs for the current category
+    let currentFeedIndex = 0;
+    let currentFeedsList = [];
     let hasMoreFeeds = true;
-    let batchSize = 2;              // fetch 2 feeds at a time
+    let batchSize = 2;
+    // For All category: separate flat feed for infinite scroll (appended after grouped sections)
+    let allFlatArticles = [];
+    let allFlatIndex = 0;          // how many flat articles have been displayed
+    let allFlatFeedsLoaded = false; // whether initial grouped feeds are done
 
-    // Top News (unchanged, fully functional)
+    // Top News
     let topNewsFeeds = [
         { name: "Google News Top Stories", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
         { name: "Yahoo News", url: "https://www.yahoo.com/news/rss", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Yahoo+News" },
@@ -142,7 +146,7 @@
         }
     }
 
-    // ========== FETCH FEED (with cache busting) ==========
+    // ========== FETCH FEED ==========
     async function fetchSingleFeed(feedCfg) {
         try {
             const fresh = Date.now();
@@ -168,12 +172,10 @@
         } catch(e) { return []; }
     }
 
-    // Fetch next batch of feeds and add articles
-    async function fetchMoreArticles() {
+    async function fetchMoreArticles(useFlat = false) {
         if (isLoading || !hasMoreFeeds) return false;
         isLoading = true;
         showEndSpinner(true);
-        
         const nextFeeds = currentFeedsList.slice(currentFeedIndex, currentFeedIndex + batchSize);
         if (nextFeeds.length === 0) {
             hasMoreFeeds = false;
@@ -181,22 +183,21 @@
             showEndSpinner(false);
             return false;
         }
-        
         const results = await Promise.all(nextFeeds.map(f => fetchSingleFeed(f)));
         let newArticles = [];
         results.forEach(r => newArticles.push(...r));
-        
-        // Remove duplicates (by link)
         const existingLinks = new Set(allArticles.map(a => a.link));
         const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
-        
         if (uniqueNew.length) {
-            allArticles.push(...uniqueNew);
-            renderNewsFeed();                // re-render the feed with updated articles
+            if (useFlat) {
+                allFlatArticles.push(...uniqueNew);
+            } else {
+                allArticles.push(...uniqueNew);
+            }
             currentFeedIndex += batchSize;
+            renderNewsFeed();  // re-render the current view
             showToast(`📰 ${uniqueNew.length} new articles`);
         }
-        
         isLoading = false;
         showEndSpinner(false);
         return uniqueNew.length > 0;
@@ -240,27 +241,13 @@
 
     function renderAllCategoryGrouped() {
         const feedDiv = document.getElementById('newsFeed');
-        if (!allArticles.length) {
-            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 Loading news...</div>';
-            return;
-        }
-        const categoriesOrder = ['World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
-        function getArticlesByCategory(cat, limit) {
-            return allArticles.filter(a => a.category === cat).slice(0, limit);
-        }
+        // Group articles by category
+        const categoriesOrder = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
         let html = '';
-        const localArticles = getArticlesByCategory('Local', 3);
-        if (localArticles.length) {
-            html += `<div class="category-section" data-cat="Local">
-                        <div class="category-section-title"><i class="fas fa-location-dot"></i> Local News</div>`;
-            localArticles.forEach(art => { html += renderArticleCard(art); });
-            html += `<button class="show-more-btn" data-target-cat="Local"><i class="fas fa-chevron-right"></i> Show More Local News</button>
-                    </div>`;
-        }
+        // For each category, take up to 10 articles (or all available)
         for (let cat of categoriesOrder) {
-            const articleCount = 3;
-            const catArticles = getArticlesByCategory(cat, articleCount);
-            if (catArticles.length) {
+            const catArticles = allArticles.filter(a => a.category === cat).slice(0, 10);
+            if (catArticles.length > 0) {
                 html += `<div class="category-section" data-cat="${cat}">
                             <div class="category-section-title"><i class="fas ${getCategoryIcon(cat)}"></i> ${cat}</div>`;
                 catArticles.forEach(art => { html += renderArticleCard(art); });
@@ -268,7 +255,18 @@
                         </div>`;
             }
         }
+        // Append flat infinite scroll section for additional articles (if any)
+        if (allFlatArticles.length > 0 && allFlatIndex < allFlatArticles.length) {
+            html += `<div class="category-section"><div class="category-section-title"><i class="fas fa-infinity"></i> More News</div>`;
+            const toShow = allFlatArticles.slice(0, allFlatIndex + 10);
+            for (let i = allFlatIndex; i < toShow.length; i++) {
+                html += renderArticleCard(toShow[i]);
+            }
+            allFlatIndex = toShow.length;
+            html += `</div>`;
+        }
         feedDiv.innerHTML = html;
+        // Attach "Show More" buttons
         document.querySelectorAll('.show-more-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetCat = btn.dataset.targetCat;
@@ -280,7 +278,7 @@
     }
 
     function getCategoryIcon(cat) {
-        const icons = { 'World':'fa-globe', 'Politics':'fa-landmark', 'Technology':'fa-microchip', 'Sports':'fa-futbol', 'Entertainment':'fa-mask', 'Business':'fa-chart-line', 'Health':'fa-heartbeat', 'Local':'fa-location-dot' };
+        const icons = { 'Local':'fa-location-dot', 'World':'fa-globe', 'Politics':'fa-landmark', 'Technology':'fa-microchip', 'Sports':'fa-futbol', 'Entertainment':'fa-mask', 'Business':'fa-chart-line', 'Health':'fa-heartbeat' };
         return icons[cat] || 'fa-newspaper';
     }
 
@@ -331,8 +329,17 @@
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         scrollObserver = new IntersectionObserver(async (entries) => {
-            if(entries[0].isIntersecting && !isLoading && currentView === 'home' && hasMoreFeeds && currentCategory !== 'all') {
-                await fetchMoreArticles();
+            if(entries[0].isIntersecting && !isLoading && currentView === 'home' && hasMoreFeeds) {
+                if (currentCategory === 'all') {
+                    // For All category, we use flat articles (already loaded) or fetch more
+                    if (allFlatIndex < allFlatArticles.length) {
+                        renderAllCategoryGrouped(); // this will show next batch
+                    } else if (hasMoreFeeds) {
+                        await fetchMoreArticles(true);
+                    }
+                } else {
+                    await fetchMoreArticles(false);
+                }
             }
         }, { threshold: 0.5, rootMargin: "0px 0px 200px 0px" });
         if(sentinelElement) scrollObserver.observe(sentinelElement);
@@ -342,48 +349,53 @@
     async function switchCategory(cat) {
         if(currentCategory === cat) return;
         currentCategory = cat;
-        // Update active pill
         document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
         const activePill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
         if(activePill) activePill.classList.add('active');
         
-        // Reset pagination state
         currentFeedIndex = 0;
         hasMoreFeeds = true;
         isLoading = false;
         
         if (cat === 'all') {
-            // For 'all', we use grouped view (pre-loaded with all articles)
+            // Reset flat articles and re-fetch if needed
+            allFlatArticles = [];
+            allFlatIndex = 0;
+            // Use all feeds (world + local) for the initial grouped view
+            const allFeeds = [...WORLD_FEEDS];
+            const localFeeds = localMap.get(userCountry) || [];
+            if (localFeeds.length) allFeeds.push(...localFeeds);
+            currentFeedsList = allFeeds;
+            await fetchMoreArticles(false); // loads first batch into allArticles (for grouped)
+            // Load extra feeds to fill categories (up to 10 per category)
+            while (allArticles.filter(a => a.category !== 'Local' && a.category !== 'World').length < 80 && currentFeedIndex < currentFeedsList.length) {
+                await fetchMoreArticles(false);
+            }
             renderAllCategoryGrouped();
-            return;
-        }
-        
-        // Build feed list for the selected category
-        let feeds = [];
-        if (cat === 'Local') {
-            // Try to get local feeds for the detected country
-            let localFeeds = localMap.get(userCountry) || [];
-            if (localFeeds.length === 0 && userCountry) {
-                // Fallback to Google News for that country
-                const googleUrl = `https://news.google.com/rss?hl=en-${userCountry}&gl=${userCountry}&ceid=${userCountry}:en`;
-                localFeeds = [{ name: `Google News ${userCountryName}`, url: googleUrl, category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Local" }];
+            // Start flat infinite scroll (remaining feeds go into allFlatArticles)
+            if (currentFeedIndex < currentFeedsList.length) {
+                // Continue fetching remaining feeds as flat articles
+                await fetchMoreArticles(true);
             }
-            if (localFeeds.length === 0) {
-                // Ultimate fallback: world news
-                localFeeds = WORLD_FEEDS.slice(0, 5);
-            }
-            feeds = localFeeds;
         } else {
-            feeds = WORLD_FEEDS.filter(f => f.category === cat);
-            if (feeds.length === 0) feeds = WORLD_FEEDS.slice(0, 10);
+            let feeds = [];
+            if (cat === 'Local') {
+                let localFeeds = localMap.get(userCountry) || [];
+                if (localFeeds.length === 0 && userCountry) {
+                    const googleUrl = `https://news.google.com/rss?hl=en-${userCountry}&gl=${userCountry}&ceid=${userCountry}:en`;
+                    localFeeds = [{ name: `Google News ${userCountryName}`, url: googleUrl, category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Local" }];
+                }
+                if (localFeeds.length === 0) localFeeds = WORLD_FEEDS.slice(0, 5);
+                feeds = localFeeds;
+            } else {
+                feeds = WORLD_FEEDS.filter(f => f.category === cat);
+                if (feeds.length === 0) feeds = WORLD_FEEDS.slice(0, 10);
+            }
+            currentFeedsList = feeds;
+            allArticles = []; // clear previous category articles
+            renderNewsFeed();
+            await fetchMoreArticles(false);
         }
-        currentFeedsList = feeds;
-        // Clear existing articles for this category (start fresh)
-        allArticles = allArticles.filter(a => a.category !== cat);
-        renderNewsFeed();
-        // Load first batch
-        await fetchMoreArticles();
-        // Start scroll observer
         initScrollObserver();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -401,7 +413,7 @@
                     userCountryName = d.country_name || userCountry;
                 }
             }
-        } catch(e) { console.log("Location detection failed, using World"); }
+        } catch(e) { console.log("Location detection failed"); }
         if (!userCountry) {
             userCountry = null;
             userCountryName = "World";
@@ -409,7 +421,7 @@
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
     }
 
-    // ========== TOP NEWS (unchanged, fully functional) ==========
+    // ========== TOP NEWS (unchanged) ==========
     async function fetchTopNewsFeed(feedCfg) {
         try {
             const fresh = Date.now();
@@ -587,20 +599,34 @@
     // ========== INITIAL LOAD ==========
     async function init() {
         await detectLocation();
-        // Build initial feed list for 'all' category (grouped view)
-        // For grouped view, we need a rich set of articles from all feeds
-        const initialFeeds = [...WORLD_FEEDS];
+        // Initial All category load
+        currentCategory = 'all';
+        const allFeeds = [...WORLD_FEEDS];
         const localFeeds = localMap.get(userCountry) || [];
-        if (localFeeds.length) initialFeeds.push(...localFeeds);
-        currentFeedsList = initialFeeds;
+        if (localFeeds.length) allFeeds.push(...localFeeds);
+        currentFeedsList = allFeeds;
         currentFeedIndex = 0;
         hasMoreFeeds = true;
-        // Load first batch of articles (2 feeds)
-        await fetchMoreArticles();
+        // Load enough feeds to get ~10 articles per category (approx 8 categories * 10 = 80 articles)
+        // We'll load 15 feeds initially (each gives up to 8 articles)
+        const initialBatchCount = Math.min(15, currentFeedsList.length);
+        const initialFeeds = currentFeedsList.slice(0, initialBatchCount);
+        const results = await Promise.all(initialFeeds.map(f => fetchSingleFeed(f)));
+        let arts = [];
+        results.forEach(r => arts.push(...r));
+        const uniqueMap = new Map();
+        arts.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
+        allArticles = Array.from(uniqueMap.values());
+        currentFeedIndex = initialBatchCount;
+        // Also pre-load flat articles from remaining feeds
+        if (currentFeedIndex < currentFeedsList.length) {
+            await fetchMoreArticles(true);
+        }
         renderAllCategoryGrouped();
         loadTopNews(false);
         startCarouselScroll();
         updateSavedCounter();
+        initScrollObserver();
 
         // Event listeners
         document.querySelectorAll('.cat-pill').forEach(pill => pill.addEventListener('click', () => switchCategory(pill.dataset.cat)));
@@ -621,7 +647,7 @@
         document.getElementById('menuHome').addEventListener('click', () => { showHomeView(); closeMenu(); });
         document.getElementById('menuSaved').addEventListener('click', () => { showSavedView(); closeMenu(); });
         document.getElementById('menuTrending').addEventListener('click', () => { document.getElementById('trendingCarousel').scrollIntoView({ behavior: 'smooth' }); closeMenu(); });
-        document.getElementById('menuAbout').addEventListener('click', () => { alert("Amimo Blue – Continuous infinite scroll\nLocal news fallback to Google News\nReload works"); closeMenu(); });
+        document.getElementById('menuAbout').addEventListener('click', () => { alert("Amimo Blue – All category: 10 articles per group, then infinite scroll\nOther categories: progressive load"); closeMenu(); });
         document.getElementById('viewSavedBtn').onclick = () => showSavedView();
         document.getElementById('searchBtn').addEventListener('click', () => { const q = document.getElementById('searchInput').value.trim(); if(q) window.location.href = `seachresult.html?q=${encodeURIComponent(q)}`; });
         document.getElementById('searchInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('searchBtn').click(); });
