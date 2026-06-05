@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Continuous Infinite Scroll + Progressive Loading) =====================
+// ===================== MAIN.JS - Amimo Discovery (Fixed Infinite Scroll + Local News) =====================
 (function() {
     // ========== RSS FEEDS ==========
     const WORLD_FEEDS = [
@@ -52,32 +52,28 @@
         { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=MNT" },
         { name: "Healthline", url: "https://www.healthline.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Healthline" },
         { name: "WHO News", url: "https://www.who.int/rss-feeds/news-english.xml", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WHO" },
-        { name: "Harvard Health", url: "https://www.health.harvard.edu/feed", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Harvard+Health" },
-        { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
+        { name: "Harvard Health", url: "https://www.health.harvard.edu/feed", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Harvard+Health" }
     ];
 
-    // Local feeds map (expanded)
+    // Local feeds (predefined for some countries)
     const localMap = new Map();
-    localMap.set("ZM", [ 
+    localMap.set("ZM", [
         { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
-        { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" },
-        { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" },
-        { name: "Zambia Reports", url: "https://zambiareports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Reports" }
+        { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" }
     ]);
-    localMap.set("US", [ 
-        { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" }, 
+    localMap.set("US", [
+        { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" },
         { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" }
     ]);
-    localMap.set("GB", [ 
+    localMap.set("GB", [
         { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+UK" }
     ]);
-    localMap.set("IN", [ 
+    localMap.set("IN", [
         { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TOI" }
     ]);
-    // Additional countries can be added similarly
 
     // ========== GLOBALS ==========
-    let allArticles = [];
+    let allArticles = [];           // all articles ever loaded (for current category)
     let currentCategory = "all";
     let userCountry = null;
     let userCountryName = "World";
@@ -88,11 +84,12 @@
     let autoScrollActive = true;
     let currentView = "home";
     let isLoading = false;
-    let currentFeedIndex = 0;            // for progressive loading
-    let currentFeedsList = [];            // list of feeds for current category
+    let currentFeedIndex = 0;       // index of next feed to fetch
+    let currentFeedsList = [];      // list of feed configs for the current category
     let hasMoreFeeds = true;
+    let batchSize = 2;              // fetch 2 feeds at a time
 
-    // Top News (unchanged)
+    // Top News (unchanged, fully functional)
     let topNewsFeeds = [
         { name: "Google News Top Stories", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
         { name: "Yahoo News", url: "https://www.yahoo.com/news/rss", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Yahoo+News" },
@@ -112,7 +109,7 @@
     let isLoadingTopNews = false;
     let topNewsObserver = null;
 
-    // ========== HELPER FUNCTIONS ==========
+    // ========== HELPERS ==========
     function generateViews(title) {
         let hash = 0;
         for(let i=0;i<title.length;i++) hash = ((hash<<5)-hash)+title.charCodeAt(i);
@@ -136,33 +133,30 @@
         const color = categoryColors[category] || '3b82f6';
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(item.source || category)}`;
     }
-
     async function shareArticle(title, url) {
         if (navigator.share) {
-            try {
-                await navigator.share({ title: title, url: url });
-            } catch (err) { console.log('Share cancelled'); }
+            try { await navigator.share({ title: title, url: url }); } catch(e) {}
         } else {
             navigator.clipboard.writeText(url);
             showToast('Link copied to clipboard!');
         }
     }
 
-    // ========== FETCH FUNCTIONS ==========
+    // ========== FETCH FEED (with cache busting) ==========
     async function fetchSingleFeed(feedCfg) {
         try {
             const fresh = Date.now();
-            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
-            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+            const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
+            const resp = await fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 8).map(item => {
                 let img = feedCfg.imgFallback;
-                if (item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
-                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) img = item.enclosure.link;
-                else if (item.description) {
+                if(item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
+                else if(item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) img = item.enclosure.link;
+                else if(item.description) {
                     const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (match && match[1].startsWith('http')) img = match[1];
+                    if(match && match[1].startsWith('http')) img = match[1];
                 }
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
@@ -174,13 +168,12 @@
         } catch(e) { return []; }
     }
 
+    // Fetch next batch of feeds and add articles
     async function fetchMoreArticles() {
         if (isLoading || !hasMoreFeeds) return false;
         isLoading = true;
         showEndSpinner(true);
         
-        // Get next batch of feeds (2-3 at a time)
-        const batchSize = 2;
         const nextFeeds = currentFeedsList.slice(currentFeedIndex, currentFeedIndex + batchSize);
         if (nextFeeds.length === 0) {
             hasMoreFeeds = false;
@@ -193,15 +186,13 @@
         let newArticles = [];
         results.forEach(r => newArticles.push(...r));
         
-        // Remove duplicates
+        // Remove duplicates (by link)
         const existingLinks = new Set(allArticles.map(a => a.link));
         const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
         
         if (uniqueNew.length) {
             allArticles.push(...uniqueNew);
-            // Keep only last 500 articles to avoid memory bloat
-            if (allArticles.length > 500) allArticles = allArticles.slice(-500);
-            renderNewsFeed();  // re-render with new articles
+            renderNewsFeed();                // re-render the feed with updated articles
             currentFeedIndex += batchSize;
             showToast(`📰 ${uniqueNew.length} new articles`);
         }
@@ -213,13 +204,13 @@
 
     function showEndSpinner(show) {
         let spinner = document.getElementById('endSpinner');
-        if(show && !spinner) { 
-            spinner = document.createElement('div'); 
-            spinner.id = "endSpinner"; 
-            spinner.className = "end-loader"; 
-            spinner.innerHTML = '<div class="loader"></div> Loading more...'; 
+        if(show && !spinner) {
+            spinner = document.createElement('div');
+            spinner.id = "endSpinner";
+            spinner.className = "end-loader";
+            spinner.innerHTML = '<div class="loader"></div> Loading more...';
             if(sentinelElement && sentinelElement.parentNode) {
-                sentinelElement.parentNode.insertBefore(spinner, sentinelElement); 
+                sentinelElement.parentNode.insertBefore(spinner, sentinelElement);
             }
         } else if(!show && spinner) spinner.remove();
     }
@@ -231,17 +222,16 @@
             renderAllCategoryGrouped();
             return;
         }
-        // For non-all categories, show all articles (no limit, infinite scroll adds more)
         const toRender = allArticles.filter(a => a.category === currentCategory);
         if(toRender.length === 0) {
-            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles yet. Loading...</div>';
+            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 Loading articles...</div>';
             return;
         }
         let html = '';
         for(let i=0; i<toRender.length; i++) {
             const art = toRender[i];
             html += renderArticleCard(art);
-            if((i+1) % 5 === 0 && i+1 < toRender.length) html += `<div class="inline-ad"><i class="fas fa-ad"></i> Advertisement — Support our journalism</div>`;
+            if((i+1) % 5 === 0 && i+1 < toRender.length) html += `<div class="inline-ad"><i class="fas fa-ad"></i> Advertisement — Support Amimo</div>`;
         }
         feedDiv.innerHTML = html;
         attachSaveEvents();
@@ -259,7 +249,7 @@
             return allArticles.filter(a => a.category === cat).slice(0, limit);
         }
         let html = '';
-        const localArticles = getArticlesByCategory('Local', 4);
+        const localArticles = getArticlesByCategory('Local', 3);
         if (localArticles.length) {
             html += `<div class="category-section" data-cat="Local">
                         <div class="category-section-title"><i class="fas fa-location-dot"></i> Local News</div>`;
@@ -290,16 +280,7 @@
     }
 
     function getCategoryIcon(cat) {
-        const icons = {
-            'World': 'fa-globe',
-            'Politics': 'fa-landmark',
-            'Technology': 'fa-microchip',
-            'Sports': 'fa-futbol',
-            'Entertainment': 'fa-mask',
-            'Business': 'fa-chart-line',
-            'Health': 'fa-heartbeat',
-            'Local': 'fa-location-dot'
-        };
+        const icons = { 'World':'fa-globe', 'Politics':'fa-landmark', 'Technology':'fa-microchip', 'Sports':'fa-futbol', 'Entertainment':'fa-mask', 'Business':'fa-chart-line', 'Health':'fa-heartbeat', 'Local':'fa-location-dot' };
         return icons[cat] || 'fa-newspaper';
     }
 
@@ -314,7 +295,7 @@
                 <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
                 <div class="news-desc">${escapeHtml(art.description)}</div>
                 <div class="action-row">
-                    <a href="${art.link}" target="_blank" class="btn-primary" style="text-decoration:none;"><i class="fas fa-external-link-alt"></i> Read</a>
+                    <a href="${art.link}" target="_blank" class="btn-primary"><i class="fas fa-external-link-alt"></i> Read</a>
                     <button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save'}</button>
                     <button class="btn-share share-btn" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button>
                 </div>
@@ -328,10 +309,7 @@
     function attachShareEvents() {
         document.querySelectorAll('.share-btn').forEach(btn => { btn.removeEventListener('click', shareHandler); btn.addEventListener('click', shareHandler); });
     }
-    function shareHandler(e) {
-        const btn = e.currentTarget;
-        shareArticle(btn.dataset.title, btn.dataset.url);
-    }
+    function shareHandler(e) { shareArticle(e.currentTarget.dataset.title, e.currentTarget.dataset.url); }
     function saveHandler(e) {
         const btn = e.currentTarget; const link = btn.dataset.link;
         if(!savedArticles.some(s => s.link === link)) {
@@ -347,10 +325,7 @@
         if (currentView === 'saved') renderSavedArticles();
         if (currentCategory === 'all' && currentView === 'home') renderAllCategoryGrouped();
     }
-    function updateSavedCounter() { 
-        const counter = document.getElementById('savedCounter');
-        if(counter) counter.innerText = savedArticles.length; 
-    }
+    function updateSavedCounter() { document.getElementById('savedCounter').innerText = savedArticles.length; }
 
     // ========== INFINITE SCROLL OBSERVER ==========
     function initScrollObserver() {
@@ -372,42 +347,44 @@
         const activePill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
         if(activePill) activePill.classList.add('active');
         
-        // Reset progressive loading state
+        // Reset pagination state
         currentFeedIndex = 0;
         hasMoreFeeds = true;
         isLoading = false;
         
-        // Build feed list for the selected category
         if (cat === 'all') {
-            // For 'all', we don't use infinite scroll; use grouped view
+            // For 'all', we use grouped view (pre-loaded with all articles)
             renderAllCategoryGrouped();
             return;
-        } else {
-            let feeds = [];
-            if (cat === 'Local') {
-                let localFeeds = localMap.get(userCountry) || [];
-                if (localFeeds.length === 0 && userCountry) {
-                    // Fallback: Google News for the country
-                    const googleNewsUrl = `https://news.google.com/rss?hl=en-${userCountry}&gl=${userCountry}&ceid=${userCountry}:en`;
-                    localFeeds = [{ name: `Google News ${userCountryName}`, url: googleNewsUrl, category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Local" }];
-                }
-                if (localFeeds.length === 0) {
-                    // Ultimate fallback: world news
-                    localFeeds = WORLD_FEEDS.slice(0, 5);
-                }
-                feeds = localFeeds;
-            } else {
-                feeds = WORLD_FEEDS.filter(f => f.category === cat);
-                if (feeds.length === 0) feeds = WORLD_FEEDS.slice(0, 10);
-            }
-            currentFeedsList = feeds;
-            // Clear current articles for this category and start fresh
-            allArticles = allArticles.filter(a => a.category === cat);
-            renderNewsFeed();
-            // Start loading first batch
-            await fetchMoreArticles();
-            initScrollObserver();
         }
+        
+        // Build feed list for the selected category
+        let feeds = [];
+        if (cat === 'Local') {
+            // Try to get local feeds for the detected country
+            let localFeeds = localMap.get(userCountry) || [];
+            if (localFeeds.length === 0 && userCountry) {
+                // Fallback to Google News for that country
+                const googleUrl = `https://news.google.com/rss?hl=en-${userCountry}&gl=${userCountry}&ceid=${userCountry}:en`;
+                localFeeds = [{ name: `Google News ${userCountryName}`, url: googleUrl, category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Local" }];
+            }
+            if (localFeeds.length === 0) {
+                // Ultimate fallback: world news
+                localFeeds = WORLD_FEEDS.slice(0, 5);
+            }
+            feeds = localFeeds;
+        } else {
+            feeds = WORLD_FEEDS.filter(f => f.category === cat);
+            if (feeds.length === 0) feeds = WORLD_FEEDS.slice(0, 10);
+        }
+        currentFeedsList = feeds;
+        // Clear existing articles for this category (start fresh)
+        allArticles = allArticles.filter(a => a.category !== cat);
+        renderNewsFeed();
+        // Load first batch
+        await fetchMoreArticles();
+        // Start scroll observer
+        initScrollObserver();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -416,10 +393,7 @@
         const badge = document.getElementById('countryBadge');
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> detecting...`;
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
-            const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-            clearTimeout(timeoutId);
+            const res = await fetch('https://ipapi.co/json/');
             if (res.ok) {
                 const d = await res.json();
                 if (d.country_code) {
@@ -435,20 +409,20 @@
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
     }
 
-    // ========== TOP NEWS FUNCTIONS (unchanged) ==========
+    // ========== TOP NEWS (unchanged, fully functional) ==========
     async function fetchTopNewsFeed(feedCfg) {
         try {
             const fresh = Date.now();
-            const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
-            const resp = await fetch(proxyUrl, { cache: 'no-store' });
+            const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
+            const resp = await fetch(url, { cache: 'no-store' });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 8).map(item => {
                 let img = feedCfg.imgFallback;
-                if (item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
-                else if (item.description) {
+                if(item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
+                else if(item.description) {
                     const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (match && match[1].startsWith('http')) img = match[1];
+                    if(match && match[1].startsWith('http')) img = match[1];
                 }
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
@@ -494,20 +468,18 @@
             html += `<div class="news-card"><img class="card-img" src="${imgSrc}" onerror="this.src='https://placehold.co/400x300/f59e0b/white?text=Top'"><div class="card-body"><div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div><div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div><div class="news-desc">${escapeHtml(art.description)}</div><div class="action-row"><a href="${art.link}" target="_blank" class="btn-primary">Read</a><button class="btn-save save-top-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save'}</button><button class="btn-share share-top-btn" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button></div></div></div>`;
         });
         html += `</div>`;
-        if (topNewsLimit < topNewsArticles.length) html += `<div id="topNewsLoadMoreSentinel" style="height: 10px; margin: 10px 0;"></div>`;
+        if (topNewsLimit < topNewsArticles.length) html += `<div id="topNewsLoadMoreSentinel" style="height: 10px;"></div>`;
         html += `</div>`;
         container.innerHTML = html;
-        document.querySelectorAll('.save-top-btn').forEach(btn => { btn.addEventListener('click', saveHandler); });
-        document.querySelectorAll('.share-top-btn').forEach(btn => { btn.addEventListener('click', shareHandler); });
+        document.querySelectorAll('.save-top-btn').forEach(btn => btn.addEventListener('click', saveHandler));
+        document.querySelectorAll('.share-top-btn').forEach(btn => btn.addEventListener('click', shareHandler));
     }
     function setupTopNewsInfiniteScroll() {
         if (topNewsObserver) topNewsObserver.disconnect();
         const sentinel = document.getElementById('topNewsLoadMoreSentinel');
         if (!sentinel) return;
         topNewsObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !isLoadingTopNews && topNewsLimit < topNewsArticles.length) {
-                loadTopNews(true);
-            }
+            if (entries[0].isIntersecting && !isLoadingTopNews && topNewsLimit < topNewsArticles.length) loadTopNews(true);
         }, { threshold: 0.1 });
         topNewsObserver.observe(sentinel);
     }
@@ -540,7 +512,7 @@
             });
         });
         document.querySelectorAll('.share-saved-btn').forEach(btn => {
-            btn.addEventListener('click', () => { shareArticle(btn.dataset.title, btn.dataset.url); });
+            btn.addEventListener('click', () => shareArticle(btn.dataset.title, btn.dataset.url));
         });
     }
 
@@ -553,7 +525,6 @@
         document.querySelector('.nav-item[data-nav="home"]').classList.add('active');
         if (carouselInterval) clearInterval(carouselInterval);
         startCarouselScroll();
-        // Refresh current category view
         switchCategory(currentCategory);
     }
     function showSavedView() {
@@ -576,10 +547,9 @@
             const catArticles = allArticles.filter(a => a.category === cat).slice(0, 2);
             selected.push(...catArticles);
         }
-        const trendingItems = selected.slice(0, 16);
         const carousel = document.getElementById('trendingCarousel');
-        if(!trendingItems.length) { carousel.innerHTML = '<div>No trending</div>'; return; }
-        carousel.innerHTML = trendingItems.map(art => {
+        if(!selected.length) { carousel.innerHTML = '<div>No trending</div>'; return; }
+        carousel.innerHTML = selected.map(art => {
             const imgSrc = getImageUrl(art, art.category);
             return `<div class="trend-card-full"><img src="${imgSrc}"><div class="trend-info"><h3><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></h3><div class="trend-meta"><span>${art.source}</span><span>${formatViews(art.views)} views</span></div><button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button></div></div>`;
         }).join('');
@@ -602,8 +572,8 @@
         const container = document.getElementById('trendingCarousel');
         if(!container) return;
         autoScrollActive = true;
-        container.addEventListener('mouseenter', () => { autoScrollActive = false; });
-        container.addEventListener('mouseleave', () => { autoScrollActive = true; });
+        container.addEventListener('mouseenter', () => autoScrollActive = false);
+        container.addEventListener('mouseleave', () => autoScrollActive = true);
         carouselInterval = setInterval(() => {
             if(!autoScrollActive) return;
             const maxScroll = container.scrollWidth - container.clientWidth;
@@ -617,48 +587,44 @@
     // ========== INITIAL LOAD ==========
     async function init() {
         await detectLocation();
-        // Start with 'all' category (grouped view) – it has its own loading method
-        // For 'all', we load articles gradually as well, but we'll use the existing feed list
-        currentCategory = 'all';
-        // Pre-load a few articles to show initially
+        // Build initial feed list for 'all' category (grouped view)
+        // For grouped view, we need a rich set of articles from all feeds
         const initialFeeds = [...WORLD_FEEDS];
         const localFeeds = localMap.get(userCountry) || [];
         if (localFeeds.length) initialFeeds.push(...localFeeds);
         currentFeedsList = initialFeeds;
         currentFeedIndex = 0;
         hasMoreFeeds = true;
-        await fetchMoreArticles(); // loads first 2 feeds
+        // Load first batch of articles (2 feeds)
+        await fetchMoreArticles();
         renderAllCategoryGrouped();
-        // Load Top News
         loadTopNews(false);
         startCarouselScroll();
         updateSavedCounter();
-        
+
         // Event listeners
         document.querySelectorAll('.cat-pill').forEach(pill => pill.addEventListener('click', () => switchCategory(pill.dataset.cat)));
         const themeSwitch = document.getElementById('themeSwitch');
         if(themeSwitch) {
-            themeSwitch.addEventListener('change', (e) => { 
-                if(e.target.checked) document.body.classList.add('dark'); 
-                else document.body.classList.remove('dark'); 
-                localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light'); 
+            themeSwitch.addEventListener('change', (e) => {
+                if(e.target.checked) document.body.classList.add('dark');
+                else document.body.classList.remove('dark');
+                localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light');
             });
             if(localStorage.getItem('blue_theme') === 'dark') { document.body.classList.add('dark'); themeSwitch.checked = true; }
         }
-        // Side menu
-        const sideMenu = document.getElementById('sideMenu'), overlayDiv = document.getElementById('overlay');
-        function closeMenu() { if(sideMenu) sideMenu.classList.remove('open'); if(overlayDiv) overlayDiv.classList.remove('show'); }
-        document.getElementById('hamburgerBtn').onclick = () => { sideMenu.classList.add('open'); overlayDiv.classList.add('show'); };
+        const sideMenu = document.getElementById('sideMenu'), overlay = document.getElementById('overlay');
+        function closeMenu() { sideMenu.classList.remove('open'); overlay.classList.remove('show'); }
+        document.getElementById('hamburgerBtn').onclick = () => { sideMenu.classList.add('open'); overlay.classList.add('show'); };
         document.getElementById('closeMenuBtn').onclick = closeMenu;
-        overlayDiv.onclick = closeMenu;
+        overlay.onclick = closeMenu;
         document.getElementById('menuHome').addEventListener('click', () => { showHomeView(); closeMenu(); });
         document.getElementById('menuSaved').addEventListener('click', () => { showSavedView(); closeMenu(); });
         document.getElementById('menuTrending').addEventListener('click', () => { document.getElementById('trendingCarousel').scrollIntoView({ behavior: 'smooth' }); closeMenu(); });
-        document.getElementById('menuAbout').addEventListener('click', () => { alert("Amimo Blue – Continuous infinite scroll\nLoads articles progressively like TikTok/Facebook"); closeMenu(); });
+        document.getElementById('menuAbout').addEventListener('click', () => { alert("Amimo Blue – Continuous infinite scroll\nLocal news fallback to Google News\nReload works"); closeMenu(); });
         document.getElementById('viewSavedBtn').onclick = () => showSavedView();
         document.getElementById('searchBtn').addEventListener('click', () => { const q = document.getElementById('searchInput').value.trim(); if(q) window.location.href = `seachresult.html?q=${encodeURIComponent(q)}`; });
         document.getElementById('searchInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('searchBtn').click(); });
-        // Floating search
         const searchZone = document.getElementById('searchZone');
         document.getElementById('searchInput').addEventListener('focus', () => {
             searchZone.classList.add('floating-top');
