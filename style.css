@@ -340,6 +340,7 @@ body {
     background: var(--card-bg);
     border-radius: 28px;
     overflow: hidden;
+    gap: 1rem;
     box-shadow: var(--shadow-md);
     transition: all 0.25s ease;
     width: 100%;
