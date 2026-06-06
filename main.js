@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Local News Fixed + Reload Working) =====================
+// ===================== MAIN.JS - Amimo Discovery (Infinite Scroll Fixed + More Data) =====================
 (function() {
     // ========== RSS FEEDS (EXPANDED - same as before) ==========
     const WORLD_FEEDS = [
@@ -345,6 +345,7 @@
         topNewsObserver.observe(sentinel);
     }
 
+    // ========== FETCH MORE ARTICLES (INCREASED BATCH SIZE) ==========
     async function fetchMoreForCategory(category) {
         let feedsToFetch = [];
         if (category === 'all') {
@@ -361,8 +362,10 @@
         }
         if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
         
+        // Increase number of feeds fetched per batch to consume more internet and get more articles
+        const BATCH_SIZE = 12;  // was 5, now 12
         let newArticles = [];
-        const limitedFeeds = feedsToFetch.slice(0, 5);
+        const limitedFeeds = feedsToFetch.slice(0, BATCH_SIZE);
         const results = await Promise.all(limitedFeeds.map(f => fetchFeed(f)));
         results.forEach(r => newArticles.push(...r));
         const existingLinks = new Set(allArticles.map(a => a.link));
@@ -436,6 +439,8 @@
                     setupTopNewsInfiniteScroll();
                 }
             }
+            // Re-enable infinite scroll for 'all' category
+            initScrollObserver();
         } else {
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'none';
@@ -549,11 +554,11 @@
     }
 
     function attachSaveEvents() {
-        document.querySelectorAll('.save-btn').forEach(btn => { btn.removeEventListener('click', saveHandler); btn.addEventListener('click', saveHandler); });
+        document.querySelectorAll('.save-btn, .save-top-btn').forEach(btn => { btn.removeEventListener('click', saveHandler); btn.addEventListener('click', saveHandler); });
     }
     
     function attachShareEvents() {
-        document.querySelectorAll('.share-btn').forEach(btn => {
+        document.querySelectorAll('.share-btn, .share-top-btn').forEach(btn => {
             btn.removeEventListener('click', shareHandler);
             btn.addEventListener('click', shareHandler);
         });
@@ -660,21 +665,18 @@
 
     // ========== SENTINEL MANAGEMENT (FIXED) ==========
     function ensureSentinel() {
-        // Remove existing sentinel if any
         const existing = document.getElementById('loadSentinel');
         if (existing && existing.parentNode) existing.remove();
-        // Create new sentinel
         const sentinel = document.createElement('div');
         sentinel.id = 'loadSentinel';
         sentinel.style.height = '10px';
         sentinel.style.margin = '20px 0';
         sentinel.style.textAlign = 'center';
-        // Append after news feed container
         const feedDiv = document.getElementById('newsFeed');
         if (feedDiv && feedDiv.parentNode) {
             feedDiv.parentNode.insertBefore(sentinel, feedDiv.nextSibling);
         } else {
-            document.body.appendChild(sentinel); // fallback
+            document.body.appendChild(sentinel);
         }
         sentinelElement = sentinel;
     }
@@ -683,7 +685,7 @@
     
     function showRetryButton(message, retryCallback) {
         clearRetryButton();
-        ensureSentinel(); // ensure sentinel exists before inserting
+        ensureSentinel();
         const wrapper = document.createElement('div');
         wrapper.className = 'end-loader';
         wrapper.innerHTML = `<div><i class="fas fa-exclamation-triangle"></i> ${message}</div><button class="retry-button"><i class="fas fa-sync-alt"></i> Reload More</button>`;
@@ -715,7 +717,7 @@
     }
 
     async function attemptLoadMore() {
-        if(isLoadingMore || isLoadingEndless || currentCategory === 'all') return false;
+        if(isLoadingMore || isLoadingEndless) return false;
         isLoadingEndless = true;
         showEndSpinner(true);
         let newCount = 0;
@@ -757,45 +759,66 @@
     function initScrollObserver() {
         if(scrollObserver) scrollObserver.disconnect();
         if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
-        ensureSentinel(); // make sure sentinel exists
+        ensureSentinel();
         scrollObserver = new IntersectionObserver(async (entries) => {
             const entry = entries[0];
-            if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home' && currentCategory !== 'all') {
-                if(displayLimit < currentFiltered.length) {
-                    isLoadingMore = true;
-                    showEndSpinner(true);
-                    setTimeout(() => {
-                        displayLimit = Math.min(displayLimit + 5, currentFiltered.length);
-                        renderNewsFeed();
-                        isLoadingMore = false;
-                        showEndSpinner(false);
-                        if (displayLimit + 5 >= currentFiltered.length) {
-                            setTimeout(() => attemptBackgroundFetch(), 200);
-                        }
-                    }, 300);
-                } 
-                else if (displayLimit >= currentFiltered.length && !isLoadingEndless && hasMoreArticles !== false) {
-                    if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
-                    attemptLoadMore();
-                    infiniteScrollTimer = setInterval(async () => {
-                        if(!isLoadingEndless && !isLoadingMore && currentCategory !== 'all' && hasMoreArticles !== false) {
-                            const success = await attemptLoadMore();
-                            if(!success || hasMoreArticles === false) {
+            if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home') {
+                if(currentCategory !== 'all') {
+                    // For specific categories, first increase displayLimit if more articles exist
+                    if(displayLimit < currentFiltered.length) {
+                        isLoadingMore = true;
+                        showEndSpinner(true);
+                        setTimeout(() => {
+                            displayLimit = Math.min(displayLimit + 10, currentFiltered.length);
+                            renderNewsFeed();
+                            isLoadingMore = false;
+                            showEndSpinner(false);
+                            if (displayLimit + 5 >= currentFiltered.length) {
+                                setTimeout(() => attemptBackgroundFetch(), 200);
+                            }
+                        }, 300);
+                    } 
+                    else if (displayLimit >= currentFiltered.length && !isLoadingEndless && hasMoreArticles !== false) {
+                        if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
+                        attemptLoadMore();
+                        infiniteScrollTimer = setInterval(async () => {
+                            if(!isLoadingEndless && !isLoadingMore && hasMoreArticles !== false) {
+                                const success = await attemptLoadMore();
+                                if(!success || hasMoreArticles === false) {
+                                    clearInterval(infiniteScrollTimer);
+                                    infiniteScrollTimer = null;
+                                }
+                            } else if(hasMoreArticles === false) {
                                 clearInterval(infiniteScrollTimer);
                                 infiniteScrollTimer = null;
                             }
-                        } else if(hasMoreArticles === false) {
-                            clearInterval(infiniteScrollTimer);
-                            infiniteScrollTimer = null;
-                        }
-                    }, 3000);
+                        }, 3000);
+                    }
+                } else {
+                    // For 'all' category, we just load more articles directly
+                    if(!isLoadingEndless && hasMoreArticles !== false) {
+                        if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
+                        attemptLoadMore();
+                        infiniteScrollTimer = setInterval(async () => {
+                            if(!isLoadingEndless && !isLoadingMore && hasMoreArticles !== false) {
+                                const success = await attemptLoadMore();
+                                if(!success || hasMoreArticles === false) {
+                                    clearInterval(infiniteScrollTimer);
+                                    infiniteScrollTimer = null;
+                                }
+                            } else if(hasMoreArticles === false) {
+                                clearInterval(infiniteScrollTimer);
+                                infiniteScrollTimer = null;
+                            }
+                        }, 3000);
+                    }
                 }
             } else if(!entry.isIntersecting && infiniteScrollTimer) {
                 clearInterval(infiniteScrollTimer);
                 infiniteScrollTimer = null;
             }
         }, { threshold: 0.2, rootMargin: "0px 0px 300px 0px" });
-        if(sentinelElement && currentCategory !== 'all') {
+        if(sentinelElement) {
             scrollObserver.observe(sentinelElement);
         }
     }
@@ -812,7 +835,7 @@
         if(infiniteScrollTimer) { clearInterval(infiniteScrollTimer); infiniteScrollTimer = null; }
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (cat !== 'all') { setTimeout(() => initScrollObserver(), 100); }
+        setTimeout(() => initScrollObserver(), 100);
     }
 
     async function detectLocation() {
@@ -972,7 +995,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v17.0\n✅ Local news fixed\n🔄 Reload button works\n📱 Continuous infinite scroll"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v17.1\n✅ Infinite scroll works for ALL categories\n📡 More data fetched per scroll\n🔄 Reload button works\n📱 Continuous loading"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
