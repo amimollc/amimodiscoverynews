@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - Amimo Discovery (Infinite Scroll Fixed + More Data) =====================
+// ===================== MAIN.JS - Amimo Discovery (Local First + Reload + Infinite) =====================
 (function() {
-    // ========== RSS FEEDS (EXPANDED - same as before) ==========
+    // ========== RSS FEEDS (EXPANDED) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -116,7 +116,6 @@
         { name: "Daily Nation", url: "https://www.nation.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Daily+Nation" },
         { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Star" }
     ]);
-    // Fallback local feeds for unknown countries
     const FALLBACK_LOCAL_FEEDS = [
         { name: "World News (VOA)", url: "https://www.voanews.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=World+News" }
     ];
@@ -132,7 +131,7 @@
     let isLoadingEndless = false;
     let savedArticles = JSON.parse(localStorage.getItem("amimo_saved") || "[]");
     let scrollObserver = null;
-    let sentinelElement = null; // Will be created dynamically
+    let sentinelElement = null;
     let retryContainer = null;
     let carouselInterval = null;
     let autoScrollActive = true;
@@ -140,7 +139,7 @@
     let hasMoreArticles = true;
     let infiniteScrollTimer = null;
 
-    // Top News specific variables
+    // Top News
     let topNewsFeeds = [
         { name: "Google News Top Stories", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
         { name: "Yahoo News", url: "https://www.yahoo.com/news/rss", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Yahoo+News" },
@@ -187,40 +186,34 @@
 
     async function shareArticle(title, url) {
         if (navigator.share) {
-            try {
-                await navigator.share({ title: title, url: url });
-            } catch (err) { console.log('Share cancelled'); }
+            try { await navigator.share({ title, url }); } catch(e) {}
         } else {
             navigator.clipboard.writeText(url);
-            showToast('Link copied to clipboard!');
+            showToast('Link copied!');
         }
     }
 
-    // ========== FETCH FUNCTIONS (with cache busting) ==========
+    // ========== FETCH FUNCTIONS ==========
     async function fetchFeed(feedCfg) {
         try {
             const fresh = Date.now();
             const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
-            const resp = await fetch(proxyUrl, {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-            });
+            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 12).map(item => {
                 let img = feedCfg.imgFallback;
-                if (item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
-                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) img = item.media.thumbnail.url;
-                else if (item['media:thumbnail'] && item['media:thumbnail'].url) img = item['media:thumbnail'].url;
-                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) img = item.enclosure.link;
-                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) img = item.enclosure.link;
+                if (item.thumbnail?.startsWith('http')) img = item.thumbnail;
+                else if (item.media?.thumbnail?.url) img = item.media.thumbnail.url;
+                else if (item['media:thumbnail']?.url) img = item['media:thumbnail'].url;
+                else if (item.enclosure?.link && (item.enclosure.type?.startsWith('image') || item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i))) img = item.enclosure.link;
                 else if (item.description) {
                     const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (match && match[1].startsWith('http')) img = match[1];
+                    if (match?.[1]?.startsWith('http')) img = match[1];
                 }
                 if (item['content:encoded']) {
                     const match = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (match && match[1].startsWith('http')) img = match[1];
+                    if (match?.[1]?.startsWith('http')) img = match[1];
                 }
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
@@ -235,23 +228,17 @@
         try {
             const fresh = Date.now();
             const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedCfg.url)}&_fresh=${fresh}`;
-            const resp = await fetch(proxyUrl, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+            const resp = await fetch(proxyUrl, { cache: 'no-store' });
             const data = await resp.json();
             if(data.status !== 'ok') return [];
             return data.items.slice(0, 10).map(item => {
                 let img = feedCfg.imgFallback;
-                if (item.thumbnail && item.thumbnail.startsWith('http')) img = item.thumbnail;
-                else if (item.media && item.media.thumbnail && item.media.thumbnail.url) img = item.media.thumbnail.url;
-                else if (item['media:thumbnail'] && item['media:thumbnail'].url) img = item['media:thumbnail'].url;
-                else if (item.enclosure && item.enclosure.link && item.enclosure.type && item.enclosure.type.startsWith('image')) img = item.enclosure.link;
-                else if (item.enclosure && item.enclosure.link && item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i)) img = item.enclosure.link;
+                if (item.thumbnail?.startsWith('http')) img = item.thumbnail;
+                else if (item.media?.thumbnail?.url) img = item.media.thumbnail.url;
+                else if (item.enclosure?.link && (item.enclosure.type?.startsWith('image') || item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i))) img = item.enclosure.link;
                 else if (item.description) {
                     const match = item.description.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (match && match[1].startsWith('http')) img = match[1];
-                }
-                if (item['content:encoded']) {
-                    const match = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (match && match[1].startsWith('http')) img = match[1];
+                    if (match?.[1]?.startsWith('http')) img = match[1];
                 }
                 return {
                     title: item.title, link: item.link, pubDate: item.pubDate,
@@ -268,14 +255,13 @@
         isLoadingTopNews = true;
         const container = document.getElementById('topNewsContainer');
         if (!container) { isLoadingTopNews = false; return; }
-        
         if (!loadMore) {
             topNewsArticles = [];
             const results = await Promise.all(topNewsFeeds.map(f => fetchTopNewsFeed(f)));
             results.forEach(r => topNewsArticles.push(...r));
-            const uniqueMap = new Map();
-            topNewsArticles.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
-            topNewsArticles = Array.from(uniqueMap.values());
+            const unique = new Map();
+            topNewsArticles.forEach(a => { if(!unique.has(a.link)) unique.set(a.link, a); });
+            topNewsArticles = Array.from(unique.values());
             topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
             topNewsLimit = 5;
         } else {
@@ -289,15 +275,10 @@
     function renderTopNews() {
         const container = document.getElementById('topNewsContainer');
         if (!container) return;
-        if (!topNewsArticles.length) {
-            container.style.display = 'none';
-            return;
-        }
+        if (!topNewsArticles.length) { container.style.display = 'none'; return; }
         container.style.display = 'block';
         const toShow = topNewsArticles.slice(0, topNewsLimit);
-        let html = `<div class="top-news-section">
-                        <div class="top-news-title"><i class="fas fa-chart-line"></i> 🔥 Top News</div>
-                        <div class="top-news-grid" id="topNewsGrid">`;
+        let html = `<div class="top-news-section"><div class="top-news-title"><i class="fas fa-chart-line"></i> 🔥 Top News</div><div class="top-news-grid">`;
         toShow.forEach(art => {
             const isSaved = savedArticles.some(s => s.link === art.link);
             const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
@@ -317,20 +298,11 @@
                     </div>`;
         });
         html += `</div>`;
-        if (topNewsLimit < topNewsArticles.length) {
-            html += `<div id="topNewsLoadMoreSentinel" style="height: 10px; margin: 10px 0;"></div>`;
-        }
+        if (topNewsLimit < topNewsArticles.length) html += `<div id="topNewsLoadMoreSentinel" style="height:10px;margin:10px 0;"></div>`;
         html += `</div>`;
         container.innerHTML = html;
-        
-        document.querySelectorAll('.save-top-btn').forEach(btn => {
-            btn.removeEventListener('click', saveHandler);
-            btn.addEventListener('click', saveHandler);
-        });
-        document.querySelectorAll('.share-top-btn').forEach(btn => {
-            btn.removeEventListener('click', shareHandler);
-            btn.addEventListener('click', shareHandler);
-        });
+        document.querySelectorAll('.save-top-btn').forEach(btn => { btn.removeEventListener('click', saveHandler); btn.addEventListener('click', saveHandler); });
+        document.querySelectorAll('.share-top-btn').forEach(btn => { btn.removeEventListener('click', shareHandler); btn.addEventListener('click', shareHandler); });
     }
 
     function setupTopNewsInfiniteScroll() {
@@ -338,35 +310,80 @@
         const sentinel = document.getElementById('topNewsLoadMoreSentinel');
         if (!sentinel) return;
         topNewsObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && !isLoadingTopNews && topNewsLimit < topNewsArticles.length) {
-                loadTopNews(true);
-            }
+            if (entries[0].isIntersecting && !isLoadingTopNews && topNewsLimit < topNewsArticles.length) loadTopNews(true);
         }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
         topNewsObserver.observe(sentinel);
     }
 
-    // ========== FETCH MORE ARTICLES (INCREASED BATCH SIZE) ==========
+    // ========== CORE LOAD (LOCAL FIRST) ==========
+    async function fetchLocalFeedsFirst() {
+        let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+        let localArticles = [];
+        for (let feed of localFeeds) {
+            const articles = await fetchFeed(feed);
+            localArticles.push(...articles);
+        }
+        return localArticles;
+    }
+
+    async function fetchWorldFeeds() {
+        let allWorld = [];
+        for (let i = 0; i < WORLD_FEEDS.length; i += 8) {
+            const batch = WORLD_FEEDS.slice(i, i+8);
+            const results = await Promise.all(batch.map(f => fetchFeed(f)));
+            results.forEach(r => allWorld.push(...r));
+            await new Promise(r => setTimeout(r, 100));
+        }
+        return allWorld;
+    }
+
+    async function loadAllFeeds() {
+        const statusDiv = document.getElementById('statusMsg');
+        statusDiv.innerHTML = '<div class="loader"></div> Fetching local news first...';
+        allArticles = [];
+        
+        // 1. Fetch local news first
+        let localArticles = await fetchLocalFeedsFirst();
+        allArticles.push(...localArticles);
+        statusDiv.innerHTML = `✅ Local news loaded (${localArticles.length} stories). Fetching world news...`;
+        
+        // 2. Fetch world & other categories
+        let worldArticles = await fetchWorldFeeds();
+        allArticles.push(...worldArticles);
+        
+        // 3. Deduplicate
+        const uniqueMap = new Map();
+        allArticles.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
+        allArticles = Array.from(uniqueMap.values());
+        allArticles.forEach(a => { a.views = generateViews(a.title); });
+        allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+        
+        statusDiv.innerHTML = `✅ ${allArticles.length} total stories ready`;
+        storeAllArticlesForSearch();
+        applyCategoryFilter();
+        renderTrendingCarousel();
+        updateSavedCounter();
+    }
+
+    // ========== FETCH MORE (for infinite scroll) ==========
     async function fetchMoreForCategory(category) {
         let feedsToFetch = [];
         if (category === 'all') {
-            const worldFeeds = WORLD_FEEDS.filter(f => f.category !== 'Local');
-            let localFeeds = localMap.get(userCountry) || [];
-            if (localFeeds.length === 0) localFeeds = FALLBACK_LOCAL_FEEDS;
-            feedsToFetch = [...worldFeeds, ...localFeeds];
+            // For 'all', we fetch a mix: local + some world
+            let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+            feedsToFetch = [...localFeeds, ...WORLD_FEEDS.slice(0, 10)];
         } else if (category === 'Local') {
-            let localFeeds = localMap.get(userCountry) || [];
-            if (localFeeds.length === 0) localFeeds = FALLBACK_LOCAL_FEEDS;
+            let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
             feedsToFetch = localFeeds;
         } else {
             feedsToFetch = WORLD_FEEDS.filter(f => f.category === category);
         }
-        if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
+        if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 12);
         
-        // Increase number of feeds fetched per batch to consume more internet and get more articles
-        const BATCH_SIZE = 12;  // was 5, now 12
-        let newArticles = [];
+        const BATCH_SIZE = 12;
         const limitedFeeds = feedsToFetch.slice(0, BATCH_SIZE);
         const results = await Promise.all(limitedFeeds.map(f => fetchFeed(f)));
+        let newArticles = [];
         results.forEach(r => newArticles.push(...r));
         const existingLinks = new Set(allArticles.map(a => a.link));
         const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
@@ -396,36 +413,7 @@
         window.location.href = `seachresult.html?q=${encodeURIComponent(query)}`;
     }
 
-    async function loadAllFeeds() {
-        const statusDiv = document.getElementById('statusMsg');
-        statusDiv.innerHTML = '<div class="loader"></div> Fetching latest news from 50+ providers...';
-        allArticles = [];
-        const allFeeds = [...WORLD_FEEDS];
-        let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
-        allFeeds.push(...localFeeds);
-        
-        let allArts = [];
-        const batchSize = 8;
-        for (let i = 0; i < allFeeds.length; i += batchSize) {
-            const batch = allFeeds.slice(i, i + batchSize);
-            const results = await Promise.all(batch.map(f => fetchFeed(f)));
-            results.forEach(r => allArts.push(...r));
-            await new Promise(r => setTimeout(r, 100));
-        }
-        
-        const uniqueMap = new Map();
-        allArts.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
-        allArticles = Array.from(uniqueMap.values());
-        allArticles.forEach(a => { a.views = generateViews(a.title); });
-        allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-        statusDiv.innerHTML = `✅ ${allArticles.length} fresh stories ready`;
-        storeAllArticlesForSearch();
-        applyCategoryFilter();
-        renderTrendingCarousel();
-        updateSavedCounter();
-    }
-
-    // ========== RENDER FUNCTIONS ==========
+    // ========== RENDER ==========
     function applyCategoryFilter() {
         if (currentCategory === 'all') {
             renderAllCategoryGrouped();
@@ -433,20 +421,14 @@
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) {
                 if (topNewsArticles.length === 0) loadTopNews(false);
-                else {
-                    topContainer.style.display = 'block';
-                    renderTopNews();
-                    setupTopNewsInfiniteScroll();
-                }
+                else { topContainer.style.display = 'block'; renderTopNews(); setupTopNewsInfiniteScroll(); }
             }
-            // Re-enable infinite scroll for 'all' category
-            initScrollObserver();
+            initScrollObserver(); // enable infinite scroll for 'all'
         } else {
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'none';
             if (currentCategory === 'Local') {
-                let localArticles = allArticles.filter(a => a.category === 'Local');
-                currentFiltered = localArticles;
+                currentFiltered = allArticles.filter(a => a.category === 'Local');
             } else {
                 currentFiltered = allArticles.filter(a => a.category === currentCategory);
             }
@@ -458,26 +440,13 @@
 
     function renderAllCategoryGrouped() {
         const feedDiv = document.getElementById('newsFeed');
-        if (!allArticles.length) {
-            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles available</div>';
-            return;
-        }
-        const categoriesOrder = ['World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
-        function getArticlesByCategory(cat, limit) {
-            return allArticles.filter(a => a.category === cat).slice(0, limit);
-        }
+        if (!allArticles.length) { feedDiv.innerHTML = '<div style="padding:2rem;text-align:center;">📭 No articles</div>'; return; }
+        const categoriesOrder = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
+        function getArticlesByCategory(cat, limit) { return allArticles.filter(a => a.category === cat).slice(0, limit); }
         let html = '';
-        const localArticles = getArticlesByCategory('Local', 3);
-        if (localArticles.length) {
-            html += `<div class="category-section" data-cat="Local">
-                        <div class="category-section-title"><i class="fas fa-location-dot"></i> Local News</div>`;
-            localArticles.forEach(art => { html += renderArticleCard(art); });
-            html += `<button class="show-more-btn" data-target-cat="Local"><i class="fas fa-chevron-right"></i> Show More Local News</button>
-                    </div>`;
-        }
         for (let cat of categoriesOrder) {
-            const articleCount = Math.floor(Math.random() * 4) + 2;
-            const catArticles = getArticlesByCategory(cat, articleCount);
+            const limit = (cat === 'Local') ? 6 : 3;
+            const catArticles = getArticlesByCategory(cat, limit);
             if (catArticles.length) {
                 html += `<div class="category-section" data-cat="${cat}">
                             <div class="category-section-title"><i class="fas ${getCategoryIcon(cat)}"></i> ${cat}</div>`;
@@ -488,26 +457,14 @@
         }
         feedDiv.innerHTML = html;
         document.querySelectorAll('.show-more-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const targetCat = btn.dataset.targetCat;
-                if (targetCat) switchCategory(targetCat);
-            });
+            btn.addEventListener('click', () => switchCategory(btn.dataset.targetCat));
         });
         attachSaveEvents();
         attachShareEvents();
     }
 
     function getCategoryIcon(cat) {
-        const icons = {
-            'World': 'fa-globe',
-            'Politics': 'fa-landmark',
-            'Technology': 'fa-microchip',
-            'Sports': 'fa-futbol',
-            'Entertainment': 'fa-mask',
-            'Business': 'fa-chart-line',
-            'Health': 'fa-heartbeat',
-            'Local': 'fa-location-dot'
-        };
+        const icons = { 'Local':'fa-location-dot', 'World':'fa-globe', 'Politics':'fa-landmark', 'Technology':'fa-microchip', 'Sports':'fa-futbol', 'Entertainment':'fa-mask', 'Business':'fa-chart-line', 'Health':'fa-heartbeat' };
         return icons[cat] || 'fa-newspaper';
     }
 
@@ -522,7 +479,7 @@
                 <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
                 <div class="news-desc">${escapeHtml(art.description)}</div>
                 <div class="action-row">
-                    <a href="${art.link}" target="_blank" class="btn-primary" style="text-decoration:none;"><i class="fas fa-external-link-alt"></i> Read</a>
+                    <a href="${art.link}" target="_blank" class="btn-primary"><i class="fas fa-external-link-alt"></i> Read</a>
                     <button class="btn-save save-btn" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${escapeHtml(art.source)}" data-desc="${escapeHtml(art.description)}">${isSaved ? '✅ Saved' : '💾 Save'}</button>
                     <button class="btn-share share-btn" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button>
                 </div>
@@ -531,21 +488,14 @@
     }
 
     function renderNewsFeed() {
-        if (currentCategory === 'all') {
-            renderAllCategoryGrouped();
-            return;
-        }
+        if (currentCategory === 'all') { renderAllCategoryGrouped(); return; }
         const feedDiv = document.getElementById('newsFeed');
         const toRender = currentFiltered.slice(0, displayLimit);
-        if(toRender.length === 0) { 
-            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles in this category. Pull to refresh or check back later.</div>'; 
-            return; 
-        }
+        if(toRender.length === 0) { feedDiv.innerHTML = '<div style="padding:2rem;text-align:center;">📭 No articles</div>'; return; }
         let html = '';
         for(let i=0; i<toRender.length; i++) {
-            const art = toRender[i];
-            html += renderArticleCard(art);
-            if((i+1) % 5 === 0 && i+1 < toRender.length) html += `<div class="inline-ad"><i class="fas fa-ad"></i> Advertisement — Support our journalism</div>`;
+            html += renderArticleCard(toRender[i]);
+            if((i+1) % 5 === 0 && i+1 < toRender.length) html += `<div class="inline-ad"><i class="fas fa-ad"></i> Advertisement</div>`;
         }
         feedDiv.innerHTML = html;
         attachSaveEvents();
@@ -556,23 +506,13 @@
     function attachSaveEvents() {
         document.querySelectorAll('.save-btn, .save-top-btn').forEach(btn => { btn.removeEventListener('click', saveHandler); btn.addEventListener('click', saveHandler); });
     }
-    
     function attachShareEvents() {
-        document.querySelectorAll('.share-btn, .share-top-btn').forEach(btn => {
-            btn.removeEventListener('click', shareHandler);
-            btn.addEventListener('click', shareHandler);
-        });
+        document.querySelectorAll('.share-btn, .share-top-btn').forEach(btn => { btn.removeEventListener('click', shareHandler); btn.addEventListener('click', shareHandler); });
     }
-    
-    function shareHandler(e) {
-        const btn = e.currentTarget;
-        const url = btn.dataset.url;
-        const title = btn.dataset.title;
-        shareArticle(title, url);
-    }
-    
+    function shareHandler(e) { shareArticle(e.currentTarget.dataset.title, e.currentTarget.dataset.url); }
     function saveHandler(e) {
-        const btn = e.currentTarget; const link = btn.dataset.link;
+        const btn = e.currentTarget;
+        const link = btn.dataset.link;
         if(!savedArticles.some(s => s.link === link)) {
             savedArticles.push({ title: btn.dataset.title, link, imageUrl: btn.dataset.img, source: btn.dataset.source, description: btn.dataset.desc, savedAt: Date.now() });
             localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
@@ -580,23 +520,16 @@
         } else {
             savedArticles = savedArticles.filter(s => s.link !== link);
             localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
-            btn.innerHTML = '💾 Save'; btn.style.background = '#2563eb'; showToast('Removed from saved');
+            btn.innerHTML = '💾 Save'; btn.style.background = '#2563eb'; showToast('Removed');
         }
         updateSavedCounter();
         if (currentView === 'saved') renderSavedArticles();
-        if (currentCategory === 'all' && currentView === 'home') {
-            renderAllCategoryGrouped();
-            if (topNewsArticles.length) renderTopNews();
-        }
+        if (currentCategory === 'all' && currentView === 'home') { renderAllCategoryGrouped(); if (topNewsArticles.length) renderTopNews(); }
     }
-    
-    function updateSavedCounter() { 
-        const counter = document.getElementById('savedCounter');
-        if(counter) counter.innerText = savedArticles.length; 
-    }
+    function updateSavedCounter() { const c = document.getElementById('savedCounter'); if(c) c.innerText = savedArticles.length; }
 
     function renderTrendingCarousel() {
-        const categories = ['Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health', 'World', 'Local'];
+        const categories = ['Local','World','Politics','Technology','Sports','Entertainment','Business','Health'];
         const selected = [];
         for (const cat of categories) {
             const catArticles = allArticles.filter(a => a.category === cat).slice(0, 2);
@@ -610,8 +543,8 @@
             return `<div class="trend-card-full">
                 <img src="${imgSrc}" onerror="this.src='https://placehold.co/800x400/3b82f6/white?text=Trend'">
                 <div class="trend-info">
-                    <h3><a href="${art.link}" target="_blank" style="text-decoration:none;">${escapeHtml(art.title)}</a></h3>
-                    <div class="trend-meta"><span><i class="fas fa-globe"></i> ${art.source}</span><span><i class="fas fa-eye"></i> ${formatViews(generateViews(art.title))} views</span></div>
+                    <h3><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></h3>
+                    <div class="trend-meta"><span><i class="fas fa-globe"></i> ${art.source}</span><span><i class="fas fa-eye"></i> ${formatViews(generateViews(art.title))}</span></div>
                     <button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button>
                 </div>
             </div>`;
@@ -625,9 +558,7 @@
                     btn.innerHTML = '✅ Saved'; updateSavedCounter();
                     if (currentView === 'saved') renderSavedArticles();
                     showToast('Saved offline');
-                } else {
-                    showToast('Already saved');
-                }
+                } else { showToast('Already saved'); }
             });
         });
         startCarouselScroll();
@@ -655,15 +586,12 @@
         isLoadingMore = true;
         try {
             const newCount = await fetchMoreForCategory(currentCategory);
-            if (newCount > 0) {
-                applyCategoryFilter();
-                showToast(`✨ ${newCount} new articles loaded`);
-            }
+            if (newCount > 0) { applyCategoryFilter(); showToast(`✨ ${newCount} new articles`); }
         } catch(e) { console.warn(e); }
         isLoadingMore = false;
     }
 
-    // ========== SENTINEL MANAGEMENT (FIXED) ==========
+    // ========== INFINITE SCROLL & SENTINEL ==========
     function ensureSentinel() {
         const existing = document.getElementById('loadSentinel');
         if (existing && existing.parentNode) existing.remove();
@@ -671,18 +599,14 @@
         sentinel.id = 'loadSentinel';
         sentinel.style.height = '10px';
         sentinel.style.margin = '20px 0';
-        sentinel.style.textAlign = 'center';
         const feedDiv = document.getElementById('newsFeed');
-        if (feedDiv && feedDiv.parentNode) {
-            feedDiv.parentNode.insertBefore(sentinel, feedDiv.nextSibling);
-        } else {
-            document.body.appendChild(sentinel);
-        }
+        if (feedDiv && feedDiv.parentNode) feedDiv.parentNode.insertBefore(sentinel, feedDiv.nextSibling);
+        else document.body.appendChild(sentinel);
         sentinelElement = sentinel;
     }
-    
+
     function clearRetryButton() { if(retryContainer && retryContainer.parentNode) retryContainer.remove(); retryContainer = null; }
-    
+
     function showRetryButton(message, retryCallback) {
         clearRetryButton();
         ensureSentinel();
@@ -693,66 +617,46 @@
         retryBtn.onclick = async () => {
             wrapper.innerHTML = '<div class="loader"></div> Fetching...';
             const newCount = await retryCallback();
-            if(newCount > 0) { 
-                clearRetryButton(); 
-                applyCategoryFilter(); 
-                showToast(`✅ ${newCount} new articles`); 
-            } else {
-                wrapper.innerHTML = `<div>No new articles found. <button class="retry-button">Retry</button></div>`;
-                const newBtn = wrapper.querySelector('.retry-button');
-                if(newBtn) {
-                    newBtn.onclick = async () => {
-                        wrapper.innerHTML = '<div class="loader"></div> Fetching...';
-                        const retryCount = await retryCallback();
-                        if(retryCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${retryCount} new articles`); }
-                        else wrapper.innerHTML = `<div>No new articles. <button class="retry-button">Retry</button></div>`;
-                    };
-                }
-            }
+            if(newCount > 0) { clearRetryButton(); applyCategoryFilter(); showToast(`✅ ${newCount} new articles`); }
+            else { wrapper.innerHTML = `<div>No new articles. <button class="retry-button">Retry</button></div>`; }
         };
-        if(sentinelElement && sentinelElement.parentNode) {
-            sentinelElement.parentNode.insertBefore(wrapper, sentinelElement);
-            retryContainer = wrapper;
-        }
+        if(sentinelElement && sentinelElement.parentNode) sentinelElement.parentNode.insertBefore(wrapper, sentinelElement);
+        retryContainer = wrapper;
     }
 
     async function attemptLoadMore() {
         if(isLoadingMore || isLoadingEndless) return false;
         isLoadingEndless = true;
         showEndSpinner(true);
-        let newCount = 0;
         try {
-            newCount = await fetchMoreForCategory(currentCategory);
-            if(newCount > 0) { 
-                applyCategoryFilter(); 
-                window.scrollBy({ top: 60, behavior: 'smooth' }); 
+            const newCount = await fetchMoreForCategory(currentCategory);
+            if(newCount > 0) {
+                applyCategoryFilter();
+                window.scrollBy({ top: 60, behavior: 'smooth' });
                 clearRetryButton();
-                showToast(`✨ ${newCount} more articles loaded`);
+                showToast(`✨ ${newCount} more articles`);
                 return true;
             } else {
                 showRetryButton("End of content. Tap to check for new articles.", async () => await fetchMoreForCategory(currentCategory));
                 return false;
             }
-        } catch(err) { 
-            showRetryButton("Failed to load more. Tap to retry.", async () => await fetchMoreForCategory(currentCategory)); 
+        } catch(err) {
+            showRetryButton("Failed to load more. Tap to retry.", async () => await fetchMoreForCategory(currentCategory));
             return false;
-        }
-        finally { 
-            isLoadingEndless = false; 
-            showEndSpinner(false); 
+        } finally {
+            isLoadingEndless = false;
+            showEndSpinner(false);
         }
     }
 
     function showEndSpinner(show) {
         let spinner = document.getElementById('endSpinner');
-        if(show && !spinner) { 
-            spinner = document.createElement('div'); 
-            spinner.id = "endSpinner"; 
-            spinner.className = "end-loader"; 
-            spinner.innerHTML = '<div class="loader"></div> Loading more articles...'; 
-            if(sentinelElement && sentinelElement.parentNode) {
-                sentinelElement.parentNode.insertBefore(spinner, sentinelElement); 
-            }
+        if(show && !spinner) {
+            spinner = document.createElement('div');
+            spinner.id = "endSpinner";
+            spinner.className = "end-loader";
+            spinner.innerHTML = '<div class="loader"></div> Loading more...';
+            if(sentinelElement && sentinelElement.parentNode) sentinelElement.parentNode.insertBefore(spinner, sentinelElement);
         } else if(!show && spinner) spinner.remove();
     }
 
@@ -764,7 +668,6 @@
             const entry = entries[0];
             if(entry.isIntersecting && !isLoadingMore && !isLoadingEndless && currentView === 'home') {
                 if(currentCategory !== 'all') {
-                    // For specific categories, first increase displayLimit if more articles exist
                     if(displayLimit < currentFiltered.length) {
                         isLoadingMore = true;
                         showEndSpinner(true);
@@ -773,43 +676,28 @@
                             renderNewsFeed();
                             isLoadingMore = false;
                             showEndSpinner(false);
-                            if (displayLimit + 5 >= currentFiltered.length) {
-                                setTimeout(() => attemptBackgroundFetch(), 200);
-                            }
+                            if (displayLimit + 5 >= currentFiltered.length) setTimeout(() => attemptBackgroundFetch(), 200);
                         }, 300);
-                    } 
-                    else if (displayLimit >= currentFiltered.length && !isLoadingEndless && hasMoreArticles !== false) {
+                    } else if (!isLoadingEndless && hasMoreArticles !== false) {
                         if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
                         attemptLoadMore();
                         infiniteScrollTimer = setInterval(async () => {
                             if(!isLoadingEndless && !isLoadingMore && hasMoreArticles !== false) {
                                 const success = await attemptLoadMore();
-                                if(!success || hasMoreArticles === false) {
-                                    clearInterval(infiniteScrollTimer);
-                                    infiniteScrollTimer = null;
-                                }
-                            } else if(hasMoreArticles === false) {
-                                clearInterval(infiniteScrollTimer);
-                                infiniteScrollTimer = null;
-                            }
+                                if(!success || hasMoreArticles === false) { clearInterval(infiniteScrollTimer); infiniteScrollTimer = null; }
+                            } else if(hasMoreArticles === false) { clearInterval(infiniteScrollTimer); infiniteScrollTimer = null; }
                         }, 3000);
                     }
                 } else {
-                    // For 'all' category, we just load more articles directly
+                    // For 'all' category
                     if(!isLoadingEndless && hasMoreArticles !== false) {
                         if(infiniteScrollTimer) clearInterval(infiniteScrollTimer);
                         attemptLoadMore();
                         infiniteScrollTimer = setInterval(async () => {
                             if(!isLoadingEndless && !isLoadingMore && hasMoreArticles !== false) {
                                 const success = await attemptLoadMore();
-                                if(!success || hasMoreArticles === false) {
-                                    clearInterval(infiniteScrollTimer);
-                                    infiniteScrollTimer = null;
-                                }
-                            } else if(hasMoreArticles === false) {
-                                clearInterval(infiniteScrollTimer);
-                                infiniteScrollTimer = null;
-                            }
+                                if(!success || hasMoreArticles === false) { clearInterval(infiniteScrollTimer); infiniteScrollTimer = null; }
+                            } else if(hasMoreArticles === false) { clearInterval(infiniteScrollTimer); infiniteScrollTimer = null; }
                         }, 3000);
                     }
                 }
@@ -818,12 +706,10 @@
                 infiniteScrollTimer = null;
             }
         }, { threshold: 0.2, rootMargin: "0px 0px 300px 0px" });
-        if(sentinelElement) {
-            scrollObserver.observe(sentinelElement);
-        }
+        if(sentinelElement) scrollObserver.observe(sentinelElement);
     }
 
-    // ========== CATEGORY & LOCATION ==========
+    // ========== CATEGORY SWITCH ==========
     function switchCategory(cat) {
         if(currentCategory === cat) return;
         currentCategory = cat;
@@ -838,12 +724,12 @@
         setTimeout(() => initScrollObserver(), 100);
     }
 
+    // ========== LOCATION DETECTION ==========
     async function detectLocation() {
         const badge = document.getElementById('countryBadge');
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> locating...`;
         let locationDetected = false;
-        let tryCount = 0;
-        while (!locationDetected && tryCount < 2) {
+        for (let attempt = 0; attempt < 2; attempt++) {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -858,7 +744,7 @@
                         break;
                     }
                 }
-            } catch(e) { console.log("ipapi failed"); }
+            } catch(e) {}
             if (!locationDetected) {
                 try {
                     const controller = new AbortController();
@@ -874,16 +760,11 @@
                             break;
                         }
                     }
-                } catch(e) { console.log("ipinfo failed"); }
+                } catch(e) {}
             }
-            tryCount++;
-            if (!locationDetected && tryCount < 2) await new Promise(r => setTimeout(r, 1000));
+            if (!locationDetected) await new Promise(r => setTimeout(r, 1000));
         }
-        if (!locationDetected) {
-            await new Promise(r => setTimeout(r, 1500));
-            userCountry = "ZM";
-            userCountryName = "Zambia (fallback)";
-        }
+        if (!locationDetected) { userCountry = "ZM"; userCountryName = "Zambia (fallback)"; }
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
     }
 
@@ -891,10 +772,7 @@
     function renderSavedArticles() {
         const savedDiv = document.getElementById('savedFeed');
         if(!savedDiv) return;
-        if(!savedArticles.length) {
-            savedDiv.innerHTML = '<div style="padding:2rem;text-align:center;background:var(--card-bg);border-radius:32px;"><i class="fas fa-archive"></i> No saved articles yet. Tap 💾 on any news to store offline.</div>';
-            return;
-        }
+        if(!savedArticles.length) { savedDiv.innerHTML = '<div style="padding:2rem;text-align:center;"><i class="fas fa-archive"></i> No saved articles.</div>'; return; }
         let html = '';
         savedArticles.forEach(art => {
             html += `<div class="news-card">
@@ -903,8 +781,8 @@
                     <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                     <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>saved offline</span></div>
                     <div class="news-desc">${escapeHtml(art.description || 'No description')}</div>
-                    <div class="action-row" style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
-                        <a href="${art.link}" target="_blank" class="btn-primary" style="margin-right: 0.5rem;">Read Original</a>
+                    <div class="action-row">
+                        <a href="${art.link}" target="_blank" class="btn-primary">Read Original</a>
                         <button class="btn-remove unsave-btn" data-link="${art.link}"><i class="fas fa-trash-alt"></i> Remove</button>
                         <button class="btn-share share-saved-btn" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button>
                     </div>
@@ -914,8 +792,7 @@
         savedDiv.innerHTML = html;
         document.querySelectorAll('.unsave-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                let link = btn.dataset.link;
-                savedArticles = savedArticles.filter(s => s.link !== link);
+                savedArticles = savedArticles.filter(s => s.link !== btn.dataset.link);
                 localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
                 updateSavedCounter();
                 renderSavedArticles();
@@ -923,21 +800,19 @@
                     if (currentCategory === 'all') { renderAllCategoryGrouped(); if (topNewsArticles.length) renderTopNews(); }
                     else renderNewsFeed();
                 }
-                showToast('Article removed from saved');
+                showToast('Removed');
             });
         });
         document.querySelectorAll('.share-saved-btn').forEach(btn => {
-            btn.addEventListener('click', () => { shareArticle(btn.dataset.title, btn.dataset.url); });
+            btn.addEventListener('click', () => shareArticle(btn.dataset.title, btn.dataset.url));
         });
     }
 
     // ========== VIEW SWITCHING ==========
     function showHomeView() {
         currentView = 'home';
-        const homeDiv = document.getElementById('homeView');
-        const savedDiv = document.getElementById('savedView');
-        if(homeDiv) homeDiv.style.display = 'block';
-        if(savedDiv) savedDiv.style.display = 'none';
+        document.getElementById('homeView').style.display = 'block';
+        document.getElementById('savedView').style.display = 'none';
         document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
         const homeNav = document.querySelector('.nav-item[data-nav="home"]');
         if(homeNav) homeNav.classList.add('active');
@@ -948,10 +823,8 @@
 
     function showSavedView() {
         currentView = 'saved';
-        const homeDiv = document.getElementById('homeView');
-        const savedDiv = document.getElementById('savedView');
-        if(homeDiv) homeDiv.style.display = 'none';
-        if(savedDiv) savedDiv.style.display = 'block';
+        document.getElementById('homeView').style.display = 'none';
+        document.getElementById('savedView').style.display = 'block';
         document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
         const savedNav = document.querySelector('.nav-item[data-nav="saved"]');
         if(savedNav) savedNav.classList.add('active');
@@ -964,25 +837,18 @@
 
     // ========== EVENT LISTENERS ==========
     document.querySelectorAll('.cat-pill').forEach(pill => pill.addEventListener('click', () => switchCategory(pill.dataset.cat)));
-    
     const themeSwitch = document.getElementById('themeSwitch');
     if(themeSwitch) {
-        themeSwitch.addEventListener('change', (e) => { 
-            if(e.target.checked) document.body.classList.add('dark'); 
-            else document.body.classList.remove('dark'); 
-            localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light'); 
-        });
+        themeSwitch.addEventListener('change', (e) => { document.body.classList.toggle('dark', e.target.checked); localStorage.setItem('blue_theme', e.target.checked ? 'dark' : 'light'); });
         if(localStorage.getItem('blue_theme') === 'dark') { document.body.classList.add('dark'); themeSwitch.checked = true; }
     }
 
     const sideMenu = document.getElementById('sideMenu'), overlayDiv = document.getElementById('overlay');
-    function closeMenu() { if(sideMenu) sideMenu.classList.remove('open'); if(overlayDiv) overlayDiv.classList.remove('show'); }
-    const hamburgerBtn = document.getElementById('hamburgerBtn');
-    if(hamburgerBtn) hamburgerBtn.onclick = () => { if(sideMenu) sideMenu.classList.add('open'); if(overlayDiv) overlayDiv.classList.add('show'); };
-    const closeMenuBtn = document.getElementById('closeMenuBtn');
-    if(closeMenuBtn) closeMenuBtn.onclick = closeMenu;
+    function closeMenu() { sideMenu?.classList.remove('open'); overlayDiv?.classList.remove('show'); }
+    document.getElementById('hamburgerBtn')?.addEventListener('click', () => { sideMenu?.classList.add('open'); overlayDiv?.classList.add('show'); });
+    document.getElementById('closeMenuBtn')?.addEventListener('click', closeMenu);
     if(overlayDiv) overlayDiv.onclick = closeMenu;
-    
+
     const menuHome = document.getElementById('menuHome');
     const menuTrending = document.getElementById('menuTrending');
     const menuNotification = document.getElementById('menuNotification');
@@ -990,35 +856,32 @@
     const menuAbout = document.getElementById('menuAbout');
     const menuSaved = document.getElementById('menuSaved');
     const viewSavedBtn = document.getElementById('viewSavedBtn');
-    
     if(menuHome) menuHome.addEventListener('click', () => { showHomeView(); switchCategory('all'); closeMenu(); });
-    if(menuTrending) menuTrending.addEventListener('click', () => { const trending = document.getElementById('trendingCarousel'); if(trending) trending.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
+    if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
-    if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); const search = document.getElementById('searchInput'); if(search) search.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v17.1\n✅ Infinite scroll works for ALL categories\n📡 More data fetched per scroll\n🔄 Reload button works\n📱 Continuous loading"); closeMenu(); });
+    if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v18.0\n✅ Local news loads first\n🔄 Reload button works\n📱 True infinite scroll for all categories"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
     if(searchBtn) searchBtn.addEventListener('click', () => { const q = searchInput.value.trim(); if(q) redirectToSearchPage(q); });
-    if(searchInput) searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && searchBtn) searchBtn.click(); });
+    if(searchInput) searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') searchBtn?.click(); });
 
     const searchZone = document.getElementById('searchZone');
-    function enableFloating() {
+    if(searchInput) searchInput.addEventListener('focus', () => {
         if(!searchZone) return;
         searchZone.classList.add('floating-top');
         document.body.style.paddingTop = '80px';
         const removeFloat = (e) => { if(!searchZone.contains(e.target)) { searchZone.classList.remove('floating-top'); document.body.style.paddingTop = '0px'; document.removeEventListener('click', removeFloat); } };
         setTimeout(() => document.addEventListener('click', removeFloat), 50);
-        if(searchInput) searchInput.focus();
-    }
-    if(searchInput) searchInput.addEventListener('focus', enableFloating);
+    });
 
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', () => { if (btn.dataset.nav === 'home') showHomeView(); else if (btn.dataset.nav === 'saved') showSavedView(); });
     });
 
-    // ========== INIT ==========
+    // ========== START ==========
     detectLocation().then(() => { loadAllFeeds(); });
 })();
