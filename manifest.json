@@ -29,14 +29,14 @@
     {
       "src": "/amimodiscoverynews/screenshot-wide.png",
       "sizes": "1280x720",
-      "type": "image/jpeg",
+      "type": "image/png",
       "form_factor": "wide",
       "label": "Homepage on desktop"
     },
     {
       "src": "/amimodiscoverynews/screenshot-narrow.png",
       "sizes": "720x1280",
-      "type": "image/jpeg",
+      "type": "image/png",
       "form_factor": "narrow",
       "label": "Mobile article view"
     }
@@ -82,7 +82,7 @@
   "widgets": [
     {
       "name": "Amimo News Widget",
-      "description": "Latest headlines widget",a
+      "description": "Latest headlines widget",
       "tag": "news-widget",
       "screenshots": [{ "src": "/amimodiscoverynews/widget-preview.png", "sizes": "512x512", "type": "image/png" }],
       "data": { "url": "/amimodiscoverynews/widget-data.json" },
@@ -92,4 +92,4 @@
   "prefer_related_applications": false,
   "related_applications": [],
   "iarc_rating_id": "rating.pending"
-    }
+}
