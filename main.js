@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - Amimo Discovery (Top News Mixed Sources + Continuous Infinite Scroll) =====================
+// ===================== MAIN.JS - Amimo Discovery (Local first, mixed top news) =====================
 (function() {
     // ========== RSS FEEDS (unchanged) ==========
     const WORLD_FEEDS = [
@@ -17,14 +17,12 @@
         { name: "Euronews", url: "https://www.euronews.com/rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Euronews" },
         { name: "The New York Times World", url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT+World" },
         { name: "The Washington Post World", url: "https://feeds.washingtonpost.com/rss/world", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WaPo+World" },
-        // Technology
         { name: "TechCrunch", url: "https://techcrunch.com/feed/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TechCrunch" },
         { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Verge" },
         { name: "Wired", url: "https://www.wired.com/feed/rss", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Wired" },
         { name: "Ars Technica", url: "https://feeds.feedburner.com/arstechnica/index", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Ars" },
         { name: "ZDNet", url: "https://www.zdnet.com/news/rss.xml", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ZDNet" },
         { name: "CNET", url: "https://www.cnet.com/rss/news/", category: "Technology", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNET" },
-        // Sports
         { name: "ESPN", url: "https://www.espn.com/espn/rss/news", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN" },
         { name: "Sky Sports", url: "https://www.skysports.com/rss/12040", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SkySports" },
         { name: "Bleacher Report", url: "https://bleacherreport.com/articles/feed", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bleacher" },
@@ -32,21 +30,17 @@
         { name: "The Athletic", url: "https://theathletic.com/feed/", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Athletic" },
         { name: "FOX Sports", url: "https://www.foxsports.com/rss", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FOXSports" },
         { name: "CBS Sports", url: "https://www.cbssports.com/rss/headlines", category: "Sports", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBSSports" },
-        // Entertainment
         { name: "Variety", url: "https://variety.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Variety" },
         { name: "Hollywood Reporter", url: "https://www.hollywoodreporter.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=THR" },
         { name: "Deadline", url: "https://deadline.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Deadline" },
         { name: "Entertainment Weekly", url: "https://ew.com/feed/", category: "Entertainment", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=EW" },
-        // Politics
         { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politics" },
         { name: "Politico", url: "https://www.politico.com/rss/politics.xml", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politico" },
         { name: "The Hill", url: "https://thehill.com/feed/", category: "Politics", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TheHill" },
-        // Business
         { name: "Bloomberg", url: "https://feeds.bloomberg.com/markets/news.rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Bloomberg" },
         { name: "CNBC", url: "https://www.cnbc.com/id/100003114/device/rss/rss.html", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNBC" },
         { name: "Financial Times", url: "https://www.ft.com/?format=rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=FT" },
         { name: "Business Insider", url: "https://www.businessinsider.com/rss", category: "Business", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BI" },
-        // Health
         { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Health" },
         { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=WebMD" },
         { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=MNT" },
@@ -111,7 +105,7 @@
     let isLoadingTopNews = false;
     let topNewsObserver = null;
 
-    // Ad counter for unique IDs
+    // Ad counter
     let adCounter = 0;
 
     // ========== HELPERS ==========
@@ -147,7 +141,7 @@
         }
     }
 
-    // ========== FETCH FEED ==========
+    // ========== FETCH ==========
     async function fetchSingleFeed(feedCfg) {
         try {
             const fresh = Date.now();
@@ -182,11 +176,6 @@
             hasMoreFeeds = false;
             isLoading = false;
             showEndSpinner(false);
-            setTimeout(() => {
-                if (currentFeedIndex >= currentFeedsList.length && hasMoreFeeds === false) {
-                    // Optionally, you could re-fetch or just keep false
-                }
-            }, 30000);
             return false;
         }
         const results = await Promise.all(nextFeeds.map(f => fetchSingleFeed(f)));
@@ -222,7 +211,7 @@
         } else if(!show && spinner) spinner.remove();
     }
 
-    // ========== RENDER FUNCTIONS ==========
+    // ========== RENDER ==========
     function renderNewsFeed() {
         const feedDiv = document.getElementById('newsFeed');
         if (currentCategory === 'all') {
@@ -262,7 +251,6 @@
                         </div>`;
             }
         }
-        // Append flat infinite scroll section
         if (allFlatArticles.length > 0 && allFlatIndex < allFlatArticles.length) {
             html += `<div class="category-section"><div class="category-section-title"><i class="fas fa-infinity"></i> More News</div>`;
             const toShow = allFlatArticles.slice(0, allFlatIndex + 10);
@@ -365,10 +353,10 @@
         if (cat === 'all') {
             allFlatArticles = [];
             allFlatIndex = 0;
-            const allFeeds = [...WORLD_FEEDS];
-            const localFeeds = localMap.get(userCountry) || [];
-            if (localFeeds.length) allFeeds.push(...localFeeds);
-            currentFeedsList = allFeeds;
+            const localFeedsOnly = localMap.get(userCountry) || [];
+            const otherFeeds = [...WORLD_FEEDS];
+            const prioritizedFeeds = [...localFeedsOnly, ...otherFeeds];
+            currentFeedsList = prioritizedFeeds;
             await fetchMoreArticles(false);
             while (allArticles.filter(a => a.category !== 'Local' && a.category !== 'World').length < 80 && currentFeedIndex < currentFeedsList.length) {
                 await fetchMoreArticles(false);
@@ -421,7 +409,7 @@
         badge.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userCountryName}`;
     }
 
-    // ========== TOP NEWS (UPDATED: SHUFFLED FOR MIXED SOURCES) ==========
+    // ========== TOP NEWS (SHUFFLED) ==========
     async function fetchTopNewsFeed(feedCfg) {
         try {
             const fresh = Date.now();
@@ -457,7 +445,7 @@
             const uniqueMap = new Map();
             topNewsArticles.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
             topNewsArticles = Array.from(uniqueMap.values());
-            // --- SHUFFLE to mix articles from different sources ---
+            // Shuffle to mix sources
             for (let i = topNewsArticles.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [topNewsArticles[i], topNewsArticles[j]] = [topNewsArticles[j], topNewsArticles[i]];
@@ -600,18 +588,17 @@
         }, 6000);
     }
 
-    // ========== INITIAL LOAD ==========
+    // ========== INIT ==========
     async function init() {
         await detectLocation();
-        // Initial All category load
         currentCategory = 'all';
-        const allFeeds = [...WORLD_FEEDS];
-        const localFeeds = localMap.get(userCountry) || [];
-        if (localFeeds.length) allFeeds.push(...localFeeds);
-        currentFeedsList = allFeeds;
+        // Prioritize local feeds for faster local news appearance
+        const localFeedsOnly = localMap.get(userCountry) || [];
+        const otherFeeds = [...WORLD_FEEDS];
+        const prioritizedFeeds = [...localFeedsOnly, ...otherFeeds];
+        currentFeedsList = prioritizedFeeds;
         currentFeedIndex = 0;
         hasMoreFeeds = true;
-        // Load initial batch (first 15 feeds)
         const initialBatchCount = Math.min(15, currentFeedsList.length);
         const initialFeeds = currentFeedsList.slice(0, initialBatchCount);
         const results = await Promise.all(initialFeeds.map(f => fetchSingleFeed(f)));
@@ -621,7 +608,6 @@
         arts.forEach(a => { if(!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
         allArticles = Array.from(uniqueMap.values());
         currentFeedIndex = initialBatchCount;
-        // Pre-load flat articles from remaining feeds
         if (currentFeedIndex < currentFeedsList.length) {
             await fetchMoreArticles(true);
         }
@@ -631,11 +617,10 @@
         updateSavedCounter();
         initScrollObserver();
 
-        // Global ad banners (add IDs)
         const globalAd = document.getElementById('globalAdBanner');
         if (globalAd) globalAd.setAttribute('data-ad-id', 'global-ad-1');
 
-        // Event listeners
+        // Event listeners (unchanged)
         document.querySelectorAll('.cat-pill').forEach(pill => pill.addEventListener('click', () => switchCategory(pill.dataset.cat)));
         const themeSwitch = document.getElementById('themeSwitch');
         if(themeSwitch) {
@@ -654,7 +639,7 @@
         document.getElementById('menuHome').addEventListener('click', () => { showHomeView(); closeMenu(); });
         document.getElementById('menuSaved').addEventListener('click', () => { showSavedView(); closeMenu(); });
         document.getElementById('menuTrending').addEventListener('click', () => { document.getElementById('trendingCarousel').scrollIntoView({ behavior: 'smooth' }); closeMenu(); });
-        document.getElementById('menuAbout').addEventListener('click', () => { alert("Amimo Blue – Top news now mixed from all sources\nContinuous infinite scroll\nAd IDs ready"); closeMenu(); });
+        document.getElementById('menuAbout').addEventListener('click', () => { alert("Amimo Blue – Local news loads first, top news mixed, infinite scroll"); closeMenu(); });
         document.getElementById('viewSavedBtn').onclick = () => showSavedView();
         document.getElementById('searchBtn').addEventListener('click', () => { const q = document.getElementById('searchInput').value.trim(); if(q) window.location.href = `seachresult.html?q=${encodeURIComponent(q)}`; });
         document.getElementById('searchInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('searchBtn').click(); });
