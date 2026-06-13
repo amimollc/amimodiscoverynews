@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - FIXED TOP NEWS + STRONG IMAGES + INFINITE SCROLL =====================
+// ===================== MAIN.JS - COMPLETE FIXED VERSION =====================
 (function() {
-    // ========== RSS FEEDS (FULL LIST - SAME AS BEFORE) ==========
+    // ========== RSS FEEDS (FULL LIST) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -183,8 +183,7 @@
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(feedCfg.name)}`;
     }
 
-    // Lazy load image with retries and timeout (up to 2 minutes)
-    function setImageWithRetry(imgElement, src, retries = 3, timeout = 2000) {
+    function setImageWithRetry(imgElement, src, retries = 3, timeout = 3000) {
         let attempt = 0;
         const tryLoad = () => {
             const timer = setTimeout(() => {
@@ -259,7 +258,7 @@
         setTimeout(()=>t.remove(),2000);
     }
 
-    // ========== INFINITE SCROLL FOR "ALL" CATEGORY (Append only, no gaps) ==========
+    // ========== INFINITE SCROLL FOR "ALL" CATEGORY ==========
     async function loadMoreArticlesForAll() {
         if (isLoadingMore) return;
         isLoadingMore = true;
@@ -271,15 +270,19 @@
             const results = await Promise.all(feedsToFetch.map(f => fetchFeed(f)));
             let newArticles = [];
             results.forEach(r => newArticles.push(...r));
-            const existingLinks = new Set(allArticles.map(a => a.link));
-            const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
-            if (uniqueNew.length) {
+            
+            // Deduplicate using link without query parameters
+            const existingLinks = new Set(
+                allArticles.map(a => (a.link || '').split('?')[0])
+            );
+            const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
+            
+            if (uniqueNew.length >= 3) {
                 allArticles.push(...uniqueNew);
                 const feedContainer = document.getElementById('newsFeed');
                 uniqueNew.forEach(art => {
                     const cardHtml = renderArticleCard(art);
                     feedContainer.insertAdjacentHTML('beforeend', cardHtml);
-                    // Apply image retry to the newly added images
                     const newCard = feedContainer.lastElementChild;
                     const img = newCard.querySelector('img');
                     if (img && art.imageUrl && !art.imageUrl.includes('placehold.co')) {
@@ -292,8 +295,12 @@
                 hasMoreArticles = true;
                 clearRetryButton();
             } else {
-                hasMoreArticles = false;
-                showRetryButton("No more articles from these feeds. Tap to retry.", loadMoreArticlesForAll);
+                // Not enough new articles – wait 5 seconds and retry
+                setTimeout(() => {
+                    if (!isLoadingMore) {
+                        loadMoreArticlesForAll();
+                    }
+                }, 5000);
             }
         } catch (err) {
             console.error(err);
@@ -316,8 +323,10 @@
         const results = await Promise.all(feedsToFetch.slice(0, 12).map(f => fetchFeed(f)));
         let newArticles = [];
         results.forEach(r => newArticles.push(...r));
-        const existingLinks = new Set(allArticles.map(a => a.link));
-        const uniqueNew = newArticles.filter(a => !existingLinks.has(a.link));
+        const existingLinks = new Set(
+            allArticles.map(a => (a.link || '').split('?')[0])
+        );
+        const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
         if (uniqueNew.length) {
             uniqueNew.forEach(a => { a.views = generateViews(a.title); });
             allArticles = [...uniqueNew, ...allArticles];
@@ -358,13 +367,16 @@
             const results = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
             let fresh = [];
             results.forEach(r => fresh.push(...r));
-            const existingLinks = new Set(topNewsArticles.map(a => a.link));
-            const newUnique = fresh.filter(a => !existingLinks.has(a.link));
+            const existingLinks = new Set(
+                topNewsArticles.map(a => (a.link || '').split('?')[0])
+            );
+            const newUnique = fresh.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
             if (newUnique.length) {
-                newUnique.forEach(a => { a.views = generateViews(a.title); });
                 topNewsArticles.push(...newUnique);
-                topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
                 topNewsDisplayed += 5;
+                if (topNewsDisplayed > topNewsArticles.length) {
+                    topNewsDisplayed = topNewsArticles.length;
+                }
                 renderTopNews();
                 showToast(`✨ ${newUnique.length} new top stories`);
                 hasMoreTopNews = true;
@@ -384,9 +396,8 @@
     function renderArticleCard(art) {
         const isSaved = savedArticles.some(s => s.link === art.link);
         const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-        // Use a data-src for lazy loading with retry
         return `<div class="news-card">
-            <img class="card-img" data-src="${art.imageUrl}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading..." onerror="this.src='https://placehold.co/800x450/6b7280/white?text=Retrying...'">
+            <img class="card-img" data-src="${art.imageUrl}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
             <div class="card-body">
                 <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                 <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
@@ -400,7 +411,6 @@
         </div>`;
     }
 
-    // Apply image retry to all images in the feed
     function applyImageRetries() {
         document.querySelectorAll('.card-img').forEach(img => {
             const src = img.getAttribute('data-src');
@@ -454,14 +464,14 @@
                     </div>`;
         });
         html += `</div>`;
-        if (hasMoreTopNews) {
+        if (hasMoreTopNews && topNewsDisplayed < topNewsArticles.length) {
             html += `<div id="topNewsSentinel" style="height:10px;margin:10px 0;"></div>`;
         }
         html += `</div>`;
         container.innerHTML = html;
         attachSaveEvents();
         attachShareEvents();
-        applyImageRetries(); // retry top news images
+        applyImageRetries();
         topNewsSentinel = document.getElementById('topNewsSentinel');
         if (topNewsSentinel) setupTopNewsInfinite();
     }
@@ -492,17 +502,17 @@
             renderAllCategoryInitial();
             initScrollObserver();
             if (topNewsArticles.length === 0) {
-                // Initial load of top news if empty
                 (async () => {
                     const results = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
                     let temp = [];
                     results.forEach(r => temp.push(...r));
                     const unique = new Map();
-                    temp.forEach(a => { if (!unique.has(a.link)) unique.set(a.link, a); });
+                    temp.forEach(a => { if (!unique.has((a.link || '').split('?')[0])) unique.set((a.link || '').split('?')[0], a); });
                     topNewsArticles = Array.from(unique.values());
                     topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
                     topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
                     topNewsDisplayed = 5;
+                    if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
                     hasMoreTopNews = true;
                     renderTopNews();
                     setupTopNewsInfinite();
@@ -559,14 +569,6 @@
             }
         }, { threshold: 0.2, rootMargin: "0px 0px 300px 0px" });
         if (sentinelElement) scrollObserver.observe(sentinelElement);
-        // Fallback timer in case observer fails (load within 3 minutes)
-        if (window._infScrollTimer) clearTimeout(window._infScrollTimer);
-        window._infScrollTimer = setTimeout(() => {
-            if (sentinelElement && !isLoadingMore && currentCategory === 'all') {
-                console.log("Fallback: triggering infinite scroll");
-                loadMoreArticlesForAll();
-            }
-        }, 180000); // 3 minutes
     }
 
     function initScrollObserverForSpecificCategory() {
@@ -684,7 +686,10 @@
         }
         allArticles = [...localArticles, ...worldArticles];
         const uniqueMap = new Map();
-        allArticles.forEach(a => { if (!uniqueMap.has(a.link)) uniqueMap.set(a.link, a); });
+        allArticles.forEach(a => { 
+            const key = (a.link || '').split('?')[0];
+            if (!uniqueMap.has(key)) uniqueMap.set(key, a);
+        });
         allArticles = Array.from(uniqueMap.values());
         allArticles.forEach(a => { a.views = generateViews(a.title); });
         allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
@@ -696,11 +701,15 @@
         let topTemp = [];
         topRes.forEach(r => topTemp.push(...r));
         const topUnique = new Map();
-        topTemp.forEach(a => { if (!topUnique.has(a.link)) topUnique.set(a.link, a); });
+        topTemp.forEach(a => { 
+            const key = (a.link || '').split('?')[0];
+            if (!topUnique.has(key)) topUnique.set(key, a);
+        });
         topNewsArticles = Array.from(topUnique.values());
         topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
         topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
         topNewsDisplayed = 5;
+        if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
         hasMoreTopNews = true;
         
         applyCategoryFilter();
@@ -708,7 +717,19 @@
         updateSavedCounter();
     }
 
-    // ========== HELPER FUNCTIONS (Save, Share, Search, etc.) ==========
+    // ========== SCROLL FALLBACK ==========
+    function setupScrollFallback() {
+        // Fallback timer: if no scroll event after 3 minutes, trigger infinite scroll manually
+        if (window._infScrollTimer) clearTimeout(window._infScrollTimer);
+        window._infScrollTimer = setTimeout(() => {
+            if (sentinelElement && !isLoadingMore && currentCategory === 'all') {
+                console.log("Fallback: triggering infinite scroll after 3 minutes");
+                loadMoreArticlesForAll();
+            }
+        }, 180000);
+    }
+
+    // ========== HELPER FUNCTIONS ==========
     function storeAllArticlesForSearch() {
         if (allArticles.length) {
             const searchable = allArticles.map(art => ({ title: art.title, link: art.link, description: art.description, source: art.source }));
@@ -949,7 +970,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v21.0\n✅ Top News fixed\n✅ Images load with retries (up to 2 min)\n✅ No gaps in All news\n✅ Infinite scroll triggers within 3 minutes"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v22.0\n✅ Top News fixed with overflow guard\n✅ Better duplicate detection (strip query params)\n✅ Minimum 3 new articles or retry after 5s\n✅ Scroll fallback timer"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -972,5 +993,8 @@
     });
 
     // ========== START ==========
-    detectLocation().then(() => { loadAllFeeds(); });
+    detectLocation().then(() => {
+        loadAllFeeds();
+        setupScrollFallback();
+    });
 })();
