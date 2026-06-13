@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - COMPLETE FIXED VERSION =====================
+// ===================== MAIN.JS - COMPLETE FIXED VERSION (ALL LINKS + SPINNER + IMAGE RETRIES) =====================
 (function() {
     // ========== RSS FEEDS (FULL LIST) ==========
     const WORLD_FEEDS = [
@@ -149,15 +149,20 @@
     let topNewsObserver = null;
     let hasMoreTopNews = true;
 
-    // ========== STRONG IMAGE EXTRACTION WITH RETRY ==========
-    function extractImageFromItem(item, feedCfg) {
+    // ========== STRONG IMAGE EXTRACTION WITH MULTIPLE CANDIDATES ==========
+    function extractImageCandidates(item, feedCfg) {
         const candidates = [];
+        // media:content
         if (item.media?.content?.[0]?.url) candidates.push(item.media.content[0].url);
         if (item['media:content']?.url) candidates.push(item['media:content'].url);
+        // media:thumbnail
         if (item.media?.thumbnail?.[0]?.url) candidates.push(item.media.thumbnail[0].url);
         if (item['media:thumbnail']?.url) candidates.push(item['media:thumbnail'].url);
+        // enclosure
         if (item.enclosure?.link && (item.enclosure.type?.startsWith('image') || item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i))) candidates.push(item.enclosure.link);
+        // thumbnail from rss2json
         if (item.thumbnail?.startsWith('http')) candidates.push(item.thumbnail);
+        // img tags in description
         if (item.description) {
             const imgMatches = item.description.match(/<img[^>]+src=["']([^"']+)["']/gi);
             if (imgMatches) {
@@ -167,6 +172,7 @@
                 });
             }
         }
+        // img tags in content:encoded
         if (item['content:encoded']) {
             const imgMatches = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/gi);
             if (imgMatches) {
@@ -176,19 +182,28 @@
                 });
             }
         }
+        // Remove duplicates and invalid
         const valid = [...new Set(candidates.filter(url => url && url.startsWith('http')))];
-        if (valid.length) return valid[0];
-        const categoryColors = { 'Politics':'1e3a8a', 'Technology':'0f172a', 'Sports':'b91c1c', 'Entertainment':'831843', 'Business':'065f46', 'Health':'0e7c7c', 'Local':'4c1d95', 'World':'1e40af', 'Top':'f59e0b' };
-        const color = categoryColors[feedCfg.category] || '3b82f6';
-        return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(feedCfg.name)}`;
+        return valid;
     }
 
-    function setImageWithRetry(imgElement, src, retries = 3, timeout = 3000) {
+    // Enhanced image loader with retries and fallback candidates
+    function setImageWithRetry(imgElement, candidates, retries = 5, timeout = 5000) {
+        if (!candidates || candidates.length === 0) {
+            imgElement.src = 'https://placehold.co/800x450/6b7280/white?text=No+Image';
+            return;
+        }
         let attempt = 0;
+        let candidateIndex = 0;
         const tryLoad = () => {
+            const src = candidates[candidateIndex];
             const timer = setTimeout(() => {
                 if (attempt < retries) {
                     attempt++;
+                    tryLoad();
+                } else if (candidateIndex + 1 < candidates.length) {
+                    candidateIndex++;
+                    attempt = 0;
                     tryLoad();
                 } else {
                     imgElement.src = 'https://placehold.co/800x450/6b7280/white?text=Image+Failed';
@@ -200,6 +215,10 @@
                 if (attempt < retries) {
                     attempt++;
                     tryLoad();
+                } else if (candidateIndex + 1 < candidates.length) {
+                    candidateIndex++;
+                    attempt = 0;
+                    tryLoad();
                 } else {
                     imgElement.src = 'https://placehold.co/800x450/6b7280/white?text=Image+Failed';
                 }
@@ -209,7 +228,7 @@
         tryLoad();
     }
 
-    // ========== FETCH FUNCTIONS ==========
+    // ========== FETCH FUNCTIONS (with image candidates) ==========
     async function fetchFeed(feedCfg) {
         try {
             const fresh = Date.now();
@@ -221,7 +240,12 @@
             const data = await resp.json();
             if (data.status !== 'ok') return [];
             return data.items.slice(0, 15).map(item => {
-                const imageUrl = extractImageFromItem(item, feedCfg);
+                const imageCandidates = extractImageCandidates(item, feedCfg);
+                const primaryImage = imageCandidates[0] || (() => {
+                    const categoryColors = { 'Politics':'1e3a8a', 'Technology':'0f172a', 'Sports':'b91c1c', 'Entertainment':'831843', 'Business':'065f46', 'Health':'0e7c7c', 'Local':'4c1d95', 'World':'1e40af', 'Top':'f59e0b' };
+                    const color = categoryColors[feedCfg.category] || '3b82f6';
+                    return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(feedCfg.name)}`;
+                })();
                 return {
                     title: item.title,
                     link: item.link,
@@ -229,7 +253,8 @@
                     description: (item.description || "").replace(/<[^>]*>/g, '').substring(0, 200),
                     source: feedCfg.name,
                     category: feedCfg.category,
-                    imageUrl: imageUrl,
+                    imageCandidates: imageCandidates,
+                    imageUrl: primaryImage,
                     views: generateViews(item.title)
                 };
             });
@@ -258,6 +283,26 @@
         setTimeout(()=>t.remove(),2000);
     }
 
+    // ========== SPINNER MANAGEMENT (FIXED) ==========
+    function showEndSpinner(show) {
+        let spinner = document.getElementById('endSpinner');
+        if (show && !spinner) {
+            spinner = document.createElement('div');
+            spinner.id = "endSpinner";
+            spinner.className = "end-loader";
+            spinner.innerHTML = '<div class="loader"></div> Loading more articles...';
+            if (!sentinelElement) ensureSentinel();
+            if (sentinelElement && sentinelElement.parentNode) {
+                sentinelElement.parentNode.insertBefore(spinner, sentinelElement);
+            } else {
+                const feedDiv = document.getElementById('newsFeed');
+                if (feedDiv) feedDiv.appendChild(spinner);
+            }
+        } else if (!show && spinner) {
+            spinner.remove();
+        }
+    }
+
     // ========== INFINITE SCROLL FOR "ALL" CATEGORY ==========
     async function loadMoreArticlesForAll() {
         if (isLoadingMore) return;
@@ -270,13 +315,10 @@
             const results = await Promise.all(feedsToFetch.map(f => fetchFeed(f)));
             let newArticles = [];
             results.forEach(r => newArticles.push(...r));
-            
-            // Deduplicate using link without query parameters
             const existingLinks = new Set(
                 allArticles.map(a => (a.link || '').split('?')[0])
             );
             const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
-            
             if (uniqueNew.length >= 3) {
                 allArticles.push(...uniqueNew);
                 const feedContainer = document.getElementById('newsFeed');
@@ -285,8 +327,10 @@
                     feedContainer.insertAdjacentHTML('beforeend', cardHtml);
                     const newCard = feedContainer.lastElementChild;
                     const img = newCard.querySelector('img');
-                    if (img && art.imageUrl && !art.imageUrl.includes('placehold.co')) {
-                        setImageWithRetry(img, art.imageUrl, 3, 3000);
+                    if (img && art.imageCandidates && art.imageCandidates.length) {
+                        setImageWithRetry(img, art.imageCandidates, 5, 5000);
+                    } else if (img && art.imageUrl) {
+                        setImageWithRetry(img, [art.imageUrl], 5, 5000);
                     }
                 });
                 attachSaveEvents();
@@ -295,7 +339,6 @@
                 hasMoreArticles = true;
                 clearRetryButton();
             } else {
-                // Not enough new articles – wait 5 seconds and retry
                 setTimeout(() => {
                     if (!isLoadingMore) {
                         loadMoreArticlesForAll();
@@ -396,8 +439,9 @@
     function renderArticleCard(art) {
         const isSaved = savedArticles.some(s => s.link === art.link);
         const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        const candidatesJson = JSON.stringify(art.imageCandidates || [art.imageUrl]);
         return `<div class="news-card">
-            <img class="card-img" data-src="${art.imageUrl}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
+            <img class="card-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
             <div class="card-body">
                 <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                 <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
@@ -413,10 +457,18 @@
 
     function applyImageRetries() {
         document.querySelectorAll('.card-img').forEach(img => {
-            const src = img.getAttribute('data-src');
-            if (src && src.startsWith('http') && !img.dataset.retryApplied) {
-                img.dataset.retryApplied = 'true';
-                setImageWithRetry(img, src, 3, 3000);
+            if (img.dataset.retryApplied) return;
+            img.dataset.retryApplied = 'true';
+            let candidates = [];
+            try {
+                const raw = img.getAttribute('data-candidates');
+                if (raw) candidates = JSON.parse(raw);
+            } catch(e) {}
+            if (candidates.length === 0 && img.getAttribute('data-src')) {
+                candidates = [img.getAttribute('data-src')];
+            }
+            if (candidates.length) {
+                setImageWithRetry(img, candidates, 5, 5000);
             }
         });
     }
@@ -449,8 +501,9 @@
         toShow.forEach(art => {
             const isSaved = savedArticles.some(s => s.link === art.link);
             const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+            const candidatesJson = JSON.stringify(art.imageCandidates || [art.imageUrl]);
             html += `<div class="news-card">
-                        <img class="card-img" data-src="${art.imageUrl}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
+                        <img class="card-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
                         <div class="card-body">
                             <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                             <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
@@ -629,17 +682,6 @@
         retryContainer = null;
     }
 
-    function showEndSpinner(show) {
-        let spinner = document.getElementById('endSpinner');
-        if (show && !spinner) {
-            spinner = document.createElement('div');
-            spinner.id = "endSpinner";
-            spinner.className = "end-loader";
-            spinner.innerHTML = '<div class="loader"></div> Loading more...';
-            if (sentinelElement && sentinelElement.parentNode) sentinelElement.parentNode.insertBefore(spinner, sentinelElement);
-        } else if (!show && spinner) spinner.remove();
-    }
-
     function showTopNewsSpinner(show) {
         let spinner = document.getElementById('topNewsEndSpinner');
         if (show && !spinner && topNewsSentinel) {
@@ -719,7 +761,6 @@
 
     // ========== SCROLL FALLBACK ==========
     function setupScrollFallback() {
-        // Fallback timer: if no scroll event after 3 minutes, trigger infinite scroll manually
         if (window._infScrollTimer) clearTimeout(window._infScrollTimer);
         window._infScrollTimer = setTimeout(() => {
             if (sentinelElement && !isLoadingMore && currentCategory === 'all') {
@@ -783,13 +824,13 @@
         const carousel = document.getElementById('trendingCarousel');
         if(!trendingItems.length) { carousel.innerHTML = '<div>No trending</div>'; return; }
         carousel.innerHTML = trendingItems.map(art => {
-            const imgSrc = art.imageUrl;
+            const candidatesJson = JSON.stringify(art.imageCandidates || [art.imageUrl]);
             return `<div class="trend-card-full">
-                <img class="trend-img" data-src="${imgSrc}" src="https://placehold.co/800x400/e2e8f0/white?text=Loading...">
+                <img class="trend-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x400/e2e8f0/white?text=Loading...">
                 <div class="trend-info">
                     <h3><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></h3>
                     <div class="trend-meta"><span><i class="fas fa-globe"></i> ${art.source}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
-                    <button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button>
+                    <button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${art.imageUrl}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button>
                 </div>
             </div>`;
         }).join('');
@@ -886,8 +927,9 @@
         if(!savedArticles.length) { savedDiv.innerHTML = '<div style="padding:2rem;text-align:center;"><i class="fas fa-archive"></i> No saved articles.</div>'; return; }
         let html = '';
         savedArticles.forEach(art => {
+            const candidatesJson = JSON.stringify([art.imageUrl]);
             html += `<div class="news-card">
-                <img class="card-img" data-src="${art.imageUrl || 'https://placehold.co/800x450/3b82f6/white?text=Saved'}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
+                <img class="card-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
                 <div class="card-body">
                     <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                     <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>saved offline</span></div>
@@ -970,7 +1012,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v22.0\n✅ Top News fixed with overflow guard\n✅ Better duplicate detection (strip query params)\n✅ Minimum 3 new articles or retry after 5s\n✅ Scroll fallback timer"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v23.0\n✅ All feeds restored\n✅ Loading spinner fixed\n✅ Images retry with multiple candidates\n✅ Infinite scroll works\n✅ Top news infinite scroll"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
