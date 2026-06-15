@@ -1,12 +1,13 @@
-// Amimo Discovery – Full Service Worker (Updated with Offline Page)
-
-const CACHE_NAME = 'amimo-discovery-v5';
+// Amimo Discovery – Service Worker (Offline + Cache Optimised)
+const CACHE_NAME = 'amimo-discovery-v6';
 const OFFLINE_PAGE = '/amimodiscoverynews/offline.html';
 const STATIC_ASSETS = [
   OFFLINE_PAGE,
   '/amimodiscoverynews/index.html',
   '/amimodiscoverynews/manifest.json',
-  '/amimodiscoverynews/favicon.png'
+  '/amimodiscoverynews/favicon.png',
+  '/amimodiscoverynews/style.css',      // add if you have a separate CSS file
+  '/amimodiscoverynews/main.js'         // add your main JS file
 ];
 
 // ----- Install -----
@@ -18,7 +19,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// ----- Activate & cleanup -----
+// ----- Activate & cleanup old caches -----
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
@@ -29,17 +30,17 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ----- Fetch: network-first for navigation with offline fallback, cache-first for assets -----
+// ----- Fetch: network-first for navigation, cache-first for assets -----
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // For navigation (HTML pages) – try network, fallback to offline page
+  // Navigation (HTML pages) – try network, fallback to offline page
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then(response => {
-          // Cache the fresh page for future offline use
+          // Cache the fresh page for offline use
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(request, responseClone);
@@ -47,22 +48,20 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(async () => {
-          // Offline fallback: serve the offline page from cache
           const cachedOffline = await caches.match(OFFLINE_PAGE);
           if (cachedOffline) return cachedOffline;
-          // If offline page not cached yet, try to fetch it (should be cached from install)
-          return caches.match(OFFLINE_PAGE) || new Response('Offline page not available', { status: 503 });
+          return new Response('Offline page not available', { status: 503 });
         })
     );
     return;
   }
 
-  // For static assets (CSS, JS, images, etc.) – cache first
+  // Static assets (CSS, JS, images) – cache first, network fallback
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
       return fetch(request).then(networkResponse => {
-        // Cache new assets for future offline use
+        // Cache only successful responses of same-origin or certain types
         if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -71,61 +70,17 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        // Optional: return a default offline image or empty response for images
+        // Optional: return a tiny placeholder for images
         if (request.url.match(/\.(jpg|png|gif|svg|webp)$/)) {
           return new Response('', { status: 200, headers: { 'Content-Type': 'image/svg+xml' } });
         }
-        // For other assets, just fail silently
+        // For other assets, simply fail (no fallback)
       });
     })
   );
 });
 
-// ----- Background Sync -----
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-news') {
-    event.waitUntil(syncNewsData());
-  }
-});
-
-async function syncNewsData() {
-  const cache = await caches.open('news-data');
-  try {
-    const response = await fetch('/amimodiscoverynews/api/latest-news');
-    if (response.ok) {
-      await cache.put('/amimodiscoverynews/api/news', response);
-      await self.registration.showNotification('Amimo Discovery', {
-        body: 'News updated in background!',
-        icon: '/amimodiscoverynews/favicon.png',
-        badge: '/amimodiscoverynews/favicon.png'
-      });
-    }
-  } catch (err) {
-    console.error('Background sync failed', err);
-  }
-}
-
-// ----- Periodic Background Sync -----
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'periodic-news-sync') {
-    event.waitUntil(periodicUpdateNews());
-  }
-});
-
-async function periodicUpdateNews() {
-  const cache = await caches.open('news-data');
-  try {
-    const response = await fetch('/amimodiscoverynews/api/latest-news');
-    if (response.ok) {
-      await cache.put('/amimodiscoverynews/api/news', response);
-      console.log('Periodic sync completed');
-    }
-  } catch (err) {
-    console.error('Periodic sync failed', err);
-  }
-}
-
-// ----- Push Notifications -----
+// ----- Push Notifications (optional, keep if you use them) -----
 self.addEventListener('push', (event) => {
   let data = {
     title: 'Amimo Discovery',
