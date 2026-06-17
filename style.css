@@ -569,16 +569,15 @@ body {
     flex-direction: column;
     gap: 1.25rem;
 }
-/* Offline overlay - covers only the content area, leaves bottom bar visible */
 #offlineOverlay {
+    display: none !important;  /* Force hidden initially */
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 60px; /* Match your bottom nav height */
+    bottom: 70px;
     background: #ffffff;
-    z-index: 9990; /* Lower than bottom nav */
-    display: none; /* Hidden by default */
+    z-index: 9990;
     flex-direction: column;
     align-items: center;
     justify-content: center;
