@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - GROUPED ALL CATEGORY + TOP NEWS AT BOTTOM =====================
+// ===================== MAIN.JS - CATEGORY PAGES + TOP NEWS AT BOTTOM =====================
 (function() {
-    // ========== RSS FEEDS (FULL LIST - unchanged) ==========
+    // ========== RSS FEEDS ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -312,6 +312,11 @@
                 showToast(`✨ ${uniqueNew.length} new articles loaded`);
                 hasMoreArticles = true;
                 clearRetryButton();
+                // Re-render the grouped view to show new articles in each category section
+                // However, to keep infinite scroll smooth, we just append and don't re-render the entire view.
+                // But the categories are grouped, so appending new articles to the bottom is fine.
+                // We'll keep the current implementation: append to the end of the feed.
+                // The sentinel will be re-attached.
                 ensureSentinel();
                 initScrollObserver();
             } else {
@@ -434,7 +439,7 @@
         lazyLoadImages();
     }
 
-    // --- NEW: Grouped rendering for "All" category with Local first and Top News at bottom ---
+    // ----- RENDER ALL CATEGORY (GROUPED) -----
     function renderAllCategoryGrouped() {
         const feedDiv = document.getElementById('newsFeed');
         if (!allArticles.length) {
@@ -442,13 +447,10 @@
             return;
         }
 
-        // Define category order: Local first, then others
         const categoriesOrder = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
-
         let html = '';
-        // For each category, get articles (limit: Local gets 5, others get 3)
         for (let cat of categoriesOrder) {
-            const limit = (cat === 'Local') ? 5 : 3;
+            const limit = 5; // At least 5 articles per category
             const catArticles = allArticles.filter(a => a.category === cat).slice(0, limit);
             if (catArticles.length) {
                 const icon = getCategoryIcon(cat);
@@ -457,46 +459,33 @@
                 catArticles.forEach(art => {
                     html += renderArticleCard(art);
                 });
-                html += `<button class="show-more-btn" data-target-cat="${cat}"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
+                // "Show More" button that links to dedicated category page (e.g., Local.html, World.html)
+                html += `<a href="${cat}.html" class="show-more-link">
+                            <button class="show-more-btn"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
+                        </a>
                         </div>`;
             }
         }
 
-        // Append Top News section after all categories
+        // ---- Top News after all categories ----
         const topContainer = document.getElementById('topNewsContainer');
-        // We'll move the top container to after the feedDiv, and render top news into it
-        // But we need to ensure it's placed after the feedDiv in the DOM.
-        // We'll call renderTopNews() which updates the container, and then move it if needed.
-
-        // First render the categories into feedDiv
-        feedDiv.innerHTML = html;
-
-        // Now handle Top News placement
-        // Ensure topNewsContainer is after feedDiv
-        if (topContainer && topContainer.parentNode) {
-            // Move it after feedDiv if it's not already after
-            if (topContainer.previousSibling !== feedDiv && topContainer.parentNode !== feedDiv) {
+        if (topContainer) {
+            // Move it after feedDiv if not already
+            if (topContainer.parentNode && topContainer.previousSibling !== feedDiv) {
                 feedDiv.parentNode.insertBefore(topContainer, feedDiv.nextSibling);
             }
-            // Show it and render top news
+            // Show and render top news
             topContainer.style.display = 'block';
-            renderTopNews(); // This will populate the container with top news articles and sentinel
+            renderTopNews();
             setupTopNewsInfinite();
         }
 
-        // Re-attach event listeners for show-more buttons
-        document.querySelectorAll('.show-more-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const targetCat = btn.dataset.targetCat;
-                if (targetCat) switchCategory(targetCat);
-            });
-        });
-
+        feedDiv.innerHTML = html;
         attachSaveEvents();
         attachShareEvents();
         applyImageRetries();
         ensureSentinel();
-        initScrollObserver();
+        initScrollObserver(); // for infinite scroll on "All" category
     }
 
     function renderTopNews() {
@@ -567,30 +556,8 @@
 
     function applyCategoryFilter() {
         if (currentCategory === 'all') {
-            const topContainer = document.getElementById('topNewsContainer');
-            if (topContainer) {
-                // If top news is not yet loaded, load it
-                if (topNewsArticles.length === 0) {
-                    (async () => {
-                        const results = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
-                        let temp = [];
-                        results.forEach(r => temp.push(...r));
-                        const unique = new Map();
-                        temp.forEach(a => { if (!unique.has((a.link || '').split('?')[0])) unique.set((a.link || '').split('?')[0], a); });
-                        topNewsArticles = Array.from(unique.values());
-                        topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
-                        topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-                        topNewsDisplayed = 5;
-                        if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
-                        hasMoreTopNews = true;
-                        // Now render the grouped view (which includes top news)
-                        renderAllCategoryGrouped();
-                    })();
-                } else {
-                    renderAllCategoryGrouped();
-                }
-            }
-            // Hide the top container if it's empty – but renderAllCategoryGrouped will show it
+            // Render the grouped view – top news will be placed after categories
+            renderAllCategoryGrouped();
         } else {
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'none';
@@ -1055,7 +1022,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v25.0\n✅ All category now groups: Local first (5+), then others, Top News at bottom\n✅ Show More buttons switch to category\n✅ All features intact"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v26.0\n✅ All category shows 5+ per category with Show More links to pages\n✅ Top News after all categories\n✅ Page detection for category pages"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -1115,6 +1082,19 @@
     } else {
         updateOfflineUI();
         setTimeout(updateOfflineUI, 2000);
+    }
+
+    // ========== DETECT CATEGORY FROM PAGE NAME ==========
+    const pageName = window.location.pathname.split('/').pop().replace('.html', '');
+    const knownCategories = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
+    if (knownCategories.includes(pageName)) {
+        currentCategory = pageName;
+        // Highlight the corresponding category pill if on that page
+        const pill = document.querySelector(`.cat-pill[data-cat="${pageName}"]`);
+        if (pill) {
+            document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+        }
     }
 
     // ========== START ==========
