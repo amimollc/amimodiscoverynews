@@ -986,7 +986,25 @@
         carouselInterval = null;
         renderSavedArticles();
     }
+// ========== OFFLINE OVERLAY HANDLING ==========
+const offlineOverlay = document.getElementById('offlineOverlay');
 
+function updateOfflineUI(isOffline) {
+    if (offlineOverlay) {
+        offlineOverlay.style.display = isOffline ? 'flex' : 'none';
+    }
+}
+
+// Listen for network changes
+window.addEventListener('online', () => updateOfflineUI(false));
+window.addEventListener('offline', () => updateOfflineUI(true));
+
+// Check initial state
+if (!navigator.onLine) {
+    updateOfflineUI(true);
+} else {
+    updateOfflineUI(false);
+}
     // ========== EVENT LISTENERS ==========
     document.querySelectorAll('.cat-pill').forEach(pill => pill.addEventListener('click', () => switchCategory(pill.dataset.cat)));
     const themeSwitch = document.getElementById('themeSwitch');
