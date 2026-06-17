@@ -68,7 +68,13 @@
         <div id="savedFeed" class="saved-feed"></div>
     </div>
 </div>
-
+<!-- Offline Overlay -->
+<div id="offlineOverlay">
+    <div class="offline-icon">📡</div>
+    <div class="offline-title">You're Offline</div>
+    <div class="offline-message">Please check your internet connection.<br>Your saved articles are still available.</div>
+    <button class="retry-btn" onclick="location.reload()">🔄 Retry</button>
+</div>
 <footer>
     <i class="fas fa-bookmark"></i> Offline saved · <span id="savedCounter">0</span> saved · <button id="viewSavedBtn" style="background: none; border: none; color: var(--accent-glow); cursor: pointer;">📚 View saved</button><br>
     © Amimo Discovery,In. · Sticky categories · Infinite scroll
