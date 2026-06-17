@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - FULL UPDATED WITH OFFLINE HANDLING =====================
+// ===================== MAIN.JS - GROUPED ALL CATEGORY + TOP NEWS AT BOTTOM =====================
 (function() {
-    // ========== RSS FEEDS (FULL LIST) ==========
+    // ========== RSS FEEDS (FULL LIST - unchanged) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -183,7 +183,6 @@
         return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(feedCfg.name)}`;
     }
 
-    // Image loading with retry – now using IntersectionObserver for lazy load (smoother)
     function setImageWithRetry(imgElement, src, retries = 3, timeout = 3000) {
         let attempt = 0;
         const tryLoad = () => {
@@ -210,7 +209,6 @@
         tryLoad();
     }
 
-    // Lazy load images using IntersectionObserver (only load when visible)
     function lazyLoadImages() {
         const images = document.querySelectorAll('.card-img[data-src]');
         if (!images.length) return;
@@ -279,7 +277,7 @@
         setTimeout(()=>t.remove(),2000);
     }
 
-    // ========== INFINITE SCROLL FOR "ALL" CATEGORY (Append only, no gaps) ==========
+    // ========== INFINITE SCROLL FOR "ALL" CATEGORY ==========
     async function loadMoreArticlesForAll() {
         if (isLoadingMore) return;
         isLoadingMore = true;
@@ -292,7 +290,6 @@
             let newArticles = [];
             results.forEach(r => newArticles.push(...r));
             
-            // Deduplicate using link without query parameters
             const existingLinks = new Set(
                 allArticles.map(a => (a.link || '').split('?')[0])
             );
@@ -301,7 +298,6 @@
             if (uniqueNew.length >= 3) {
                 allArticles.push(...uniqueNew);
                 const feedContainer = document.getElementById('newsFeed');
-                // Use DocumentFragment for better performance
                 const fragment = document.createDocumentFragment();
                 uniqueNew.forEach(art => {
                     const tempDiv = document.createElement('div');
@@ -310,18 +306,15 @@
                     fragment.appendChild(card);
                 });
                 feedContainer.appendChild(fragment);
-                // Lazy load images
                 lazyLoadImages();
                 attachSaveEvents();
                 attachShareEvents();
                 showToast(`✨ ${uniqueNew.length} new articles loaded`);
                 hasMoreArticles = true;
                 clearRetryButton();
-                // Re-attach sentinel and observer after loading new content
                 ensureSentinel();
                 initScrollObserver();
             } else {
-                // Not enough new articles – wait 5 seconds and retry
                 setTimeout(() => {
                     if (!isLoadingMore) {
                         loadMoreArticlesForAll();
@@ -384,7 +377,7 @@
         }
     }
 
-    // ========== TOP NEWS INFINITE (FIXED) ==========
+    // ========== TOP NEWS INFINITE ==========
     async function loadMoreTopNews() {
         if (isLoadingTopNews) return;
         isLoadingTopNews = true;
@@ -437,35 +430,81 @@
         </div>`;
     }
 
-    // Lazy load images after DOM updates
     function applyImageRetries() {
         lazyLoadImages();
     }
 
-    function renderAllCategoryInitial() {
+    // --- NEW: Grouped rendering for "All" category with Local first and Top News at bottom ---
+    function renderAllCategoryGrouped() {
         const feedDiv = document.getElementById('newsFeed');
-        feedDiv.innerHTML = '';
-        const initialArticles = allArticles.slice(0, 20);
-        const fragment = document.createDocumentFragment();
-        initialArticles.forEach(art => {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = renderArticleCard(art);
-            fragment.appendChild(tempDiv.firstElementChild);
+        if (!allArticles.length) {
+            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles available</div>';
+            return;
+        }
+
+        // Define category order: Local first, then others
+        const categoriesOrder = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
+
+        let html = '';
+        // For each category, get articles (limit: Local gets 5, others get 3)
+        for (let cat of categoriesOrder) {
+            const limit = (cat === 'Local') ? 5 : 3;
+            const catArticles = allArticles.filter(a => a.category === cat).slice(0, limit);
+            if (catArticles.length) {
+                const icon = getCategoryIcon(cat);
+                html += `<div class="category-section" data-cat="${cat}">
+                            <div class="category-section-title"><i class="fas ${icon}"></i> ${cat}</div>`;
+                catArticles.forEach(art => {
+                    html += renderArticleCard(art);
+                });
+                html += `<button class="show-more-btn" data-target-cat="${cat}"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
+                        </div>`;
+            }
+        }
+
+        // Append Top News section after all categories
+        const topContainer = document.getElementById('topNewsContainer');
+        // We'll move the top container to after the feedDiv, and render top news into it
+        // But we need to ensure it's placed after the feedDiv in the DOM.
+        // We'll call renderTopNews() which updates the container, and then move it if needed.
+
+        // First render the categories into feedDiv
+        feedDiv.innerHTML = html;
+
+        // Now handle Top News placement
+        // Ensure topNewsContainer is after feedDiv
+        if (topContainer && topContainer.parentNode) {
+            // Move it after feedDiv if it's not already after
+            if (topContainer.previousSibling !== feedDiv && topContainer.parentNode !== feedDiv) {
+                feedDiv.parentNode.insertBefore(topContainer, feedDiv.nextSibling);
+            }
+            // Show it and render top news
+            topContainer.style.display = 'block';
+            renderTopNews(); // This will populate the container with top news articles and sentinel
+            setupTopNewsInfinite();
+        }
+
+        // Re-attach event listeners for show-more buttons
+        document.querySelectorAll('.show-more-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetCat = btn.dataset.targetCat;
+                if (targetCat) switchCategory(targetCat);
+            });
         });
-        feedDiv.appendChild(fragment);
+
         attachSaveEvents();
         attachShareEvents();
         applyImageRetries();
         ensureSentinel();
-        initScrollObserver();  // ensure observer is active after initial render
+        initScrollObserver();
     }
 
     function renderTopNews() {
         const container = document.getElementById('topNewsContainer');
         if (!container) return;
-        if (!topNewsArticles.length) { 
-            container.style.display = 'none'; 
-            return; 
+        if (!topNewsArticles.length) {
+            container.style.display = 'none';
+            return;
         }
         container.style.display = 'block';
         const toShow = topNewsArticles.slice(0, topNewsDisplayed);
@@ -503,6 +542,10 @@
     }
 
     function renderNewsFeed() {
+        if (currentCategory === 'all') {
+            renderAllCategoryGrouped();
+            return;
+        }
         const feedDiv = document.getElementById('newsFeed');
         const toRender = currentFiltered.slice(0, displayLimit);
         if (toRender.length === 0) {
@@ -519,34 +562,35 @@
         attachShareEvents();
         applyImageRetries();
         ensureSentinelForSpecific();
-        initScrollObserverForSpecificCategory(); // re-attach observer
+        initScrollObserverForSpecificCategory();
     }
 
     function applyCategoryFilter() {
         if (currentCategory === 'all') {
             const topContainer = document.getElementById('topNewsContainer');
-            if (topContainer) topContainer.style.display = 'block';
-            renderAllCategoryInitial();
-            if (topNewsArticles.length === 0) {
-                (async () => {
-                    const results = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
-                    let temp = [];
-                    results.forEach(r => temp.push(...r));
-                    const unique = new Map();
-                    temp.forEach(a => { if (!unique.has((a.link || '').split('?')[0])) unique.set((a.link || '').split('?')[0], a); });
-                    topNewsArticles = Array.from(unique.values());
-                    topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
-                    topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-                    topNewsDisplayed = 5;
-                    if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
-                    hasMoreTopNews = true;
-                    renderTopNews();
-                    setupTopNewsInfinite();
-                })();
-            } else {
-                renderTopNews();
-                setupTopNewsInfinite();
+            if (topContainer) {
+                // If top news is not yet loaded, load it
+                if (topNewsArticles.length === 0) {
+                    (async () => {
+                        const results = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
+                        let temp = [];
+                        results.forEach(r => temp.push(...r));
+                        const unique = new Map();
+                        temp.forEach(a => { if (!unique.has((a.link || '').split('?')[0])) unique.set((a.link || '').split('?')[0], a); });
+                        topNewsArticles = Array.from(unique.values());
+                        topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
+                        topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+                        topNewsDisplayed = 5;
+                        if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
+                        hasMoreTopNews = true;
+                        // Now render the grouped view (which includes top news)
+                        renderAllCategoryGrouped();
+                    })();
+                } else {
+                    renderAllCategoryGrouped();
+                }
             }
+            // Hide the top container if it's empty – but renderAllCategoryGrouped will show it
         } else {
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'none';
@@ -558,6 +602,20 @@
             displayLimit = 20;
             renderNewsFeed();
         }
+    }
+
+    function getCategoryIcon(cat) {
+        const icons = {
+            'Local': 'fa-location-dot',
+            'World': 'fa-globe',
+            'Politics': 'fa-landmark',
+            'Technology': 'fa-microchip',
+            'Sports': 'fa-futbol',
+            'Entertainment': 'fa-mask',
+            'Business': 'fa-chart-line',
+            'Health': 'fa-heartbeat'
+        };
+        return icons[cat] || 'fa-newspaper';
     }
 
     // ========== SENTINEL & OBSERVERS ==========
@@ -604,7 +662,6 @@
                 if (displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
-                    // Use requestAnimationFrame for smoother update
                     requestAnimationFrame(() => {
                         displayLimit = Math.min(displayLimit + 10, currentFiltered.length);
                         renderNewsFeed();
@@ -793,7 +850,7 @@
         }
         updateSavedCounter();
         if (currentView === 'saved') renderSavedArticles();
-        if (currentCategory === 'all' && currentView === 'home') { renderAllCategoryInitial(); renderTopNews(); }
+        if (currentCategory === 'all' && currentView === 'home') { renderAllCategoryGrouped(); }
     }
     function updateSavedCounter() { const c = document.getElementById('savedCounter'); if(c) c.innerText = savedArticles.length; }
 
@@ -865,7 +922,6 @@
         }
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        // Re-initialize observer after a short delay
         setTimeout(() => {
             if(currentCategory === 'all') initScrollObserver();
             else initScrollObserverForSpecificCategory();
@@ -938,7 +994,7 @@
                 updateSavedCounter();
                 renderSavedArticles();
                 if (currentView === 'home') {
-                    if (currentCategory === 'all') { renderAllCategoryInitial(); renderTopNews(); }
+                    if (currentCategory === 'all') { renderAllCategoryGrouped(); }
                     else renderNewsFeed();
                 }
                 showToast('Removed');
@@ -999,7 +1055,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v24.0\n✅ Offline overlay – bottom nav always visible\n✅ Smoother infinite scroll\n✅ Lazy image loading\n✅ All features intact"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v25.0\n✅ All category now groups: Local first (5+), then others, Top News at bottom\n✅ Show More buttons switch to category\n✅ All features intact"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -1021,20 +1077,15 @@
         btn.addEventListener('click', () => { if (btn.dataset.nav === 'home') showHomeView(); else if (btn.dataset.nav === 'saved') showSavedView(); });
     });
 
-    // ========== OFFLINE OVERLAY HANDLING (RELIABLE) ==========
+    // ========== OFFLINE OVERLAY HANDLING ==========
     const offlineOverlay = document.getElementById('offlineOverlay');
-
-    // Force hide overlay initially (in case CSS fails)
     if (offlineOverlay) {
         offlineOverlay.style.display = 'none';
     }
-
     function showOfflineOverlay(show) {
         if (!offlineOverlay) return;
         offlineOverlay.style.display = show ? 'flex' : 'none';
     }
-
-    // Reliable online check – tries to fetch a tiny resource from a fast CDN
     async function checkOnlineStatus() {
         try {
             const controller = new AbortController();
@@ -1050,23 +1101,12 @@
             return false;
         }
     }
-
     async function updateOfflineUI() {
         const isOnline = await checkOnlineStatus();
         showOfflineOverlay(!isOnline);
     }
-
-    // Listen for network changes
-    window.addEventListener('online', () => {
-        // Give the network a moment to fully recover
-        setTimeout(updateOfflineUI, 1000);
-    });
-    window.addEventListener('offline', () => {
-        // Show offline overlay immediately
-        showOfflineOverlay(true);
-    });
-
-    // Initial check – run after DOM is ready and again after a short delay
+    window.addEventListener('online', () => { setTimeout(updateOfflineUI, 1000); });
+    window.addEventListener('offline', () => { showOfflineOverlay(true); });
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             updateOfflineUI();
@@ -1077,7 +1117,7 @@
         setTimeout(updateOfflineUI, 2000);
     }
 
-    // ========== START (existing) ==========
+    // ========== START ==========
     detectLocation().then(() => {
         loadAllFeeds();
         setupScrollFallback();
