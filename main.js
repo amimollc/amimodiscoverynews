@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - COMPLETE (HOME + CATEGORY PAGES) =====================
+// ===================== MAIN.JS - FULL UPDATED (SHOW MORE FIXED) =====================
 (function() {
     // ========== RSS FEEDS (FULL LIST) ==========
     const WORLD_FEEDS = [
@@ -434,6 +434,7 @@
         lazyLoadImages();
     }
 
+    // ----- FIXED: renderAllCategoryGrouped with working "Show More" buttons -----
     function renderAllCategoryGrouped() {
         const feedDiv = document.getElementById('newsFeed');
         if (!allArticles.length) {
@@ -453,9 +454,10 @@
                 catArticles.forEach(art => {
                     html += renderArticleCard(art);
                 });
-                html += `<a href="${cat}.html" class="show-more-link">
-                            <button class="show-more-btn"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
-                        </a>
+                // Show More button – now a real button with data-target-cat
+                html += `<button class="show-more-btn" data-target-cat="${cat}">
+                            <i class="fas fa-chevron-right"></i> Show More ${cat} News
+                        </button>
                         </div>`;
             }
         }
@@ -481,6 +483,20 @@
         applyImageRetries();
         ensureSentinel();
         initScrollObserver();
+
+        // Attach event listeners for Show More buttons (they use the existing showMoreHandler)
+        document.querySelectorAll('.show-more-btn').forEach(btn => {
+            btn.removeEventListener('click', showMoreHandler);
+            btn.addEventListener('click', showMoreHandler);
+        });
+    }
+
+    // Handler for "Show More" buttons
+    function showMoreHandler(e) {
+        const targetCat = this.dataset.targetCat;
+        if (targetCat) {
+            switchCategory(targetCat);
+        }
     }
 
     function renderTopNews() {
@@ -710,85 +726,53 @@
         };
     }
 
-    // ========== INITIAL LOAD (MODIFIED FOR CATEGORY PAGES) ==========
+    // ========== INITIAL LOAD ==========
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '<div class="loader"></div> Loading...';
 
-        if (currentCategory === 'all') {
-            // Home page: load local + world
-            statusDiv.innerHTML = 'Fetching local news first...';
-            let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
-            let localArticles = [];
-            for (let feed of localFeeds) {
-                const arts = await fetchFeed(feed);
-                localArticles.push(...arts);
-            }
-            statusDiv.innerHTML = `✅ Local: ${localArticles.length}. Fetching world...`;
-            let worldArticles = [];
-            for (let i = 0; i < WORLD_FEEDS.length; i += 8) {
-                const batch = WORLD_FEEDS.slice(i, i+8);
-                const results = await Promise.all(batch.map(f => fetchFeed(f)));
-                results.forEach(r => worldArticles.push(...r));
-                await new Promise(r => setTimeout(r, 100));
-            }
-            allArticles = [...localArticles, ...worldArticles];
-            const uniqueMap = new Map();
-            allArticles.forEach(a => { 
-                const key = (a.link || '').split('?')[0];
-                if (!uniqueMap.has(key)) uniqueMap.set(key, a);
-            });
-            allArticles = Array.from(uniqueMap.values());
-            allArticles.forEach(a => { a.views = generateViews(a.title); });
-            allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-            statusDiv.innerHTML = `✅ ${allArticles.length} total stories ready`;
-
-            // Load top news for home
-            const topRes = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
-            let topTemp = [];
-            topRes.forEach(r => topTemp.push(...r));
-            const topUnique = new Map();
-            topTemp.forEach(a => { 
-                const key = (a.link || '').split('?')[0];
-                if (!topUnique.has(key)) topUnique.set(key, a);
-            });
-            topNewsArticles = Array.from(topUnique.values());
-            topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
-            topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-            topNewsDisplayed = 5;
-            if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
-            hasMoreTopNews = true;
-        } else {
-            // Category page: load only that category
-            let feedsToFetch = [];
-            if (currentCategory === 'Local') {
-                feedsToFetch = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
-            } else {
-                feedsToFetch = WORLD_FEEDS.filter(f => f.category === currentCategory);
-            }
-            if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
-            statusDiv.innerHTML = `Fetching ${currentCategory} news...`;
-            let articles = [];
-            for (let feed of feedsToFetch) {
-                const arts = await fetchFeed(feed);
-                articles.push(...arts);
-            }
-            const uniqueMap = new Map();
-            articles.forEach(a => { 
-                const key = (a.link || '').split('?')[0];
-                if (!uniqueMap.has(key)) uniqueMap.set(key, a);
-            });
-            allArticles = Array.from(uniqueMap.values());
-            allArticles.forEach(a => { a.views = generateViews(a.title); });
-            allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-            statusDiv.innerHTML = `✅ ${allArticles.length} ${currentCategory} stories ready`;
-            // No top news on category pages
-            topNewsArticles = [];
-            hasMoreTopNews = false;
-            // Hide top news container
-            const topContainer = document.getElementById('topNewsContainer');
-            if (topContainer) topContainer.style.display = 'none';
+        // Always load all feeds (local + world) because this is the home page (All)
+        statusDiv.innerHTML = 'Fetching local news first...';
+        let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+        let localArticles = [];
+        for (let feed of localFeeds) {
+            const arts = await fetchFeed(feed);
+            localArticles.push(...arts);
         }
+        statusDiv.innerHTML = `✅ Local: ${localArticles.length}. Fetching world...`;
+        let worldArticles = [];
+        for (let i = 0; i < WORLD_FEEDS.length; i += 8) {
+            const batch = WORLD_FEEDS.slice(i, i+8);
+            const results = await Promise.all(batch.map(f => fetchFeed(f)));
+            results.forEach(r => worldArticles.push(...r));
+            await new Promise(r => setTimeout(r, 100));
+        }
+        allArticles = [...localArticles, ...worldArticles];
+        const uniqueMap = new Map();
+        allArticles.forEach(a => { 
+            const key = (a.link || '').split('?')[0];
+            if (!uniqueMap.has(key)) uniqueMap.set(key, a);
+        });
+        allArticles = Array.from(uniqueMap.values());
+        allArticles.forEach(a => { a.views = generateViews(a.title); });
+        allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+        statusDiv.innerHTML = `✅ ${allArticles.length} total stories ready`;
+
+        // Load top news
+        const topRes = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
+        let topTemp = [];
+        topRes.forEach(r => topTemp.push(...r));
+        const topUnique = new Map();
+        topTemp.forEach(a => { 
+            const key = (a.link || '').split('?')[0];
+            if (!topUnique.has(key)) topUnique.set(key, a);
+        });
+        topNewsArticles = Array.from(topUnique.values());
+        topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
+        topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+        topNewsDisplayed = 5;
+        if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
+        hasMoreTopNews = true;
 
         storeAllArticlesForSearch();
         applyCategoryFilter();
@@ -1051,7 +1035,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v27.0\n✅ Home shows categories with 5 articles each\n✅ Show More links to category pages\n✅ Top News at bottom\n✅ Category pages load only that category"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v28.0\n✅ Show More buttons now work\n✅ Categories grouped on Home\n✅ Top News at bottom\n✅ All features intact"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -1111,22 +1095,6 @@
     } else {
         updateOfflineUI();
         setTimeout(updateOfflineUI, 2000);
-    }
-
-    // ========== DETECT PAGE NAME FOR CATEGORY PAGES ==========
-    const pageName = window.location.pathname.split('/').pop().replace('.html', '');
-    const knownCategories = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
-    if (knownCategories.includes(pageName)) {
-        currentCategory = pageName;
-        // Highlight the category pill if present
-        const pill = document.querySelector(`.cat-pill[data-cat="${pageName}"]`);
-        if (pill) {
-            document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
-        }
-        // Also hide top news container on category pages
-        const topContainer = document.getElementById('topNewsContainer');
-        if (topContainer) topContainer.style.display = 'none';
     }
 
     // ========== START ==========
