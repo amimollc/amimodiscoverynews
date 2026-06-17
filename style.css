@@ -600,29 +600,67 @@ body {
     /* Keep your existing bottom-nav styles */
 }
 
+/* Offline overlay - covers only the content area, leaves bottom bar visible */
 #offlineOverlay {
-    display: none; /* Hidden by default */
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 70px; /* Match your bottom nav height */
+    bottom: 60px; /* Match your bottom nav height */
     background: #ffffff;
-    z-index: 9990;
+    z-index: 9990; /* Lower than bottom nav */
+    display: none; /* Hidden by default */
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px;
     text-align: center;
 }
-body.dark #offlineOverlay { background: #0f172a; }
-.offline-icon { font-size: 48px; color: #64748b; margin-bottom: 16px; }
-.offline-title { font-size: 20px; font-weight: 600; color: #1e293b; }
-body.dark .offline-title { color: #e2e8f0; }
-.offline-message { color: #64748b; margin-bottom: 20px; }
-body.dark .offline-message { color: #94a3b8; }
-.retry-btn { background: #3b82f6; color: white; border: none; padding: 10px 24px; border-radius: 40px; font-size: 16px; cursor: pointer; }
-.retry-btn:hover { background: #2563eb; }
+
+/* Ensure bottom nav stays on top */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #1e293b;
+    z-index: 10000; /* Higher than overlay */
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    /* Keep your existing bottom-nav styles */
+}
+
+/* Offline icon and message styling */
+.offline-icon {
+    font-size: 48px;
+    color: #64748b;
+    margin-bottom: 16px;
+}
+.offline-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+.offline-message {
+    color: #64748b;
+    margin-bottom: 20px;
+}
+.retry-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 40px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.retry-btn:hover {
+    background: #2563eb;
+}
 /* ========== FOOTER ========== */
 footer {
     background: var(--ticker-bg);
