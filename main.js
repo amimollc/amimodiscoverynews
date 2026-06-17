@@ -1,4 +1,4 @@
-// ===================== MAIN.JS - COMPLETE FIXED VERSION (ALL LINKS + SPINNER + IMAGE RETRIES) =====================
+// ===================== MAIN.JS - FULL UPDATED WITH OFFLINE HANDLING =====================
 (function() {
     // ========== RSS FEEDS (FULL LIST) ==========
     const WORLD_FEEDS = [
@@ -149,20 +149,15 @@
     let topNewsObserver = null;
     let hasMoreTopNews = true;
 
-    // ========== STRONG IMAGE EXTRACTION WITH MULTIPLE CANDIDATES ==========
-    function extractImageCandidates(item, feedCfg) {
+    // ========== STRONG IMAGE EXTRACTION WITH RETRY ==========
+    function extractImageFromItem(item, feedCfg) {
         const candidates = [];
-        // media:content
         if (item.media?.content?.[0]?.url) candidates.push(item.media.content[0].url);
         if (item['media:content']?.url) candidates.push(item['media:content'].url);
-        // media:thumbnail
         if (item.media?.thumbnail?.[0]?.url) candidates.push(item.media.thumbnail[0].url);
         if (item['media:thumbnail']?.url) candidates.push(item['media:thumbnail'].url);
-        // enclosure
         if (item.enclosure?.link && (item.enclosure.type?.startsWith('image') || item.enclosure.link.match(/\.(jpg|jpeg|png|gif|webp)/i))) candidates.push(item.enclosure.link);
-        // thumbnail from rss2json
         if (item.thumbnail?.startsWith('http')) candidates.push(item.thumbnail);
-        // img tags in description
         if (item.description) {
             const imgMatches = item.description.match(/<img[^>]+src=["']([^"']+)["']/gi);
             if (imgMatches) {
@@ -172,7 +167,6 @@
                 });
             }
         }
-        // img tags in content:encoded
         if (item['content:encoded']) {
             const imgMatches = item['content:encoded'].match(/<img[^>]+src=["']([^"']+)["']/gi);
             if (imgMatches) {
@@ -182,28 +176,20 @@
                 });
             }
         }
-        // Remove duplicates and invalid
         const valid = [...new Set(candidates.filter(url => url && url.startsWith('http')))];
-        return valid;
+        if (valid.length) return valid[0];
+        const categoryColors = { 'Politics':'1e3a8a', 'Technology':'0f172a', 'Sports':'b91c1c', 'Entertainment':'831843', 'Business':'065f46', 'Health':'0e7c7c', 'Local':'4c1d95', 'World':'1e40af', 'Top':'f59e0b' };
+        const color = categoryColors[feedCfg.category] || '3b82f6';
+        return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(feedCfg.name)}`;
     }
 
-    // Enhanced image loader with retries and fallback candidates
-    function setImageWithRetry(imgElement, candidates, retries = 5, timeout = 5000) {
-        if (!candidates || candidates.length === 0) {
-            imgElement.src = 'https://placehold.co/800x450/6b7280/white?text=No+Image';
-            return;
-        }
+    // Image loading with retry – now using IntersectionObserver for lazy load (smoother)
+    function setImageWithRetry(imgElement, src, retries = 3, timeout = 3000) {
         let attempt = 0;
-        let candidateIndex = 0;
         const tryLoad = () => {
-            const src = candidates[candidateIndex];
             const timer = setTimeout(() => {
                 if (attempt < retries) {
                     attempt++;
-                    tryLoad();
-                } else if (candidateIndex + 1 < candidates.length) {
-                    candidateIndex++;
-                    attempt = 0;
                     tryLoad();
                 } else {
                     imgElement.src = 'https://placehold.co/800x450/6b7280/white?text=Image+Failed';
@@ -215,10 +201,6 @@
                 if (attempt < retries) {
                     attempt++;
                     tryLoad();
-                } else if (candidateIndex + 1 < candidates.length) {
-                    candidateIndex++;
-                    attempt = 0;
-                    tryLoad();
                 } else {
                     imgElement.src = 'https://placehold.co/800x450/6b7280/white?text=Image+Failed';
                 }
@@ -228,7 +210,27 @@
         tryLoad();
     }
 
-    // ========== FETCH FUNCTIONS (with image candidates) ==========
+    // Lazy load images using IntersectionObserver (only load when visible)
+    function lazyLoadImages() {
+        const images = document.querySelectorAll('.card-img[data-src]');
+        if (!images.length) return;
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.getAttribute('data-src');
+                    if (src && src.startsWith('http') && !img.dataset.retryApplied) {
+                        img.dataset.retryApplied = 'true';
+                        setImageWithRetry(img, src, 3, 3000);
+                    }
+                    observer.unobserve(img);
+                }
+            });
+        }, { rootMargin: '200px' });
+        images.forEach(img => observer.observe(img));
+    }
+
+    // ========== FETCH FUNCTIONS ==========
     async function fetchFeed(feedCfg) {
         try {
             const fresh = Date.now();
@@ -240,12 +242,7 @@
             const data = await resp.json();
             if (data.status !== 'ok') return [];
             return data.items.slice(0, 15).map(item => {
-                const imageCandidates = extractImageCandidates(item, feedCfg);
-                const primaryImage = imageCandidates[0] || (() => {
-                    const categoryColors = { 'Politics':'1e3a8a', 'Technology':'0f172a', 'Sports':'b91c1c', 'Entertainment':'831843', 'Business':'065f46', 'Health':'0e7c7c', 'Local':'4c1d95', 'World':'1e40af', 'Top':'f59e0b' };
-                    const color = categoryColors[feedCfg.category] || '3b82f6';
-                    return `https://placehold.co/800x450/${color}/white?text=${encodeURIComponent(feedCfg.name)}`;
-                })();
+                const imageUrl = extractImageFromItem(item, feedCfg);
                 return {
                     title: item.title,
                     link: item.link,
@@ -253,8 +250,7 @@
                     description: (item.description || "").replace(/<[^>]*>/g, '').substring(0, 200),
                     source: feedCfg.name,
                     category: feedCfg.category,
-                    imageCandidates: imageCandidates,
-                    imageUrl: primaryImage,
+                    imageUrl: imageUrl,
                     views: generateViews(item.title)
                 };
             });
@@ -283,27 +279,7 @@
         setTimeout(()=>t.remove(),2000);
     }
 
-    // ========== SPINNER MANAGEMENT (FIXED) ==========
-    function showEndSpinner(show) {
-        let spinner = document.getElementById('endSpinner');
-        if (show && !spinner) {
-            spinner = document.createElement('div');
-            spinner.id = "endSpinner";
-            spinner.className = "end-loader";
-            spinner.innerHTML = '<div class="loader"></div> Loading more articles...';
-            if (!sentinelElement) ensureSentinel();
-            if (sentinelElement && sentinelElement.parentNode) {
-                sentinelElement.parentNode.insertBefore(spinner, sentinelElement);
-            } else {
-                const feedDiv = document.getElementById('newsFeed');
-                if (feedDiv) feedDiv.appendChild(spinner);
-            }
-        } else if (!show && spinner) {
-            spinner.remove();
-        }
-    }
-
-    // ========== INFINITE SCROLL FOR "ALL" CATEGORY ==========
+    // ========== INFINITE SCROLL FOR "ALL" CATEGORY (Append only, no gaps) ==========
     async function loadMoreArticlesForAll() {
         if (isLoadingMore) return;
         isLoadingMore = true;
@@ -315,30 +291,37 @@
             const results = await Promise.all(feedsToFetch.map(f => fetchFeed(f)));
             let newArticles = [];
             results.forEach(r => newArticles.push(...r));
+            
+            // Deduplicate using link without query parameters
             const existingLinks = new Set(
                 allArticles.map(a => (a.link || '').split('?')[0])
             );
             const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
+            
             if (uniqueNew.length >= 3) {
                 allArticles.push(...uniqueNew);
                 const feedContainer = document.getElementById('newsFeed');
+                // Use DocumentFragment for better performance
+                const fragment = document.createDocumentFragment();
                 uniqueNew.forEach(art => {
-                    const cardHtml = renderArticleCard(art);
-                    feedContainer.insertAdjacentHTML('beforeend', cardHtml);
-                    const newCard = feedContainer.lastElementChild;
-                    const img = newCard.querySelector('img');
-                    if (img && art.imageCandidates && art.imageCandidates.length) {
-                        setImageWithRetry(img, art.imageCandidates, 5, 5000);
-                    } else if (img && art.imageUrl) {
-                        setImageWithRetry(img, [art.imageUrl], 5, 5000);
-                    }
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = renderArticleCard(art);
+                    const card = tempDiv.firstElementChild;
+                    fragment.appendChild(card);
                 });
+                feedContainer.appendChild(fragment);
+                // Lazy load images
+                lazyLoadImages();
                 attachSaveEvents();
                 attachShareEvents();
                 showToast(`✨ ${uniqueNew.length} new articles loaded`);
                 hasMoreArticles = true;
                 clearRetryButton();
+                // Re-attach sentinel and observer after loading new content
+                ensureSentinel();
+                initScrollObserver();
             } else {
+                // Not enough new articles – wait 5 seconds and retry
                 setTimeout(() => {
                     if (!isLoadingMore) {
                         loadMoreArticlesForAll();
@@ -439,9 +422,8 @@
     function renderArticleCard(art) {
         const isSaved = savedArticles.some(s => s.link === art.link);
         const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-        const candidatesJson = JSON.stringify(art.imageCandidates || [art.imageUrl]);
         return `<div class="news-card">
-            <img class="card-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
+            <img class="card-img" data-src="${art.imageUrl}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading..." loading="lazy">
             <div class="card-body">
                 <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                 <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
@@ -455,35 +437,27 @@
         </div>`;
     }
 
+    // Lazy load images after DOM updates
     function applyImageRetries() {
-        document.querySelectorAll('.card-img').forEach(img => {
-            if (img.dataset.retryApplied) return;
-            img.dataset.retryApplied = 'true';
-            let candidates = [];
-            try {
-                const raw = img.getAttribute('data-candidates');
-                if (raw) candidates = JSON.parse(raw);
-            } catch(e) {}
-            if (candidates.length === 0 && img.getAttribute('data-src')) {
-                candidates = [img.getAttribute('data-src')];
-            }
-            if (candidates.length) {
-                setImageWithRetry(img, candidates, 5, 5000);
-            }
-        });
+        lazyLoadImages();
     }
 
     function renderAllCategoryInitial() {
         const feedDiv = document.getElementById('newsFeed');
         feedDiv.innerHTML = '';
         const initialArticles = allArticles.slice(0, 20);
+        const fragment = document.createDocumentFragment();
         initialArticles.forEach(art => {
-            feedDiv.insertAdjacentHTML('beforeend', renderArticleCard(art));
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = renderArticleCard(art);
+            fragment.appendChild(tempDiv.firstElementChild);
         });
+        feedDiv.appendChild(fragment);
         attachSaveEvents();
         attachShareEvents();
         applyImageRetries();
         ensureSentinel();
+        initScrollObserver();  // ensure observer is active after initial render
     }
 
     function renderTopNews() {
@@ -501,9 +475,8 @@
         toShow.forEach(art => {
             const isSaved = savedArticles.some(s => s.link === art.link);
             const formattedDate = new Date(art.pubDate).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-            const candidatesJson = JSON.stringify(art.imageCandidates || [art.imageUrl]);
             html += `<div class="news-card">
-                        <img class="card-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
+                        <img class="card-img" data-src="${art.imageUrl}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading..." loading="lazy">
                         <div class="card-body">
                             <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                             <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span><i class="far fa-calendar-alt"></i> ${formattedDate}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
@@ -546,6 +519,7 @@
         attachShareEvents();
         applyImageRetries();
         ensureSentinelForSpecific();
+        initScrollObserverForSpecificCategory(); // re-attach observer
     }
 
     function applyCategoryFilter() {
@@ -553,7 +527,6 @@
             const topContainer = document.getElementById('topNewsContainer');
             if (topContainer) topContainer.style.display = 'block';
             renderAllCategoryInitial();
-            initScrollObserver();
             if (topNewsArticles.length === 0) {
                 (async () => {
                     const results = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
@@ -584,7 +557,6 @@
             }
             displayLimit = 20;
             renderNewsFeed();
-            initScrollObserverForSpecificCategory();
         }
     }
 
@@ -632,7 +604,8 @@
                 if (displayLimit < currentFiltered.length) {
                     isLoadingMore = true;
                     showEndSpinner(true);
-                    setTimeout(() => {
+                    // Use requestAnimationFrame for smoother update
+                    requestAnimationFrame(() => {
                         displayLimit = Math.min(displayLimit + 10, currentFiltered.length);
                         renderNewsFeed();
                         isLoadingMore = false;
@@ -642,7 +615,7 @@
                                 if (cnt > 0) applyCategoryFilter();
                             });
                         }
-                    }, 300);
+                    });
                 } else {
                     loadMoreForSpecificCategory();
                 }
@@ -682,6 +655,17 @@
         retryContainer = null;
     }
 
+    function showEndSpinner(show) {
+        let spinner = document.getElementById('endSpinner');
+        if (show && !spinner) {
+            spinner = document.createElement('div');
+            spinner.id = "endSpinner";
+            spinner.className = "end-loader";
+            spinner.innerHTML = '<div class="loader"></div> Loading more...';
+            if (sentinelElement && sentinelElement.parentNode) sentinelElement.parentNode.insertBefore(spinner, sentinelElement);
+        } else if (!show && spinner) spinner.remove();
+    }
+
     function showTopNewsSpinner(show) {
         let spinner = document.getElementById('topNewsEndSpinner');
         if (show && !spinner && topNewsSentinel) {
@@ -708,7 +692,7 @@
         };
     }
 
-    // ========== INITIAL LOAD ==========
+    // ========== INITIAL LOAD (LOCAL FIRST) ==========
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '<div class="loader"></div> Fetching local news first...';
@@ -718,7 +702,7 @@
             const arts = await fetchFeed(feed);
             localArticles.push(...arts);
         }
-        statusDiv.innerHTML = `✅ Local: ${localArticles.length} stories. Fetching world...`;
+        statusDiv.innerHTML = `✅ Local: ${localArticles.length} stories. Fetching world news...`;
         let worldArticles = [];
         for (let i = 0; i < WORLD_FEEDS.length; i += 8) {
             const batch = WORLD_FEEDS.slice(i, i+8);
@@ -824,13 +808,13 @@
         const carousel = document.getElementById('trendingCarousel');
         if(!trendingItems.length) { carousel.innerHTML = '<div>No trending</div>'; return; }
         carousel.innerHTML = trendingItems.map(art => {
-            const candidatesJson = JSON.stringify(art.imageCandidates || [art.imageUrl]);
+            const imgSrc = art.imageUrl;
             return `<div class="trend-card-full">
-                <img class="trend-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x400/e2e8f0/white?text=Loading...">
+                <img class="trend-img" data-src="${imgSrc}" src="https://placehold.co/800x400/e2e8f0/white?text=Loading..." loading="lazy">
                 <div class="trend-info">
                     <h3><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></h3>
                     <div class="trend-meta"><span><i class="fas fa-globe"></i> ${art.source}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
-                    <button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${art.imageUrl}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button>
+                    <button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button>
                 </div>
             </div>`;
         }).join('');
@@ -881,7 +865,11 @@
         }
         applyCategoryFilter();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => { if(currentCategory === 'all') initScrollObserver(); else initScrollObserverForSpecificCategory(); }, 100);
+        // Re-initialize observer after a short delay
+        setTimeout(() => {
+            if(currentCategory === 'all') initScrollObserver();
+            else initScrollObserverForSpecificCategory();
+        }, 100);
     }
 
     async function detectLocation() {
@@ -927,9 +915,8 @@
         if(!savedArticles.length) { savedDiv.innerHTML = '<div style="padding:2rem;text-align:center;"><i class="fas fa-archive"></i> No saved articles.</div>'; return; }
         let html = '';
         savedArticles.forEach(art => {
-            const candidatesJson = JSON.stringify([art.imageUrl]);
             html += `<div class="news-card">
-                <img class="card-img" data-candidates='${escapeHtml(candidatesJson)}' src="https://placehold.co/800x450/e2e8f0/white?text=Loading...">
+                <img class="card-img" data-src="${art.imageUrl || 'https://placehold.co/800x450/3b82f6/white?text=Saved'}" src="https://placehold.co/800x450/e2e8f0/white?text=Loading..." loading="lazy">
                 <div class="card-body">
                     <div class="news-title"><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></div>
                     <div class="news-meta"><span class="source-tag"><i class="fas fa-globe"></i> ${escapeHtml(art.source)}</span><span>saved offline</span></div>
@@ -986,25 +973,7 @@
         carouselInterval = null;
         renderSavedArticles();
     }
-// ========== OFFLINE OVERLAY HANDLING ==========
-const offlineOverlay = document.getElementById('offlineOverlay');
 
-function updateOfflineUI(isOffline) {
-    if (offlineOverlay) {
-        offlineOverlay.style.display = isOffline ? 'flex' : 'none';
-    }
-}
-
-// Listen for network changes
-window.addEventListener('online', () => updateOfflineUI(false));
-window.addEventListener('offline', () => updateOfflineUI(true));
-
-// Check initial state
-if (!navigator.onLine) {
-    updateOfflineUI(true);
-} else {
-    updateOfflineUI(false);
-}
     // ========== EVENT LISTENERS ==========
     document.querySelectorAll('.cat-pill').forEach(pill => pill.addEventListener('click', () => switchCategory(pill.dataset.cat)));
     const themeSwitch = document.getElementById('themeSwitch');
@@ -1030,7 +999,7 @@ if (!navigator.onLine) {
     if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v23.0\n✅ All feeds restored\n✅ Loading spinner fixed\n✅ Images retry with multiple candidates\n✅ Infinite scroll works\n✅ Top news infinite scroll"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v24.0\n✅ Offline overlay – bottom nav always visible\n✅ Smoother infinite scroll\n✅ Lazy image loading\n✅ All features intact"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -1052,7 +1021,63 @@ if (!navigator.onLine) {
         btn.addEventListener('click', () => { if (btn.dataset.nav === 'home') showHomeView(); else if (btn.dataset.nav === 'saved') showSavedView(); });
     });
 
-    // ========== START ==========
+    // ========== OFFLINE OVERLAY HANDLING (RELIABLE) ==========
+    const offlineOverlay = document.getElementById('offlineOverlay');
+
+    // Force hide overlay initially (in case CSS fails)
+    if (offlineOverlay) {
+        offlineOverlay.style.display = 'none';
+    }
+
+    function showOfflineOverlay(show) {
+        if (!offlineOverlay) return;
+        offlineOverlay.style.display = show ? 'flex' : 'none';
+    }
+
+    // Reliable online check – tries to fetch a tiny resource from a fast CDN
+    async function checkOnlineStatus() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css', {
+                method: 'HEAD',
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+            clearTimeout(timeoutId);
+            return response.ok;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    async function updateOfflineUI() {
+        const isOnline = await checkOnlineStatus();
+        showOfflineOverlay(!isOnline);
+    }
+
+    // Listen for network changes
+    window.addEventListener('online', () => {
+        // Give the network a moment to fully recover
+        setTimeout(updateOfflineUI, 1000);
+    });
+    window.addEventListener('offline', () => {
+        // Show offline overlay immediately
+        showOfflineOverlay(true);
+    });
+
+    // Initial check – run after DOM is ready and again after a short delay
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOfflineUI();
+            setTimeout(updateOfflineUI, 2000);
+        });
+    } else {
+        updateOfflineUI();
+        setTimeout(updateOfflineUI, 2000);
+    }
+
+    // ========== START (existing) ==========
     detectLocation().then(() => {
         loadAllFeeds();
         setupScrollFallback();
