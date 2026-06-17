@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <title>Amimo Discovery – Offline</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <style>
+        /* ── reset & base ── */
         * {
             margin: 0;
             padding: 0;
@@ -21,28 +22,89 @@
         .offline-container {
             max-width: 600px;
             margin: 2rem auto;
-            background: rgba(255,255,255,0.85);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             border-radius: 32px;
             padding: 2rem 1.5rem;
             text-align: center;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-            border: 1px solid rgba(59,130,246,0.3);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            position: relative;
+        }
+
+        /* ── back button (top-left) ── */
+        .back-btn {
+            position: absolute;
+            top: 1.2rem;
+            left: 1.2rem;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 40px;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1e293b;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s, transform 0.15s;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: scale(1.02);
+        }
+        .back-btn i {
+            font-size: 0.9rem;
+            color: #3b82f6;
+        }
+
+        /* ── offline icon + status row ── */
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+            flex-wrap: wrap;
         }
         .offline-icon {
-            font-size: 5rem;
+            font-size: 4rem;
             color: #ef4444;
-            margin-bottom: 1rem;
+            line-height: 1;
         }
+        .wifi-indicator {
+            font-size: 1.2rem;
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.12);
+            border-radius: 40px;
+            padding: 0.3rem 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            font-size: 0.8rem;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .wifi-indicator i {
+            font-size: 1rem;
+        }
+
+        /* ── headings ── */
         h2 {
             font-size: 1.8rem;
-            margin-bottom: 0.5rem;
+            margin: 0.5rem 0 0.25rem;
             color: #1e293b;
         }
         .message {
             color: #475569;
             margin-bottom: 2rem;
         }
+
+        /* ── buttons ── */
         .button-group {
             display: flex;
             gap: 1rem;
@@ -78,10 +140,21 @@
             background: #475569;
             transform: scale(1.02);
         }
+        .btn-outline {
+            background: transparent;
+            color: #1e293b;
+            border: 1.5px solid rgba(59, 130, 246, 0.3);
+        }
+        .btn-outline:hover {
+            background: rgba(59, 130, 246, 0.06);
+            transform: scale(1.02);
+        }
+
+        /* ── saved articles ── */
         .saved-section {
             margin-top: 2rem;
             text-align: left;
-            border-top: 1px solid rgba(0,0,0,0.1);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
             padding-top: 1.5rem;
         }
         .saved-title {
@@ -98,11 +171,19 @@
             gap: 1rem;
         }
         .saved-card {
-            background: rgba(255,255,255,0.6);
+            background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(4px);
             border-radius: 20px;
             padding: 1rem;
-            border: 1px solid rgba(59,130,246,0.2);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .saved-card .card-info {
+            flex: 1;
+            min-width: 140px;
         }
         .saved-card h4 {
             font-size: 1rem;
@@ -111,7 +192,14 @@
         .saved-card p {
             font-size: 0.75rem;
             color: #4b5563;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .saved-card .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.25rem;
         }
         .saved-card a {
             color: #3b82f6;
@@ -119,20 +207,46 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
+        .remove-saved {
+            background: none;
+            border: none;
+            color: #dc2626;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 30px;
+            transition: background 0.15s;
+        }
+        .remove-saved:hover {
+            background: rgba(220, 38, 38, 0.08);
+        }
         .empty-saved {
             text-align: center;
             padding: 2rem;
             color: #64748b;
         }
+
+        /* ── footer ── */
         footer {
             margin-top: 2rem;
             font-size: 0.7rem;
             text-align: center;
             color: #6c757d;
         }
+
+        /* ── responsive ── */
         @media (max-width: 500px) {
             .offline-container {
-                padding: 1.5rem;
+                padding: 1.5rem 1rem;
+            }
+            .back-btn {
+                top: 0.8rem;
+                left: 0.8rem;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.75rem;
             }
             .button-group {
                 flex-direction: column;
@@ -140,79 +254,75 @@
             .btn {
                 justify-content: center;
             }
+            .offline-icon {
+                font-size: 3.2rem;
+            }
+            .saved-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .saved-card .card-actions {
+                justify-content: flex-start;
+                margin-top: 0.5rem;
+            }
         }
     </style>
 </head>
 <body>
+
     <div class="offline-container" id="offlineContainer">
-        <div class="offline-icon">
-            <i class="fas fa-wifi-slash"></i>
+
+        <!-- ─── BACK BUTTON ─── -->
+        <button class="back-btn" id="backBtn" aria-label="Go back">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+
+        <!-- ─── STATUS ROW: wifi-slash + wifi indicator ─── -->
+        <div class="status-row">
+            <div class="offline-icon">
+                <i class="fas fa-wifi-slash"></i>
+            </div>
+            <span class="wifi-indicator">
+                <i class="fas fa-wifi"></i> Offline
+            </span>
         </div>
+
         <h2>You're offline</h2>
         <p class="message">No internet connection. You can still access your saved articles.</p>
-        
+
+        <!-- ─── BUTTON GROUP ─── -->
         <div class="button-group">
-            <button class="btn btn-primary" id="viewSavedBtn"><i class="fas fa-bookmark"></i> View Saved Articles</button>
-            <button class="btn btn-secondary" id="reloadBtn"><i class="fas fa-sync-alt"></i> Reload</button>
+            <button class="btn btn-primary" id="viewSavedBtn">
+                <i class="fas fa-bookmark"></i> View Saved Articles
+            </button>
+            <button class="btn btn-secondary" id="reloadBtn">
+                <i class="fas fa-sync-alt"></i> Reload
+            </button>
         </div>
-        
+
+        <!-- ─── SAVED ARTICLES ─── -->
         <div id="savedArticlesContainer" class="saved-section" style="display: none;">
             <div class="saved-title">
                 <i class="fas fa-database"></i> Your Offline Library
             </div>
             <div id="savedList" class="saved-list"></div>
         </div>
+
         <footer>
             <i class="fas fa-cloud-moon"></i> Amimo Discovery · Offline mode
         </footer>
     </div>
 
     <script>
-        // Load saved articles from localStorage
+        // ─── helpers ──────────────────────────────────────────────
         function getSavedArticles() {
-            const saved = localStorage.getItem("amimo_saved");
+            const saved = localStorage.getItem('amimo_saved');
             return saved ? JSON.parse(saved) : [];
-        }
-
-        // Render saved articles
-        function renderSavedArticles() {
-            const container = document.getElementById('savedArticlesContainer');
-            const listDiv = document.getElementById('savedList');
-            const articles = getSavedArticles();
-            
-            if (articles.length === 0) {
-                listDiv.innerHTML = `<div class="empty-saved"><i class="fas fa-folder-open"></i> No saved articles yet.<br>Go online and tap 💾 on any news to store offline.</div>`;
-            } else {
-                let html = '';
-                articles.forEach(art => {
-                    html += `
-                        <div class="saved-card">
-                            <h4>${escapeHtml(art.title)}</h4>
-                            <p>${escapeHtml(art.source || 'Unknown source')} • saved offline</p>
-                            <a href="${art.link}" target="_blank">Read original <i class="fas fa-external-link-alt"></i></a>
-                            <button class="remove-saved" data-link="${art.link}" style="background:none; border:none; color:#dc2626; font-size:0.7rem; margin-left:1rem; cursor:pointer;"><i class="fas fa-trash-alt"></i> Remove</button>
-                        </div>
-                    `;
-                });
-                listDiv.innerHTML = html;
-                
-                // Attach remove events
-                document.querySelectorAll('.remove-saved').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const link = btn.dataset.link;
-                        let saved = getSavedArticles();
-                        saved = saved.filter(s => s.link !== link);
-                        localStorage.setItem("amimo_saved", JSON.stringify(saved));
-                        renderSavedArticles();  // re-render
-                    });
-                });
-            }
-            container.style.display = 'block';
         }
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>]/g, m => {
+            return str.replace(/[&<>]/g, function(m) {
                 if (m === '&') return '&amp;';
                 if (m === '<') return '&lt;';
                 if (m === '>') return '&gt;';
@@ -220,16 +330,75 @@
             });
         }
 
-        // Button handlers
-        document.getElementById('viewSavedBtn').addEventListener('click', () => {
+        // ─── render saved articles ──────────────────────────────
+        function renderSavedArticles() {
+            const container = document.getElementById('savedArticlesContainer');
+            const listDiv = document.getElementById('savedList');
+            const articles = getSavedArticles();
+
+            if (articles.length === 0) {
+                listDiv.innerHTML =
+                    `<div class="empty-saved"><i class="fas fa-folder-open"></i> No saved articles yet.<br>Go online and tap 💾 on any news to store offline.</div>`;
+            } else {
+                let html = '';
+                articles.forEach(function(art) {
+                    html += `
+                        <div class="saved-card">
+                            <div class="card-info">
+                                <h4>${escapeHtml(art.title)}</h4>
+                                <p>${escapeHtml(art.source || 'Unknown source')} • saved offline</p>
+                            </div>
+                            <div class="card-actions">
+                                <a href="${art.link}" target="_blank">Read original <i class="fas fa-external-link-alt"></i></a>
+                                <button class="remove-saved" data-link="${art.link}">
+                                    <i class="fas fa-trash-alt"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listDiv.innerHTML = html;
+
+                // attach remove events
+                document.querySelectorAll('.remove-saved').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        const link = btn.dataset.link;
+                        let saved = getSavedArticles();
+                        saved = saved.filter(function(s) { return s.link !== link; });
+                        localStorage.setItem('amimo_saved', JSON.stringify(saved));
+                        renderSavedArticles();
+                    });
+                });
+            }
+            container.style.display = 'block';
+        }
+
+        // ─── back button ──────────────────────────────────────────
+        document.getElementById('backBtn').addEventListener('click', function() {
+            // if there's history, go back; otherwise fallback to a sensible default
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // fallback: try to go to the app root (you can change this)
+                window.location.href = '/';
+            }
+        });
+
+        // ─── view saved ──────────────────────────────────────────
+        document.getElementById('viewSavedBtn').addEventListener('click', function() {
             renderSavedArticles();
         });
-        
-        document.getElementById('reloadBtn').addEventListener('click', () => {
+
+        // ─── reload ──────────────────────────────────────────────
+        document.getElementById('reloadBtn').addEventListener('click', function() {
             window.location.reload();
         });
-        
-        // Optional: if user comes directly offline, show a toast or auto-display saved if they click
+
+        // ─── (optional) auto-show saved if they came here via a "saved" deep link ──
+        // if URL has ?show=saved, auto-expand
+        if (window.location.search.includes('show=saved')) {
+            renderSavedArticles();
+        }
     </script>
 </body>
-    </html>
+</html>
