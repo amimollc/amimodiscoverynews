@@ -1,6 +1,6 @@
-// ===================== MAIN.JS - CATEGORY PAGES + TOP NEWS AT BOTTOM =====================
+// ===================== MAIN.JS - COMPLETE (HOME + CATEGORY PAGES) =====================
 (function() {
-    // ========== RSS FEEDS ==========
+    // ========== RSS FEEDS (FULL LIST) ==========
     const WORLD_FEEDS = [
         { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
         { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
@@ -141,7 +141,7 @@
     let currentView = "home";
     let hasMoreArticles = true;
 
-    // Top news infinite
+    // Top news
     let topNewsArticles = [];
     let topNewsDisplayed = 5;
     let isLoadingTopNews = false;
@@ -149,7 +149,26 @@
     let topNewsObserver = null;
     let hasMoreTopNews = true;
 
-    // ========== STRONG IMAGE EXTRACTION WITH RETRY ==========
+    // ========== HELPER FUNCTIONS ==========
+    function generateViews(title) {
+        let hash = 0;
+        for (let i = 0; i < title.length; i++) hash = ((hash << 5) - hash) + title.charCodeAt(i);
+        return Math.abs(hash) % 300000 + 5000;
+    }
+
+    function formatViews(num) { return num>=1000000?(num/1000000).toFixed(1)+'M':num>=1000?(num/1000).toFixed(1)+'K':num; }
+    function escapeHtml(str) { return str?.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]) || ''; }
+    function showToast(msg) {
+        let t = document.createElement('div');
+        t.innerText = msg;
+        t.style.position = 'fixed'; t.style.bottom = '70px'; t.style.left = '20px';
+        t.style.background = 'var(--accent-dark)'; t.style.color = 'white';
+        t.style.padding = '8px 18px'; t.style.borderRadius = '40px'; t.style.zIndex = '9999';
+        t.style.backdropFilter = 'blur(8px)';
+        document.body.appendChild(t);
+        setTimeout(()=>t.remove(),2000);
+    }
+
     function extractImageFromItem(item, feedCfg) {
         const candidates = [];
         if (item.media?.content?.[0]?.url) candidates.push(item.media.content[0].url);
@@ -258,25 +277,6 @@
         }
     }
 
-    function generateViews(title) {
-        let hash = 0;
-        for (let i = 0; i < title.length; i++) hash = ((hash << 5) - hash) + title.charCodeAt(i);
-        return Math.abs(hash) % 300000 + 5000;
-    }
-
-    function formatViews(num) { return num>=1000000?(num/1000000).toFixed(1)+'M':num>=1000?(num/1000).toFixed(1)+'K':num; }
-    function escapeHtml(str) { return str?.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]) || ''; }
-    function showToast(msg) {
-        let t = document.createElement('div');
-        t.innerText = msg;
-        t.style.position = 'fixed'; t.style.bottom = '70px'; t.style.left = '20px';
-        t.style.background = 'var(--accent-dark)'; t.style.color = 'white';
-        t.style.padding = '8px 18px'; t.style.borderRadius = '40px'; t.style.zIndex = '9999';
-        t.style.backdropFilter = 'blur(8px)';
-        document.body.appendChild(t);
-        setTimeout(()=>t.remove(),2000);
-    }
-
     // ========== INFINITE SCROLL FOR "ALL" CATEGORY ==========
     async function loadMoreArticlesForAll() {
         if (isLoadingMore) return;
@@ -312,11 +312,6 @@
                 showToast(`✨ ${uniqueNew.length} new articles loaded`);
                 hasMoreArticles = true;
                 clearRetryButton();
-                // Re-render the grouped view to show new articles in each category section
-                // However, to keep infinite scroll smooth, we just append and don't re-render the entire view.
-                // But the categories are grouped, so appending new articles to the bottom is fine.
-                // We'll keep the current implementation: append to the end of the feed.
-                // The sentinel will be re-attached.
                 ensureSentinel();
                 initScrollObserver();
             } else {
@@ -439,7 +434,6 @@
         lazyLoadImages();
     }
 
-    // ----- RENDER ALL CATEGORY (GROUPED) -----
     function renderAllCategoryGrouped() {
         const feedDiv = document.getElementById('newsFeed');
         if (!allArticles.length) {
@@ -450,7 +444,7 @@
         const categoriesOrder = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
         let html = '';
         for (let cat of categoriesOrder) {
-            const limit = 5; // At least 5 articles per category
+            const limit = 5;
             const catArticles = allArticles.filter(a => a.category === cat).slice(0, limit);
             if (catArticles.length) {
                 const icon = getCategoryIcon(cat);
@@ -459,7 +453,6 @@
                 catArticles.forEach(art => {
                     html += renderArticleCard(art);
                 });
-                // "Show More" button that links to dedicated category page (e.g., Local.html, World.html)
                 html += `<a href="${cat}.html" class="show-more-link">
                             <button class="show-more-btn"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
                         </a>
@@ -467,17 +460,19 @@
             }
         }
 
-        // ---- Top News after all categories ----
+        // Top News after all categories
         const topContainer = document.getElementById('topNewsContainer');
         if (topContainer) {
-            // Move it after feedDiv if not already
             if (topContainer.parentNode && topContainer.previousSibling !== feedDiv) {
                 feedDiv.parentNode.insertBefore(topContainer, feedDiv.nextSibling);
             }
-            // Show and render top news
-            topContainer.style.display = 'block';
-            renderTopNews();
-            setupTopNewsInfinite();
+            if (topNewsArticles.length) {
+                topContainer.style.display = 'block';
+                renderTopNews();
+                setupTopNewsInfinite();
+            } else {
+                topContainer.style.display = 'none';
+            }
         }
 
         feedDiv.innerHTML = html;
@@ -485,7 +480,7 @@
         attachShareEvents();
         applyImageRetries();
         ensureSentinel();
-        initScrollObserver(); // for infinite scroll on "All" category
+        initScrollObserver();
     }
 
     function renderTopNews() {
@@ -556,7 +551,6 @@
 
     function applyCategoryFilter() {
         if (currentCategory === 'all') {
-            // Render the grouped view – top news will be placed after categories
             renderAllCategoryGrouped();
         } else {
             const topContainer = document.getElementById('topNewsContainer');
@@ -716,52 +710,87 @@
         };
     }
 
-    // ========== INITIAL LOAD (LOCAL FIRST) ==========
+    // ========== INITIAL LOAD (MODIFIED FOR CATEGORY PAGES) ==========
     async function loadAllFeeds() {
         const statusDiv = document.getElementById('statusMsg');
-        statusDiv.innerHTML = '<div class="loader"></div> Fetching local news first...';
-        let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
-        let localArticles = [];
-        for (let feed of localFeeds) {
-            const arts = await fetchFeed(feed);
-            localArticles.push(...arts);
+        statusDiv.innerHTML = '<div class="loader"></div> Loading...';
+
+        if (currentCategory === 'all') {
+            // Home page: load local + world
+            statusDiv.innerHTML = 'Fetching local news first...';
+            let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+            let localArticles = [];
+            for (let feed of localFeeds) {
+                const arts = await fetchFeed(feed);
+                localArticles.push(...arts);
+            }
+            statusDiv.innerHTML = `✅ Local: ${localArticles.length}. Fetching world...`;
+            let worldArticles = [];
+            for (let i = 0; i < WORLD_FEEDS.length; i += 8) {
+                const batch = WORLD_FEEDS.slice(i, i+8);
+                const results = await Promise.all(batch.map(f => fetchFeed(f)));
+                results.forEach(r => worldArticles.push(...r));
+                await new Promise(r => setTimeout(r, 100));
+            }
+            allArticles = [...localArticles, ...worldArticles];
+            const uniqueMap = new Map();
+            allArticles.forEach(a => { 
+                const key = (a.link || '').split('?')[0];
+                if (!uniqueMap.has(key)) uniqueMap.set(key, a);
+            });
+            allArticles = Array.from(uniqueMap.values());
+            allArticles.forEach(a => { a.views = generateViews(a.title); });
+            allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+            statusDiv.innerHTML = `✅ ${allArticles.length} total stories ready`;
+
+            // Load top news for home
+            const topRes = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
+            let topTemp = [];
+            topRes.forEach(r => topTemp.push(...r));
+            const topUnique = new Map();
+            topTemp.forEach(a => { 
+                const key = (a.link || '').split('?')[0];
+                if (!topUnique.has(key)) topUnique.set(key, a);
+            });
+            topNewsArticles = Array.from(topUnique.values());
+            topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
+            topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+            topNewsDisplayed = 5;
+            if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
+            hasMoreTopNews = true;
+        } else {
+            // Category page: load only that category
+            let feedsToFetch = [];
+            if (currentCategory === 'Local') {
+                feedsToFetch = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+            } else {
+                feedsToFetch = WORLD_FEEDS.filter(f => f.category === currentCategory);
+            }
+            if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
+            statusDiv.innerHTML = `Fetching ${currentCategory} news...`;
+            let articles = [];
+            for (let feed of feedsToFetch) {
+                const arts = await fetchFeed(feed);
+                articles.push(...arts);
+            }
+            const uniqueMap = new Map();
+            articles.forEach(a => { 
+                const key = (a.link || '').split('?')[0];
+                if (!uniqueMap.has(key)) uniqueMap.set(key, a);
+            });
+            allArticles = Array.from(uniqueMap.values());
+            allArticles.forEach(a => { a.views = generateViews(a.title); });
+            allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+            statusDiv.innerHTML = `✅ ${allArticles.length} ${currentCategory} stories ready`;
+            // No top news on category pages
+            topNewsArticles = [];
+            hasMoreTopNews = false;
+            // Hide top news container
+            const topContainer = document.getElementById('topNewsContainer');
+            if (topContainer) topContainer.style.display = 'none';
         }
-        statusDiv.innerHTML = `✅ Local: ${localArticles.length} stories. Fetching world news...`;
-        let worldArticles = [];
-        for (let i = 0; i < WORLD_FEEDS.length; i += 8) {
-            const batch = WORLD_FEEDS.slice(i, i+8);
-            const results = await Promise.all(batch.map(f => fetchFeed(f)));
-            results.forEach(r => worldArticles.push(...r));
-            await new Promise(r => setTimeout(r, 100));
-        }
-        allArticles = [...localArticles, ...worldArticles];
-        const uniqueMap = new Map();
-        allArticles.forEach(a => { 
-            const key = (a.link || '').split('?')[0];
-            if (!uniqueMap.has(key)) uniqueMap.set(key, a);
-        });
-        allArticles = Array.from(uniqueMap.values());
-        allArticles.forEach(a => { a.views = generateViews(a.title); });
-        allArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-        statusDiv.innerHTML = `✅ ${allArticles.length} total stories ready`;
+
         storeAllArticlesForSearch();
-        
-        // Load top news
-        const topRes = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
-        let topTemp = [];
-        topRes.forEach(r => topTemp.push(...r));
-        const topUnique = new Map();
-        topTemp.forEach(a => { 
-            const key = (a.link || '').split('?')[0];
-            if (!topUnique.has(key)) topUnique.set(key, a);
-        });
-        topNewsArticles = Array.from(topUnique.values());
-        topNewsArticles.forEach(a => { a.views = generateViews(a.title); });
-        topNewsArticles.sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
-        topNewsDisplayed = 5;
-        if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
-        hasMoreTopNews = true;
-        
         applyCategoryFilter();
         renderTrendingCarousel();
         updateSavedCounter();
@@ -1022,7 +1051,7 @@
     if(menuTrending) menuTrending.addEventListener('click', () => { document.getElementById('trendingCarousel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeMenu(); });
     if(menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
     if(menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
-    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v26.0\n✅ All category shows 5+ per category with Show More links to pages\n✅ Top News after all categories\n✅ Page detection for category pages"); closeMenu(); });
+    if(menuAbout) menuAbout.addEventListener('click', () => { alert("Amimo Blue v27.0\n✅ Home shows categories with 5 articles each\n✅ Show More links to category pages\n✅ Top News at bottom\n✅ Category pages load only that category"); closeMenu(); });
     if(menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
     if(viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
@@ -1084,17 +1113,20 @@
         setTimeout(updateOfflineUI, 2000);
     }
 
-    // ========== DETECT CATEGORY FROM PAGE NAME ==========
+    // ========== DETECT PAGE NAME FOR CATEGORY PAGES ==========
     const pageName = window.location.pathname.split('/').pop().replace('.html', '');
     const knownCategories = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
     if (knownCategories.includes(pageName)) {
         currentCategory = pageName;
-        // Highlight the corresponding category pill if on that page
+        // Highlight the category pill if present
         const pill = document.querySelector(`.cat-pill[data-cat="${pageName}"]`);
         if (pill) {
             document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
         }
+        // Also hide top news container on category pages
+        const topContainer = document.getElementById('topNewsContainer');
+        if (topContainer) topContainer.style.display = 'none';
     }
 
     // ========== START ==========
