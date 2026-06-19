@@ -3,40 +3,58 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    <!-- ─── CACHE‑PREVENTING META TAGS ─── -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
     <title>Amimo Discovery – Offline</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <style>
-        /* ── reset & base (unchanged) ── */
+        /* ── reset ── */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
+        /* ── body: full‑screen gradient ── */
         body {
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #f4f6fa, #eef2f5);
             min-height: 100vh;
             color: #1f2937;
-            padding: 1rem;
-        }
-        .offline-container {
-            max-width: 600px;
-            margin: 2rem auto;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 32px;
-            padding: 2rem 1.5rem;
-            text-align: center;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            position: relative; /* needed for absolute back button */
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* ── BACK BUTTON: top‑left, inside container ── */
+        /* ── offline container: full width ── */
+        .offline-container {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem 1.5rem 2rem;
+            background: transparent;
+            backdrop-filter: none;
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* ── BACK BUTTON: top‑left ── */
         .back-btn {
             position: absolute;
-            top: 1rem;
-            left: 1rem;
+            top: 1.2rem;
+            left: 1.2rem;
             background: rgba(255, 255, 255, 0.8);
             border: 1px solid rgba(59, 130, 246, 0.25);
             border-radius: 40px;
@@ -62,14 +80,14 @@
             color: #3b82f6;
         }
 
-        /* ── original offline icon (unchanged) ── */
+        /* ── original offline icon ── */
         .offline-icon {
             font-size: 5rem;
             color: #ef4444;
             margin-bottom: 1rem;
         }
 
-        /* ── heading row: "You're offline" + status badge ── */
+        /* ── heading row ── */
         .heading-row {
             display: flex;
             align-items: center;
@@ -81,7 +99,7 @@
         .heading-row h2 {
             font-size: 1.8rem;
             color: #1e293b;
-            margin: 0; /* remove default margin */
+            margin: 0;
         }
         .status-badge {
             background: rgba(59, 130, 246, 0.12);
@@ -101,11 +119,13 @@
             font-size: 0.8rem;
         }
 
-        /* ── rest: completely untouched ── */
+        /* ── message ── */
         .message {
             color: #475569;
             margin-bottom: 2rem;
         }
+
+        /* ── buttons ── */
         .button-group {
             display: flex;
             gap: 1rem;
@@ -141,6 +161,8 @@
             background: #475569;
             transform: scale(1.02);
         }
+
+        /* ── saved section ── */
         .saved-section {
             margin-top: 2rem;
             text-align: left;
@@ -218,6 +240,8 @@
             padding: 2rem;
             color: #64748b;
         }
+
+        /* ── footer ── */
         footer {
             margin-top: 2rem;
             font-size: 0.7rem;
@@ -268,12 +292,12 @@
             <i class="fas fa-arrow-left"></i> Back
         </button>
 
-        <!-- ─── ORIGINAL OFFLINE ICON (completely untouched) ─── -->
+        <!-- ─── ORIGINAL OFFLINE ICON ─── -->
         <div class="offline-icon">
             <i class="fas fa-wifi-slash"></i>
         </div>
 
-        <!-- ─── HEADING + NEW STATUS BADGE ─── -->
+        <!-- ─── HEADING + STATUS BADGE ─── -->
         <div class="heading-row">
             <h2>You're offline</h2>
             <span class="status-badge">
@@ -281,16 +305,16 @@
             </span>
         </div>
 
-        <!-- ─── ORIGINAL MESSAGE (unchanged) ─── -->
+        <!-- ─── MESSAGE ─── -->
         <p class="message">No internet connection. You can still access your saved articles.</p>
 
-        <!-- ─── ORIGINAL BUTTON GROUP (unchanged) ─── -->
+        <!-- ─── BUTTON GROUP ─── -->
         <div class="button-group">
             <button class="btn btn-primary" id="viewSavedBtn"><i class="fas fa-bookmark"></i> View Saved Articles</button>
             <button class="btn btn-secondary" id="reloadBtn"><i class="fas fa-sync-alt"></i> Reload</button>
         </div>
 
-        <!-- ─── ORIGINAL SAVED SECTION (unchanged) ─── -->
+        <!-- ─── SAVED ARTICLES ─── -->
         <div id="savedArticlesContainer" class="saved-section" style="display: none;">
             <div class="saved-title">
                 <i class="fas fa-database"></i> Your Offline Library
@@ -298,14 +322,14 @@
             <div id="savedList" class="saved-list"></div>
         </div>
 
-        <!-- ─── ORIGINAL FOOTER (unchanged) ─── -->
+        <!-- ─── FOOTER ─── -->
         <footer>
             <i class="fas fa-cloud-moon"></i> Amimo Discovery · Offline mode
         </footer>
     </div>
 
     <script>
-        // ─── all original JS, unchanged ──────────────────────
+        // ─── get saved articles ──────────────────────────────
         function getSavedArticles() {
             const saved = localStorage.getItem('amimo_saved');
             return saved ? JSON.parse(saved) : [];
@@ -362,24 +386,35 @@
             container.style.display = 'block';
         }
 
-        // ─── back button handler ──────────────────────────────
+        // ─── BACK BUTTON — goes back to previous page/app state ──
         document.getElementById('backBtn').addEventListener('click', function() {
+            // 1. Try standard browser history (works for web & SPAs with router)
             if (window.history.length > 1) {
                 window.history.back();
-            } else {
-                window.location.href = '/';
+                return;
             }
+
+            // 2. Fallback: if there's a referring page, go there
+            if (document.referrer) {
+                window.location.href = document.referrer;
+                return;
+            }
+
+            // 3. Last resort: go to app root (but this should rarely happen)
+            window.location.href = '/';
         });
 
+        // ─── view saved ──────────────────────────────────────
         document.getElementById('viewSavedBtn').addEventListener('click', function() {
             renderSavedArticles();
         });
 
+        // ─── reload ──────────────────────────────────────────
         document.getElementById('reloadBtn').addEventListener('click', function() {
             window.location.reload();
         });
 
-        // optional auto‑show
+        // ─── auto-show saved if URL param asks ──────────────
         if (window.location.search.includes('show=saved')) {
             renderSavedArticles();
         }
