@@ -1,3 +1,8 @@
+/* ================================================================
+   style.css – Amimo Discovery
+   Full with dark shimmer for all images (including trending)
+   ================================================================ */
+
 * {
     margin: 0;
     padding: 0;
@@ -112,15 +117,25 @@ body {
 
 .location-badge {
     background: var(--accent-dark);
-    padding: 0.3rem 1rem;
+    padding: 0.2rem 0.8rem;
     border-radius: 40px;
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     font-weight: 500;
     color: white;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.3rem;
     box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    user-select: none;
+}
+.location-badge:hover {
+    background: var(--accent-blue);
+    transform: scale(1.02);
+}
+.location-badge:active {
+    transform: scale(0.96);
 }
 
 /* ========== SEARCH ZONE ========== */
@@ -235,6 +250,8 @@ body {
     cursor: pointer;
     box-shadow: var(--shadow-sm);
     transition: all 0.2s;
+    text-decoration: none;
+    border: none;
 }
 
 .cat-pill.active {
@@ -291,8 +308,6 @@ body {
     background-clip: text;
     color: transparent;
     font-size: 1.6rem;
-    animation: none;
-    var(--accent-blue);
 }
 
 .trending-carousel {
@@ -313,6 +328,7 @@ body {
     overflow: hidden;
     box-shadow: var(--shadow-md);
     transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
 .trend-card-full:hover {
@@ -334,7 +350,15 @@ body {
     font-size: 1rem;
     margin-bottom: 0.4rem;
     line-height: 1.3;
-    color:var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.trend-info h3 a {
+    text-decoration: none;
+    color: var(--text-primary);
+}
+.trend-info h3 a:hover {
+    color: var(--accent-blue);
 }
 
 .trend-meta {
@@ -343,11 +367,6 @@ body {
     font-size: 0.7rem;
     color: var(--text-muted);
     margin: 0.5rem 0;
-}
-/* Optional: Add "HOT" badge to trending cards */
-.trend-card-full {
-    position: relative;
-    overflow: hidden;
 }
 
 .trend-card-full::after {
@@ -365,7 +384,8 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     letter-spacing: 1px;
 }
-/* ========== NEWS FEED – CONSISTENT GAPS EVERYWHERE ========== */
+
+/* ========== NEWS FEED ========== */
 .news-feed, .saved-feed {
     display: flex;
     flex-direction: column;
@@ -373,7 +393,6 @@ body {
     padding: 0 1.5rem 2rem;
 }
 
-/* Category sections in All news view */
 .category-section {
     margin-bottom: 1.5rem;
 }
@@ -387,15 +406,6 @@ body {
     color: var(--accent-blue);
 }
 
-/* Cards inside category sections also need gap */
-.category-section .news-card {
-    margin-bottom: 1.25rem;
-}
-
-.category-section .news-card:last-child {
-    margin-bottom: 0;
-}
-
 .news-card {
     background: var(--card-bg);
     border-radius: 28px;
@@ -403,7 +413,7 @@ body {
     box-shadow: var(--shadow-md);
     transition: all 0.25s ease;
     width: 100%;
-    margin-bottom: 0; /* Controlled by parent gap or margin */
+    margin-bottom: 1.25rem;
 }
 
 .news-card:hover {
@@ -411,19 +421,45 @@ body {
     box-shadow: var(--shadow-lg);
 }
 
-/* Image on top, full width */
+/* ---- DARK SHIMMER LOADING PLACEHOLDER (for all images) ---- */
+.trend-img,
+.card-img {
+    background: #111111 !important;
+    background-image: linear-gradient(
+        135deg,
+        #1a1a1a 25%,
+        #3a3a3a 50%,
+        #1a1a1a 75%
+    ) !important;
+    background-size: 200% 100% !important;
+    animation: shimmer 1.8s ease-in-out infinite !important;
+}
+
+/* Individual heights */
 .card-img {
     width: 100%;
     height: 200px;
     object-fit: cover;
-    background: var(--bg-end);
+}
+.trend-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 .card-body {
     padding: 1rem 1.2rem 1.2rem;
 }
 
-/* Metadata row (category, time, views) – above title */
 .news-meta {
     display: flex;
     gap: 0.8rem;
@@ -460,7 +496,6 @@ body {
     color: var(--accent-blue);
 }
 
-/* Blur effect on description */
 .news-desc {
     font-size: 0.75rem;
     color: var(--text-secondary);
@@ -526,8 +561,13 @@ body {
     background: #059669;
 }
 
-/* ========== SHOW MORE BUTTONS ========== */
-.show-more-btn, .load-more-top-btn {
+/* Show More */
+.show-more-link {
+    display: block;
+    text-decoration: none;
+    margin: 12px 0;
+}
+.show-more-btn {
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-dark));
     color: white;
     border: none;
@@ -540,16 +580,15 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.6rem;
-    margin: 0.5rem 0 0.5rem;
     width: 100%;
     transition: all 0.2s;
 }
-.show-more-btn:hover, .load-more-top-btn:hover {
+.show-more-btn:hover {
     transform: scale(1.01);
     box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
 }
 
-/* ========== TOP NEWS SECTION ========== */
+/* Top News */
 .top-news-section {
     margin: 2rem 0 1rem;
     border-top: 2px solid var(--accent-glow);
@@ -569,99 +608,8 @@ body {
     flex-direction: column;
     gap: 1.25rem;
 }
-#offlineOverlay {
-    display: none !important;  /* Force hidden initially */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 70px;
-    background: #ffffff;
-    z-index: 9990;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    text-align: center;
-}
 
-/* Ensure bottom nav stays on top */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: #1e293b;
-    z-index: 10000; /* Higher than overlay */
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    /* Keep your existing bottom-nav styles */
-}
-
-/* Offline overlay - covers only the content area, leaves bottom bar visible */
-#offlineOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 60px; /* Match your bottom nav height */
-    background: #ffffff;
-    z-index: 9990; /* Lower than bottom nav */
-    display: none; /* Hidden by default */
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    text-align: center;
-}
-
-/* Ensure bottom nav stays on top */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: #1e293b;
-    z-index: 10000; /* Higher than overlay */
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    /* Keep your existing bottom-nav styles */
-}
-
-/* Offline icon and message styling */
-.offline-icon {
-    font-size: 48px;
-    color: #64748b;
-    margin-bottom: 16px;
-}
-.offline-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #1e293b;
-    margin-bottom: 8px;
-}
-.offline-message {
-    color: #64748b;
-    margin-bottom: 20px;
-}
-.retry-btn {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    padding: 10px 24px;
-    border-radius: 40px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-.retry-btn:hover {
-    background: #2563eb;
-}
-/* ========== FOOTER ========== */
+/* Footer */
 footer {
     background: var(--ticker-bg);
     color: var(--ticker-text);
@@ -672,7 +620,7 @@ footer {
     border-top: 1px solid rgba(0,0,0,0.05);
 }
 
-/* ========== BOTTOM NAVIGATION (FIXED, FULL WIDTH) ========== */
+/* Bottom Navigation */
 .bottom-nav {
     position: fixed;
     bottom: 0;
@@ -720,7 +668,7 @@ footer {
     transform: scale(1.05);
 }
 
-/* ========== SIDE MENU ========== */
+/* Side Menu */
 .side-menu {
     position: fixed;
     top: 0;
@@ -788,7 +736,7 @@ footer {
     margin-left: auto;
 }
 
-/* ========== LOADERS ========== */
+/* Loaders */
 .loader {
     border: 3px solid var(--border-light, #e2e8f0);
     border-top: 3px solid var(--accent-blue);
@@ -824,7 +772,192 @@ footer {
     to { transform: translateY(0); }
 }
 
-/* ========== RESPONSIVE ========== */
+/* Offline Overlay (hidden by default) */
+#offlineOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 60px;
+    background: #ffffff;
+    z-index: 9990;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+}
+.offline-icon {
+    font-size: 48px;
+    color: #64748b;
+    margin-bottom: 16px;
+}
+.offline-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+.offline-message {
+    color: #64748b;
+    margin-bottom: 20px;
+}
+.retry-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 40px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.retry-btn:hover {
+    background: #2563eb;
+}
+/* ========== TOOLS VIEW ========== */
+#toolsView {
+    padding: 1rem 1.5rem;
+}
+#toolsView h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+#toolsView h2 i {
+    color: var(--accent-blue);
+}
+
+.tool-btn {
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 60px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1 0 auto;
+    min-width: 140px;
+}
+.tool-btn:hover {
+    background: var(--accent-dark);
+    transform: scale(1.02);
+    box-shadow: var(--shadow-lg);
+}
+.tool-btn:active {
+    transform: scale(0.97);
+}
+.tool-btn i {
+    font-size: 1.1rem;
+}
+
+#toolOutput {
+    margin-top: 1.5rem;
+    background: var(--card-bg);
+    border-radius: 28px;
+    padding: 1.2rem;
+    max-height: 400px;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+}
+#toolOutput p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+#toolOutput ul {
+    padding-left: 1.2rem;
+    margin: 0.5rem 0;
+}
+#toolOutput li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--ad-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+}
+#toolOutput .loader {
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+#toolOutput .delete-file-btn {
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+#toolOutput .delete-file-btn:hover {
+    background: #b91c1c;
+}
+
+/* Responsive tools buttons */
+@media (max-width: 600px) {
+    #toolsView .tool-btn {
+        min-width: 100%;
+        justify-content: center;
+    }
+}
+/* Horizontal sections (for Local category) */
+.horizontal-section {
+    margin-bottom: 2rem;
+}
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+    color: var(--accent-blue);
+    border-left: 3px solid var(--accent-blue);
+    padding-left: 0.6rem;
+}
+.horizontal-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+.horizontal-card {
+    scroll-snap-align: start;
+    flex: 0 0 240px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.horizontal-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+.horizontal-card .card-img {
+    height: 130px;
+}
+.horizontal-card .card-body {
+    padding: 0.6rem;
+}
+.horizontal-card .news-title {
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+/* Responsive */
 @media (max-width: 700px) {
     .card-img {
         height: 180px;
@@ -837,6 +970,7 @@ footer {
     }
     .nav-item {
         padding: 4px 12px;
+        max-width: 100px;
     }
     .nav-item i {
         font-size: 1.3rem;
@@ -847,20 +981,8 @@ footer {
     .category-section .news-card {
         margin-bottom: 1rem;
     }
-}
-.show-more-link {
-    display: block;
-    text-decoration: none;
-    margin: 12px 0;
-}
-.show-more-btn {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 40px;
-    font-size: 14px;
-    cursor: pointer;
-    width: 100%;
-    text-align: center;
+    .location-badge {
+        font-size: 0.5rem;
+        padding: 0.15rem 0.6rem;
+    }
 }
