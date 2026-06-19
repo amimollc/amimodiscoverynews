@@ -1,5 +1,5 @@
 // ================================================================
-//  category.js – FULL with ad script in renderAdBanner()
+//  category.js – FULL with source count, reliable infinite scroll
 // ================================================================
 
 (function() {
@@ -482,10 +482,9 @@
     let html = `<div class="horizontal-section">
                   <h3 class="section-title">${title}</h3>
                   <div class="horizontal-scroll" style="display:flex;overflow-x:auto;gap:1rem;padding-bottom:0.5rem;scroll-snap-type:x mandatory;">`;
-    toShow.forEach(art => {
+    toShow.forEach((art, index) => {
       html += renderSmallArticleCard(art);
-      // Ad after every 5 articles in horizontal section
-      if ((toShow.indexOf(art) + 1) % 5 === 0 && (toShow.indexOf(art) + 1) < toShow.length) {
+      if ((index + 1) % 5 === 0 && (index + 1) < toShow.length) {
         html += renderAdBanner();
       }
     });
@@ -495,14 +494,7 @@
     }
     html += `</div>`;
     container.innerHTML = html;
-    document.querySelectorAll(`#${containerId} .save-btn`).forEach(btn => {
-      btn.removeEventListener('click', saveHandler);
-      btn.addEventListener('click', saveHandler);
-    });
-    document.querySelectorAll(`#${containerId} .share-btn`).forEach(btn => {
-      btn.removeEventListener('click', shareHandler);
-      btn.addEventListener('click', shareHandler);
-    });
+    attachEvents();
     lazyLoadImages();
     const sentinelEl = document.getElementById(`${sectionKey}Sentinel`);
     if (sentinelEl) {
@@ -620,7 +612,7 @@
   }
 
   // =============================================================
-  // 13. LOAD LOCAL CATEGORY (with step-by-step status)
+  // 13. LOAD LOCAL CATEGORY (with source count)
   // =============================================================
 
   async function loadLocalCategory() {
@@ -639,9 +631,9 @@
     };
 
     for (const key of sectionKeys) {
-      statusDiv.innerHTML = `<div class="loader"></div> Loading ${sectionNames[key]}...`;
       const feeds = subFeeds[key] || [];
       const sec = localSections[key];
+      statusDiv.innerHTML = `<div class="loader"></div> Fetching ${sectionNames[key]} from ${feeds.length} sources...`;
       sec.feedPool = feeds.slice();
       sec.feedIndex = 0;
       sec.articles = [];
@@ -649,6 +641,7 @@
       sec.allFetched = false;
       sec.usedUrls.clear();
       feeds.forEach(f => sec.usedUrls.add(f.url));
+
       const initialBatch = feeds.slice(0, 10);
       sec.feedIndex = 10;
       const results = await Promise.all(initialBatch.map(f => fetchFeed(f)));
@@ -686,13 +679,12 @@
   }
 
   // =============================================================
-  // 14. REGULAR CATEGORY LOAD
+  // 14. REGULAR CATEGORY LOAD (with source count)
   // =============================================================
 
   async function loadRegularCategory(category) {
     const statusDiv = document.getElementById('statusMsg');
     statusDiv.style.display = 'block';
-    const userCountry = localStorage.getItem('amimo_country') || 'ZM';
 
     let feeds = [];
     if (category === 'Local') {
@@ -711,11 +703,11 @@
     displayLimit = 10;
     allFetched = false;
 
-    statusDiv.innerHTML = `<div class="loader"></div> Fetching ${category} news...`;
+    statusDiv.innerHTML = `<div class="loader"></div> Fetching ${category} news from ${feeds.length} sources...`;
 
     const initialBatch = feeds.slice(0, 10);
     feedIndex = 10;
-    let results = await Promise.all(initialBatch.map(f => fetchFeed(f)));
+    const results = await Promise.all(initialBatch.map(f => fetchFeed(f)));
     let articles = [];
     results.forEach(r => articles.push(...r));
 
@@ -845,6 +837,8 @@
 
   async function loadMoreArticles() {
     if (isLoadingMore) return;
+
+    // STEP 1: If we have more articles in the array, display them
     if (displayLimit < categoryArticles.length) {
       displayLimit = Math.min(displayLimit + 10, categoryArticles.length);
       renderCategoryFeed();
@@ -856,32 +850,48 @@
       }
       return;
     }
-    if (allFetched) {
-      if (sentinel) sentinel.style.display = 'none';
-      showEndSpinner(false);
-      return;
-    }
 
-    if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+    // STEP 2: If all fetched, try to refill and fetch more
+    if (allFetched) {
       refillGlobalPool();
       if (feedPool.length === 0 || feedIndex >= feedPool.length) {
-        allFetched = true;
+        // Truly no more feeds
         if (sentinel) sentinel.style.display = 'none';
         showEndSpinner(false);
         return;
       }
+      allFetched = false; // reset to try fetching
     }
 
+    // STEP 3: Fetch new articles from the feed pool
     isLoadingMore = true;
     showEndSpinner(true);
 
     try {
+      if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+        refillGlobalPool();
+        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+          allFetched = true;
+          if (sentinel) sentinel.style.display = 'none';
+          showEndSpinner(false);
+          isLoadingMore = false;
+          return;
+        }
+      }
+
       const batchSize = 5;
       const nextFeeds = feedPool.slice(feedIndex, feedIndex + batchSize);
       feedIndex += batchSize;
 
       if (nextFeeds.length === 0) {
         refillGlobalPool();
+        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+          allFetched = true;
+          if (sentinel) sentinel.style.display = 'none';
+          showEndSpinner(false);
+          isLoadingMore = false;
+          return;
+        }
         isLoadingMore = false;
         loadMoreArticles();
         return;
@@ -895,6 +905,7 @@
       const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
 
       if (uniqueNew.length === 0) {
+        // No new articles – try next batch or refill
         isLoadingMore = false;
         showEndSpinner(false);
         if (feedIndex < feedPool.length) {
@@ -911,6 +922,7 @@
         return;
       }
 
+      // Add new articles
       uniqueNew.forEach(a => { a.views = generateViews(a.title); });
       categoryArticles = [...categoryArticles, ...uniqueNew];
       categoryArticles.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
@@ -919,6 +931,7 @@
       renderCategoryFeed();
       showToast(`✨ ${uniqueNew.length} new articles loaded`);
 
+      // Update discover state if Local
       const category = new URLSearchParams(window.location.search).get('cat') || 'World';
       if (category === 'Local') {
         localSections.discover.articles = categoryArticles;
@@ -928,6 +941,7 @@
         localSections.discover.usedUrls = usedFeedUrls;
       }
 
+      // Refill pool if we've reached the end
       if (feedIndex >= feedPool.length) {
         refillGlobalPool();
         if (feedPool.length === 0 || feedIndex >= feedPool.length) {
@@ -1061,7 +1075,7 @@
     closeMenu();
   });
   document.getElementById('menuAbout')?.addEventListener('click', () => {
-    alert("Amimo Discovery Category Page\n\n✅ 10 articles loaded at a time\n✅ Step-by-step status for Local\n✅ Infinite scroll with dynamic refill\n✅ Ad banners with your ad ID\n✅ All features included");
+    alert("Amimo Discovery Category Page\n\n✅ Shows source count during loading\n✅ First loads existing articles\n✅ Infinite scroll with dynamic refill\n✅ Ad banners with your ad ID\n✅ All features included");
     closeMenu();
   });
 
