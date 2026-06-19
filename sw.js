@@ -1,4 +1,4 @@
-// Amimo Discovery – Service Worker (Offline + Cache Optimised)
+// Amimo Discovery – Service Worker (Offline + Cache Optimised + Background Sync + Notifications)
 const CACHE_NAME = 'amimo-discovery-v6';
 const OFFLINE_PAGE = '/amimodiscoverynews/offline.html';
 const STATIC_ASSETS = [
@@ -80,7 +80,88 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// ----- Push Notifications (optional, keep if you use them) -----
+// ============================================================
+//  BACKGROUND SYNC (one‑off) – triggered manually from client
+// ============================================================
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-news') {
+    event.waitUntil(fetchAndProcessArticles());
+  }
+});
+
+// ============================================================
+//  PERIODIC BACKGROUND SYNC – runs automatically every ~hour
+//  (requires permission and user engagement on the site)
+// ============================================================
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'periodic-news-sync') {
+    event.waitUntil(fetchAndProcessArticles());
+  }
+});
+
+// ============================================================
+//  SHARED FUNCTION: fetch articles, compare with cached version,
+//  and show notification if new articles are found.
+// ============================================================
+async function fetchAndProcessArticles() {
+  const API_URL = '/amimodiscoverynews/api/latest-articles'; // Replace with your actual API endpoint
+  const CACHE_KEY = '/amimodiscoverynews/api/articles';
+  const cache = await caches.open('articles-cache');
+
+  try {
+    // 1. Fetch fresh data from the API
+    const response = await fetch(API_URL);
+    if (!response.ok) throw new Error(`API responded with ${response.status}`);
+    const freshArticles = await response.json();
+
+    // 2. Retrieve previously cached articles (if any)
+    const cachedResponse = await cache.match(CACHE_KEY);
+    let oldArticles = [];
+    if (cachedResponse) {
+      oldArticles = await cachedResponse.json();
+    }
+
+    // 3. Detect new articles (simple: compare by ID or title)
+    const newArticles = freshArticles.filter(fresh => {
+      return !oldArticles.some(old => old.id === fresh.id);
+    });
+
+    // 4. If there are new articles, store the fresh list in cache
+    //    and show a notification (if we have new articles)
+    if (newArticles.length > 0) {
+      // Store the fresh data for next comparison
+      await cache.put(CACHE_KEY, new Response(JSON.stringify(freshArticles)));
+
+      // Show a notification to the user
+      const title = '📰 New articles available!';
+      const body = `${newArticles.length} new article${newArticles.length > 1 ? 's' : ''} – tap to read.`;
+      const icon = '/amimodiscoverynews/favicon.png';
+      const url = '/amimodiscoverynews/';
+
+      // Use the registration to show notification
+      await self.registration.showNotification(title, {
+        body: body,
+        icon: icon,
+        badge: icon,
+        data: { url: url },
+        vibrate: [200, 100, 200]
+      });
+
+      console.log(`[SW] Background sync: found ${newArticles.length} new articles.`);
+    } else {
+      console.log('[SW] Background sync: no new articles.');
+    }
+
+  } catch (error) {
+    console.error('[SW] Background sync failed:', error);
+    // Re-throw to let the browser know the sync failed and should be retried
+    throw error;
+  }
+}
+
+// ============================================================
+//  PUSH NOTIFICATIONS (keep as is – already implemented)
+// ============================================================
 self.addEventListener('push', (event) => {
   let data = {
     title: 'Amimo Discovery',
