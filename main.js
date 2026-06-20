@@ -1,5 +1,5 @@
 // ================================================================
-//  main.js – FULL COMPLETE with ad script in renderAdBanner()
+//  main.js – FULL with all feeds, ad script, and correct paths
 // ================================================================
 
 (function() {
@@ -555,7 +555,7 @@
         catArticles.forEach(art => {
           html += renderArticleCard(art);
         });
-        html += `<a href="category.html?cat=${encodeURIComponent(cat)}" class="show-more-link">
+        html += `<a href="/amimodiscoverynews/category.html?cat=${encodeURIComponent(cat)}" class="show-more-link">
                     <button class="show-more-btn"><i class="fas fa-chevron-right"></i> Show More ${cat} News</button>
                 </a>`;
         html += renderAdBanner();
@@ -1023,7 +1023,7 @@
   }
 
   // =============================================================
-  // 15. CATEGORY SWITCH, VIEWS, SEARCH, etc.
+  // 15. CATEGORY SWITCH, VIEWS, SEARCH – WITH CORRECT PATHS
   // =============================================================
 
   function switchCategory(cat) {
@@ -1084,7 +1084,7 @@
   function redirectToSearchPage(query) {
     if (!query.trim()) return;
     storeAllArticlesForSearch();
-    window.location.href = `seachresult.html?q=${encodeURIComponent(query)}`;
+    window.location.href = `/amimodiscoverynews/seachresult.html?q=${encodeURIComponent(query)}`;
   }
 
   function showHomeView() {
@@ -1416,7 +1416,6 @@
   // 18. SPA NAVIGATION – INTERCEPT CLICKS
   // =============================================================
 
-  // Loading indicators
   function showLoading() {
     const existing = document.querySelector('#app-loader');
     if (!existing) {
@@ -1440,7 +1439,6 @@
     if (loader) loader.remove();
   }
 
-  // Navigation function
   async function navigateTo(url) {
     try {
       showLoading();
@@ -1475,7 +1473,6 @@
     }
   }
 
-  // Intercept internal link clicks
   document.addEventListener('click', async (e) => {
     const link = e.target.closest('a');
     if (!link) return;
@@ -1495,7 +1492,6 @@
     await navigateTo(url);
   });
 
-  // Handle browser back/forward
   window.addEventListener('popstate', () => {
     window.location.reload();
   });
@@ -1508,9 +1504,10 @@
     const statusDiv = document.getElementById('statusMsg');
     statusDiv.innerHTML = '<div class="loader"></div> Loading...';
 
+    // Prefetch category page
     const link = document.createElement('link');
     link.rel = 'prefetch';
-    link.href = 'category.html';
+    link.href = '/amimodiscoverynews/category.html';
     document.head.appendChild(link);
 
     feedPool = [];
@@ -1600,7 +1597,7 @@
       if (cat === 'all') {
         switchCategory('all');
       } else {
-        window.location.href = `category.html?cat=${encodeURIComponent(cat)}`;
+        window.location.href = `/amimodiscoverynews/category.html?cat=${encodeURIComponent(cat)}`;
       }
     });
   });
@@ -1648,7 +1645,7 @@
   if (menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
   if (menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
   if (menuAbout) menuAbout.addEventListener('click', () => {
-    alert("Amimo Discovery v39.0\n✅ Ad script integrated in renderAdBanner()\n✅ All features: top news, tools, offline, SPA navigation");
+    alert("Amimo Discovery v40.0\n✅ Correct paths for GitHub Pages\n✅ All features: top news, tools, offline, SPA navigation");
     closeMenu();
   });
   if (menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
