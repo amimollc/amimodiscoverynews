@@ -1,5 +1,5 @@
 // ================================================================
-//  category.js – FULL with ad script in renderAdBanner()
+//  category.js – FULL with all feeds, ad script, and correct paths
 // ================================================================
 
 (function() {
@@ -10,6 +10,7 @@
   // =============================================================
 
   const WORLD_FEEDS = [
+    // ... (full 48 feeds – same as main.js, included below)
     { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
     { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
     { name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=AJ" },
@@ -60,6 +61,7 @@
 
   const localMap = new Map();
   localMap.set("ZM", [
+    // ... (full Zambia feeds)
     { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
     { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" },
     { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" },
@@ -73,6 +75,7 @@
     { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Observer" }
   ]);
   localMap.set("US", [
+    // ... (full US feeds)
     { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" },
     { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" },
     { name: "LA Times", url: "https://www.latimes.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=LAT" },
@@ -81,12 +84,14 @@
     { name: "ESPN US", url: "https://www.espn.com/espn/rss/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN+US" }
   ]);
   localMap.set("GB", [
+    // ... (full GB feeds)
     { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+UK" },
     { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian" },
     { name: "Sky News UK", url: "https://news.sky.com/feeds/rss/uk", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sky+UK" },
     { name: "BBC Sport UK", url: "https://feeds.bbci.co.uk/sport/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+Sport+UK" }
   ]);
   localMap.set("IN", [
+    // ... (full IN feeds)
     { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TOI" },
     { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" },
     { name: "The Hindu", url: "https://www.thehindu.com/news/feeder/default.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Hindu" },
@@ -94,26 +99,31 @@
     { name: "Sportskeeda", url: "https://www.sportskeeda.com/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sportskeeda" }
   ]);
   localMap.set("CA", [
+    // ... (full CA feeds)
     { name: "CBC", url: "https://www.cbc.ca/cmlink/rss-topstories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBC" },
     { name: "Toronto Star", url: "https://www.thestar.com/content/thestar/feed.RSS", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Toronto+Star" },
     { name: "TSN Sports", url: "https://www.tsn.ca/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TSN+Sports" }
   ]);
   localMap.set("AU", [
+    // ... (full AU feeds)
     { name: "ABC Australia", url: "https://www.abc.net.au/news/feed/51120/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ABC+AU" },
     { name: "Sydney Morning Herald", url: "https://www.smh.com.au/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SMH" },
     { name: "Fox Sports AU", url: "https://www.foxsports.com.au/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Fox+Sports+AU" }
   ]);
   localMap.set("NG", [
+    // ... (full NG feeds)
     { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Pulse+NG" },
     { name: "The Guardian NG", url: "https://guardian.ng/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian+NG" },
     { name: "Complete Sports", url: "https://www.completesports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Complete+Sports" }
   ]);
   localMap.set("ZA", [
+    // ... (full ZA feeds)
     { name: "News24", url: "https://www.news24.com/feeds", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News24" },
     { name: "IOL", url: "https://www.iol.co.za/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=IOL" },
     { name: "KickOff", url: "https://www.kickoff.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=KickOff" }
   ]);
   localMap.set("KE", [
+    // ... (full KE feeds)
     { name: "Daily Nation", url: "https://www.nation.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Daily+Nation" },
     { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Star" }
   ]);
@@ -482,10 +492,9 @@
     let html = `<div class="horizontal-section">
                   <h3 class="section-title">${title}</h3>
                   <div class="horizontal-scroll" style="display:flex;overflow-x:auto;gap:1rem;padding-bottom:0.5rem;scroll-snap-type:x mandatory;">`;
-    toShow.forEach(art => {
+    toShow.forEach((art, index) => {
       html += renderSmallArticleCard(art);
-      // Ad after every 5 articles in horizontal section
-      if ((toShow.indexOf(art) + 1) % 5 === 0 && (toShow.indexOf(art) + 1) < toShow.length) {
+      if ((index + 1) % 5 === 0 && (index + 1) < toShow.length) {
         html += renderAdBanner();
       }
     });
@@ -495,14 +504,7 @@
     }
     html += `</div>`;
     container.innerHTML = html;
-    document.querySelectorAll(`#${containerId} .save-btn`).forEach(btn => {
-      btn.removeEventListener('click', saveHandler);
-      btn.addEventListener('click', saveHandler);
-    });
-    document.querySelectorAll(`#${containerId} .share-btn`).forEach(btn => {
-      btn.removeEventListener('click', shareHandler);
-      btn.addEventListener('click', shareHandler);
-    });
+    attachEvents();
     lazyLoadImages();
     const sentinelEl = document.getElementById(`${sectionKey}Sentinel`);
     if (sentinelEl) {
@@ -620,7 +622,7 @@
   }
 
   // =============================================================
-  // 13. LOAD LOCAL CATEGORY (with step-by-step status)
+  // 13. LOAD LOCAL CATEGORY (with source count)
   // =============================================================
 
   async function loadLocalCategory() {
@@ -639,9 +641,9 @@
     };
 
     for (const key of sectionKeys) {
-      statusDiv.innerHTML = `<div class="loader"></div> Loading ${sectionNames[key]}...`;
       const feeds = subFeeds[key] || [];
       const sec = localSections[key];
+      statusDiv.innerHTML = `<div class="loader"></div> Fetching ${sectionNames[key]} from ${feeds.length} sources...`;
       sec.feedPool = feeds.slice();
       sec.feedIndex = 0;
       sec.articles = [];
@@ -649,6 +651,7 @@
       sec.allFetched = false;
       sec.usedUrls.clear();
       feeds.forEach(f => sec.usedUrls.add(f.url));
+
       const initialBatch = feeds.slice(0, 10);
       sec.feedIndex = 10;
       const results = await Promise.all(initialBatch.map(f => fetchFeed(f)));
@@ -686,13 +689,12 @@
   }
 
   // =============================================================
-  // 14. REGULAR CATEGORY LOAD
+  // 14. REGULAR CATEGORY LOAD (with source count)
   // =============================================================
 
   async function loadRegularCategory(category) {
     const statusDiv = document.getElementById('statusMsg');
     statusDiv.style.display = 'block';
-    const userCountry = localStorage.getItem('amimo_country') || 'ZM';
 
     let feeds = [];
     if (category === 'Local') {
@@ -711,11 +713,11 @@
     displayLimit = 10;
     allFetched = false;
 
-    statusDiv.innerHTML = `<div class="loader"></div> Fetching ${category} news...`;
+    statusDiv.innerHTML = `<div class="loader"></div> Fetching ${category} news from ${feeds.length} sources...`;
 
     const initialBatch = feeds.slice(0, 10);
     feedIndex = 10;
-    let results = await Promise.all(initialBatch.map(f => fetchFeed(f)));
+    const results = await Promise.all(initialBatch.map(f => fetchFeed(f)));
     let articles = [];
     results.forEach(r => articles.push(...r));
 
@@ -845,6 +847,7 @@
 
   async function loadMoreArticles() {
     if (isLoadingMore) return;
+
     if (displayLimit < categoryArticles.length) {
       displayLimit = Math.min(displayLimit + 10, categoryArticles.length);
       renderCategoryFeed();
@@ -856,32 +859,45 @@
       }
       return;
     }
-    if (allFetched) {
-      if (sentinel) sentinel.style.display = 'none';
-      showEndSpinner(false);
-      return;
-    }
 
-    if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+    if (allFetched) {
       refillGlobalPool();
       if (feedPool.length === 0 || feedIndex >= feedPool.length) {
-        allFetched = true;
         if (sentinel) sentinel.style.display = 'none';
         showEndSpinner(false);
         return;
       }
+      allFetched = false;
     }
 
     isLoadingMore = true;
     showEndSpinner(true);
 
     try {
+      if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+        refillGlobalPool();
+        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+          allFetched = true;
+          if (sentinel) sentinel.style.display = 'none';
+          showEndSpinner(false);
+          isLoadingMore = false;
+          return;
+        }
+      }
+
       const batchSize = 5;
       const nextFeeds = feedPool.slice(feedIndex, feedIndex + batchSize);
       feedIndex += batchSize;
 
       if (nextFeeds.length === 0) {
         refillGlobalPool();
+        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+          allFetched = true;
+          if (sentinel) sentinel.style.display = 'none';
+          showEndSpinner(false);
+          isLoadingMore = false;
+          return;
+        }
         isLoadingMore = false;
         loadMoreArticles();
         return;
@@ -1030,17 +1046,17 @@
   }
 
   // =============================================================
-  // 19. NAVIGATION & UI EVENTS
+  // 19. NAVIGATION & UI EVENTS – WITH CORRECT PATHS
   // =============================================================
 
   document.getElementById('backToHomeBtn')?.addEventListener('click', () => {
-    window.location.href = './';
+    window.location.href = '/amimodiscoverynews/';
   });
 
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const nav = btn.dataset.nav;
-      let url = './';
+      let url = '/amimodiscoverynews/';
       if (nav === 'saved') url += '?view=saved';
       else if (nav === 'tools') url += '?view=tools';
       else if (nav === 'live') url += '?view=live';
@@ -1049,11 +1065,11 @@
   });
 
   document.getElementById('menuHome')?.addEventListener('click', () => {
-    window.location.href = './';
+    window.location.href = '/amimodiscoverynews/';
     closeMenu();
   });
   document.getElementById('menuSaved')?.addEventListener('click', () => {
-    window.location.href = './?view=saved';
+    window.location.href = '/amimodiscoverynews/?view=saved';
     closeMenu();
   });
   document.getElementById('menuSearch')?.addEventListener('click', () => {
@@ -1061,20 +1077,20 @@
     closeMenu();
   });
   document.getElementById('menuAbout')?.addEventListener('click', () => {
-    alert("Amimo Discovery Category Page\n\n✅ 10 articles loaded at a time\n✅ Step-by-step status for Local\n✅ Infinite scroll with dynamic refill\n✅ Ad banners with your ad ID\n✅ All features included");
+    alert("Amimo Discovery Category Page\n\n✅ Correct paths for GitHub Pages\n✅ All features included");
     closeMenu();
   });
 
   document.getElementById('searchBtn')?.addEventListener('click', () => {
     const q = document.getElementById('searchInput')?.value.trim();
-    if (q) window.location.href = `./seachresult.html?q=${encodeURIComponent(q)}`;
+    if (q) window.location.href = `/amimodiscoverynews/seachresult.html?q=${encodeURIComponent(q)}`;
   });
   document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('searchBtn')?.click();
   });
 
   document.getElementById('viewSavedBtn')?.addEventListener('click', () => {
-    window.location.href = './?view=saved';
+    window.location.href = '/amimodiscoverynews/?view=saved';
   });
 
   const sideMenu = document.getElementById('sideMenu');
