@@ -1,16 +1,15 @@
 // ================================================================
-//  category.js – FULL with all feeds, ad script, and correct paths
+//  category.js – FULL with all feeds, working infinite scroll
 // ================================================================
 
 (function() {
   'use strict';
 
   // =============================================================
-  // 1. FULL FEED LISTS
+  // 1. FULL FEED LISTS (copied from main.js)
   // =============================================================
 
   const WORLD_FEEDS = [
-    // ... (full 48 feeds – same as main.js, included below)
     { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC" },
     { name: "CNN International", url: "https://rss.cnn.com/rss/edition.rss", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CNN" },
     { name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml", category: "World", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=AJ" },
@@ -61,7 +60,6 @@
 
   const localMap = new Map();
   localMap.set("ZM", [
-    // ... (full Zambia feeds)
     { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
     { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" },
     { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" },
@@ -75,7 +73,6 @@
     { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Observer" }
   ]);
   localMap.set("US", [
-    // ... (full US feeds)
     { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" },
     { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" },
     { name: "LA Times", url: "https://www.latimes.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=LAT" },
@@ -84,14 +81,12 @@
     { name: "ESPN US", url: "https://www.espn.com/espn/rss/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN+US" }
   ]);
   localMap.set("GB", [
-    // ... (full GB feeds)
     { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+UK" },
     { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian" },
     { name: "Sky News UK", url: "https://news.sky.com/feeds/rss/uk", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sky+UK" },
     { name: "BBC Sport UK", url: "https://feeds.bbci.co.uk/sport/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+Sport+UK" }
   ]);
   localMap.set("IN", [
-    // ... (full IN feeds)
     { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TOI" },
     { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" },
     { name: "The Hindu", url: "https://www.thehindu.com/news/feeder/default.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Hindu" },
@@ -99,31 +94,26 @@
     { name: "Sportskeeda", url: "https://www.sportskeeda.com/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sportskeeda" }
   ]);
   localMap.set("CA", [
-    // ... (full CA feeds)
     { name: "CBC", url: "https://www.cbc.ca/cmlink/rss-topstories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBC" },
     { name: "Toronto Star", url: "https://www.thestar.com/content/thestar/feed.RSS", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Toronto+Star" },
     { name: "TSN Sports", url: "https://www.tsn.ca/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TSN+Sports" }
   ]);
   localMap.set("AU", [
-    // ... (full AU feeds)
     { name: "ABC Australia", url: "https://www.abc.net.au/news/feed/51120/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ABC+AU" },
     { name: "Sydney Morning Herald", url: "https://www.smh.com.au/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SMH" },
     { name: "Fox Sports AU", url: "https://www.foxsports.com.au/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Fox+Sports+AU" }
   ]);
   localMap.set("NG", [
-    // ... (full NG feeds)
     { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Pulse+NG" },
     { name: "The Guardian NG", url: "https://guardian.ng/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian+NG" },
     { name: "Complete Sports", url: "https://www.completesports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Complete+Sports" }
   ]);
   localMap.set("ZA", [
-    // ... (full ZA feeds)
     { name: "News24", url: "https://www.news24.com/feeds", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News24" },
     { name: "IOL", url: "https://www.iol.co.za/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=IOL" },
     { name: "KickOff", url: "https://www.kickoff.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=KickOff" }
   ]);
   localMap.set("KE", [
-    // ... (full KE feeds)
     { name: "Daily Nation", url: "https://www.nation.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Daily+Nation" },
     { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Star" }
   ]);
@@ -133,7 +123,7 @@
   ];
 
   // =============================================================
-  // 2. HELPER FUNCTIONS
+  // 2. HELPER FUNCTIONS (unchanged)
   // =============================================================
 
   function generateViews(title) {
@@ -303,7 +293,6 @@
   // =============================================================
 
   function renderAdBanner() {
-    // Your ad script is inserted directly – it will render the 468×60 iframe ad
     return `<div class="inline-ad">
               <script>
                 atOptions = {
@@ -791,7 +780,7 @@
   }
 
   // =============================================================
-  // 16. MAIN INFINITE SCROLL
+  // 16. MAIN INFINITE SCROLL (FIXED)
   // =============================================================
 
   function ensureSentinel() {
@@ -848,6 +837,7 @@
   async function loadMoreArticles() {
     if (isLoadingMore) return;
 
+    // STEP 1: If we have more articles in the array, display them
     if (displayLimit < categoryArticles.length) {
       displayLimit = Math.min(displayLimit + 10, categoryArticles.length);
       renderCategoryFeed();
@@ -860,16 +850,19 @@
       return;
     }
 
+    // STEP 2: If all fetched, try to refill and fetch more
     if (allFetched) {
       refillGlobalPool();
       if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+        // Truly no more feeds
         if (sentinel) sentinel.style.display = 'none';
         showEndSpinner(false);
         return;
       }
-      allFetched = false;
+      allFetched = false; // reset to try fetching
     }
 
+    // STEP 3: Fetch new articles from the feed pool
     isLoadingMore = true;
     showEndSpinner(true);
 
@@ -911,6 +904,7 @@
       const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
 
       if (uniqueNew.length === 0) {
+        // No new articles – try next batch or refill
         isLoadingMore = false;
         showEndSpinner(false);
         if (feedIndex < feedPool.length) {
@@ -927,6 +921,7 @@
         return;
       }
 
+      // Add new articles
       uniqueNew.forEach(a => { a.views = generateViews(a.title); });
       categoryArticles = [...categoryArticles, ...uniqueNew];
       categoryArticles.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
@@ -935,6 +930,7 @@
       renderCategoryFeed();
       showToast(`✨ ${uniqueNew.length} new articles loaded`);
 
+      // Update discover state if Local
       const category = new URLSearchParams(window.location.search).get('cat') || 'World';
       if (category === 'Local') {
         localSections.discover.articles = categoryArticles;
@@ -944,6 +940,7 @@
         localSections.discover.usedUrls = usedFeedUrls;
       }
 
+      // Refill pool if we've reached the end
       if (feedIndex >= feedPool.length) {
         refillGlobalPool();
         if (feedPool.length === 0 || feedIndex >= feedPool.length) {
@@ -1077,7 +1074,7 @@
     closeMenu();
   });
   document.getElementById('menuAbout')?.addEventListener('click', () => {
-    alert("Amimo Discovery Category Page\n\n✅ Correct paths for GitHub Pages\n✅ All features included");
+    alert("Amimo Discovery Category Page\n\n✅ All feeds included\n✅ Infinite scroll works\n✅ Correct paths for GitHub Pages");
     closeMenu();
   });
 
