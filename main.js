@@ -1,5 +1,5 @@
 // ================================================================
-//  main.js – FULL SINGLE-PAGE with category filtering & infinite scroll
+//  main.js – FULL with local sections, toggleable Show More, infinite scroll
 // ================================================================
 
 (function() {
@@ -58,69 +58,191 @@
     { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
   ];
 
+  // Expanded local feeds with sections
   const localMap = new Map();
-  localMap.set("ZM", [
-    { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Lusaka" },
-    { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Mail" },
-    { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" },
-    { name: "Zambia Reports", url: "https://zambiareports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Reports" },
-    { name: "News Diggers Zambia", url: "https://diggers.news/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News+Diggers" },
-    { name: "Mwebantu", url: "https://mwebantu.news/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Mwebantu" },
-    { name: "Zambia Sports News", url: "https://zambiasportsnews.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Zambia+Sports" },
-    { name: "Zambia Politics Watch", url: "https://zambiapoliticswatch.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Politics+Watch" },
-    { name: "Zambia Business Times", url: "https://zambiabtimes.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ZBT" },
-    { name: "Zambia Health News", url: "https://zambiahealthnews.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Health+ZM" },
-    { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Observer" }
-  ]);
-  localMap.set("US", [
-    { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=US+News" },
-    { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NYT" },
-    { name: "LA Times", url: "https://www.latimes.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=LAT" },
-    { name: "USA Today", url: "https://www.usatoday.com/rss/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=USA+Today" },
-    { name: "NBC News", url: "https://feeds.nbcnews.com/nbcnews/public/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NBC" },
-    { name: "ESPN US", url: "https://www.espn.com/espn/rss/news", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ESPN+US" }
-  ]);
-  localMap.set("GB", [
-    { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+UK" },
-    { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian" },
-    { name: "Sky News UK", url: "https://news.sky.com/feeds/rss/uk", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sky+UK" },
-    { name: "BBC Sport UK", url: "https://feeds.bbci.co.uk/sport/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=BBC+Sport+UK" }
-  ]);
-  localMap.set("IN", [
-    { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TOI" },
-    { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=NDTV" },
-    { name: "The Hindu", url: "https://www.thehindu.com/news/feeder/default.rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Hindu" },
-    { name: "Indian Express", url: "https://indianexpress.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Indian+Express" },
-    { name: "Sportskeeda", url: "https://www.sportskeeda.com/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Sportskeeda" }
-  ]);
-  localMap.set("CA", [
-    { name: "CBC", url: "https://www.cbc.ca/cmlink/rss-topstories", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=CBC" },
-    { name: "Toronto Star", url: "https://www.thestar.com/content/thestar/feed.RSS", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Toronto+Star" },
-    { name: "TSN Sports", url: "https://www.tsn.ca/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=TSN+Sports" }
-  ]);
-  localMap.set("AU", [
-    { name: "ABC Australia", url: "https://www.abc.net.au/news/feed/51120/rss.xml", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=ABC+AU" },
-    { name: "Sydney Morning Herald", url: "https://www.smh.com.au/rss/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=SMH" },
-    { name: "Fox Sports AU", url: "https://www.foxsports.com.au/feed", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Fox+Sports+AU" }
-  ]);
-  localMap.set("NG", [
-    { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Pulse+NG" },
-    { name: "The Guardian NG", url: "https://guardian.ng/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Guardian+NG" },
-    { name: "Complete Sports", url: "https://www.completesports.com/feed/", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Complete+Sports" }
-  ]);
-  localMap.set("ZA", [
-    { name: "News24", url: "https://www.news24.com/feeds", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=News24" },
-    { name: "IOL", url: "https://www.iol.co.za/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=IOL" },
-    { name: "KickOff", url: "https://www.kickoff.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=KickOff" }
-  ]);
-  localMap.set("KE", [
-    { name: "Daily Nation", url: "https://www.nation.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Daily+Nation" },
-    { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=The+Star" }
-  ]);
 
-  const FALLBACK_LOCAL_FEEDS = [
-    { name: "World News (VOA)", url: "https://www.voanews.com/rss", category: "Local", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=VOA" }
-  ];
+  localMap.set("ZM", {
+    top: [
+      { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", section: "top" },
+      { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", section: "top" },
+      { name: "Zambia Reports", url: "https://zambiareports.com/feed/", section: "top" },
+      { name: "News Diggers Zambia", url: "https://diggers.news/feed/", section: "top" },
+      { name: "Mwebantu", url: "https://mwebantu.news/feed/", section: "top" },
+      { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", section: "top" }
+    ],
+    politics: [
+      { name: "Zambia Politics Watch", url: "https://zambiapoliticswatch.com/feed/", section: "politics" },
+      { name: "Zambia Reports Politics", url: "https://zambiareports.com/category/politics/feed/", section: "politics" }
+    ],
+    tech: [
+      { name: "Zambia Tech News", url: "https://zambiantechnews.com/feed/", section: "tech" }
+    ],
+    health: [
+      { name: "Zambia Health News", url: "https://zambiahealthnews.com/feed/", section: "health" }
+    ],
+    football: [
+      { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", section: "football" },
+      { name: "Zambia Sports News", url: "https://zambiasportsnews.com/feed/", section: "football" }
+    ],
+    discover: []
+  });
+
+  localMap.set("US", {
+    top: [
+      { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", section: "top" },
+      { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", section: "top" },
+      { name: "USA Today", url: "https://www.usatoday.com/rss/news", section: "top" },
+      { name: "NBC News", url: "https://feeds.nbcnews.com/nbcnews/public/news", section: "top" }
+    ],
+    politics: [
+      { name: "Politico", url: "https://www.politico.com/rss/politics.xml", section: "politics" },
+      { name: "The Hill", url: "https://thehill.com/feed/", section: "politics" },
+      { name: "Washington Post Politics", url: "https://feeds.washingtonpost.com/rss/politics", section: "politics" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" },
+      { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", section: "tech" },
+      { name: "Wired", url: "https://www.wired.com/feed/rss", section: "tech" }
+    ],
+    health: [
+      { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", section: "health" },
+      { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", section: "health" },
+      { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", section: "health" }
+    ],
+    football: [
+      { name: "ESPN", url: "https://www.espn.com/espn/rss/news", section: "football" },
+      { name: "FOX Sports", url: "https://www.foxsports.com/rss", section: "football" },
+      { name: "CBS Sports", url: "https://www.cbssports.com/rss/headlines", section: "football" }
+    ],
+    discover: []
+  });
+
+  localMap.set("GB", {
+    top: [
+      { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", section: "top" },
+      { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", section: "top" },
+      { name: "Sky News UK", url: "https://news.sky.com/feeds/rss/uk", section: "top" }
+    ],
+    politics: [
+      { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", section: "politics" },
+      { name: "The Guardian Politics", url: "https://www.theguardian.com/politics/rss", section: "politics" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" },
+      { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", section: "tech" }
+    ],
+    health: [
+      { name: "NHS News", url: "https://www.england.nhs.uk/feed/", section: "health" }
+    ],
+    football: [
+      { name: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/rss.xml", section: "football" },
+      { name: "Sky Sports", url: "https://www.skysports.com/rss/12040", section: "football" }
+    ],
+    discover: []
+  });
+
+  localMap.set("IN", {
+    top: [
+      { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", section: "top" },
+      { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", section: "top" },
+      { name: "The Hindu", url: "https://www.thehindu.com/news/feeder/default.rss", section: "top" },
+      { name: "Indian Express", url: "https://indianexpress.com/feed/", section: "top" }
+    ],
+    politics: [
+      { name: "NDTV Politics", url: "https://feeds.feedburner.com/ndtvnews-politics", section: "politics" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+    ],
+    health: [
+      { name: "WHO India", url: "https://www.who.int/rss-feeds/india-news-english.xml", section: "health" }
+    ],
+    football: [
+      { name: "Sportskeeda", url: "https://www.sportskeeda.com/feed", section: "football" }
+    ],
+    discover: []
+  });
+
+  localMap.set("NG", {
+    top: [
+      { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", section: "top" },
+      { name: "The Guardian NG", url: "https://guardian.ng/feed/", section: "top" }
+    ],
+    politics: [
+      { name: "Premium Times Politics", url: "https://www.premiumtimesng.com/politics/feed/", section: "politics" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+    ],
+    health: [
+      { name: "WHO Nigeria", url: "https://www.who.int/rss-feeds/nigeria-news-english.xml", section: "health" }
+    ],
+    football: [
+      { name: "Complete Sports", url: "https://www.completesports.com/feed/", section: "football" }
+    ],
+    discover: []
+  });
+
+  localMap.set("ZA", {
+    top: [
+      { name: "News24", url: "https://www.news24.com/feeds", section: "top" },
+      { name: "IOL", url: "https://www.iol.co.za/rss", section: "top" }
+    ],
+    politics: [
+      { name: "Mail & Guardian Politics", url: "https://mg.co.za/politics/feed/", section: "politics" }
+    ],
+    tech: [
+      { name: "TechCentral", url: "https://techcentral.co.za/feed/", section: "tech" }
+    ],
+    health: [
+      { name: "WHO South Africa", url: "https://www.who.int/rss-feeds/south-africa-news-english.xml", section: "health" }
+    ],
+    football: [
+      { name: "KickOff", url: "https://www.kickoff.com/rss", section: "football" }
+    ],
+    discover: []
+  });
+
+  localMap.set("KE", {
+    top: [
+      { name: "Daily Nation", url: "https://www.nation.co.ke/rss", section: "top" },
+      { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", section: "top" }
+    ],
+    politics: [
+      { name: "Nation Politics", url: "https://www.nation.co.ke/politics/feed/", section: "politics" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+    ],
+    health: [
+      { name: "WHO Kenya", url: "https://www.who.int/rss-feeds/kenya-news-english.xml", section: "health" }
+    ],
+    football: [
+      { name: "Goal Kenya", url: "https://www.goal.com/feeds/news/kenya", section: "football" }
+    ],
+    discover: []
+  });
+
+  const FALLBACK_LOCAL_FEEDS = {
+    top: [
+      { name: "World News (VOA)", url: "https://www.voanews.com/rss", section: "top" }
+    ],
+    politics: [
+      { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", section: "politics" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+    ],
+    health: [
+      { name: "WHO News", url: "https://www.who.int/rss-feeds/news-english.xml", section: "health" }
+    ],
+    football: [
+      { name: "ESPN", url: "https://www.espn.com/espn/rss/news", section: "football" }
+    ],
+    discover: [
+      { name: "Google News (Global)", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", section: "discover" }
+    ]
+  };
 
   const TOP_NEWS_FEEDS = [
     { name: "Google News", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
@@ -229,7 +351,7 @@
   }
 
   function lazyLoadImages() {
-    const images = document.querySelectorAll('.card-img[data-src]');
+    const images = document.querySelectorAll('.card-img[data-src], .trend-img[data-src]');
     if (!images.length) return;
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -308,7 +430,7 @@
   }
 
   // =============================================================
-  // 5. AD BANNER – INCLUDES YOUR AD SCRIPT
+  // 5. AD BANNER – with your ad script
   // =============================================================
 
   function renderAdBanner() {
@@ -350,7 +472,7 @@
   let topNewsFeedIndex = 0;
   let usedTopNewsUrls = new Set();
 
-  // Main feed (used for infinite scroll)
+  // Main feed (infinite scroll)
   let currentFiltered = [];
   let displayLimit = 20;
   let isLoadingMore = false;
@@ -360,6 +482,48 @@
   let usedFeedUrls = new Set();
   let sentinel = null;
   let observer = null;
+
+  // Local sections
+  let localSectionFeeds = {
+    top: [],
+    politics: [],
+    tech: [],
+    health: [],
+    football: [],
+    discover: []
+  };
+  let localSectionArticles = {
+    top: [],
+    politics: [],
+    tech: [],
+    health: [],
+    football: [],
+    discover: []
+  };
+  let localSectionDisplay = {
+    top: 5,
+    politics: 5,
+    tech: 5,
+    health: 5,
+    football: 5,
+    discover: 10
+  };
+  let localSectionExpanded = {
+    top: false,
+    politics: false,
+    tech: false,
+    health: false,
+    football: false,
+    discover: false
+  };
+  let localSectionAllFetched = {
+    top: false,
+    politics: false,
+    tech: false,
+    health: false,
+    football: false,
+    discover: false
+  };
 
   // =============================================================
   // 7. LOCATION & OFFLINE DETECTION
@@ -424,7 +588,6 @@
     }
   });
 
-  // Offline overlay
   function showOfflineOverlay(show) {
     const overlay = document.getElementById('offlineOverlay');
     if (overlay) overlay.style.display = show ? 'flex' : 'none';
@@ -468,7 +631,11 @@
           needsMore = true;
           let feedsToFetch = [];
           if (cat === 'Local') {
-            feedsToFetch = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+            // gather all local feeds
+            const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+            for (let sec of ['top', 'politics', 'tech', 'health', 'football', 'discover']) {
+              feedsToFetch = feedsToFetch.concat(countryData[sec] || []);
+            }
           } else {
             feedsToFetch = WORLD_FEEDS.filter(f => f.category === cat);
           }
@@ -530,7 +697,6 @@
   function switchCategory(cat) {
     if (currentCategory === cat) return;
     currentCategory = cat;
-    // Update active pill
     document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
     const active = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
     if (active) active.classList.add('active');
@@ -541,31 +707,25 @@
     } else {
       if (topContainer) topContainer.style.display = 'none';
     }
-    // Apply filter
-    applyCategoryFilter();
+    // Reset infinite scroll state
+    allFetched = false;
+    displayLimit = 20;
+    if (currentCategory === 'all') {
+      currentFiltered = allArticles;
+      renderAllCategoryGrouped();
+    } else if (currentCategory === 'Local') {
+      setupLocalSections();
+    } else {
+      currentFiltered = allArticles.filter(a => a.category === currentCategory);
+      displayLimit = Math.min(20, currentFiltered.length);
+      renderCategoryFeed(currentFiltered.slice(0, displayLimit));
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Re-attach sentinel for infinite scroll
+    // Re-attach sentinel after render
     setTimeout(() => {
       ensureSentinel();
       initInfiniteScroll();
     }, 100);
-  }
-
-  function applyCategoryFilter() {
-    if (currentCategory === 'all') {
-      currentFiltered = allArticles; // all articles
-      renderAllCategoryGrouped(); // grouped view
-      // Top news already handled above
-      ensureSentinel();
-      initInfiniteScroll();
-    } else {
-      // Filter articles for the selected category
-      currentFiltered = allArticles.filter(a => a.category === currentCategory);
-      displayLimit = Math.min(20, currentFiltered.length);
-      renderCategoryFeed(currentFiltered.slice(0, displayLimit));
-      ensureSentinel();
-      initInfiniteScroll();
-    }
   }
 
   // =============================================================
@@ -586,14 +746,12 @@
     return icons[cat] || 'fa-newspaper';
   }
 
-  // Render "All" view: grouped categories with Show More buttons (filter to that category)
   function renderAllCategoryGrouped() {
     const feedDiv = document.getElementById('newsFeed');
     if (!allArticles.length) {
       feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles available</div>';
       return;
     }
-
     const categoriesOrder = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
     let html = '';
     for (let cat of categoriesOrder) {
@@ -606,7 +764,6 @@
         catArticles.forEach(art => {
           html += renderArticleCard(art);
         });
-        // Show More button filters to that category
         html += `<button class="show-more-btn" data-cat="${cat}">
                     <i class="fas fa-chevron-right"></i> Show More ${cat} News
                 </button>`;
@@ -614,26 +771,31 @@
         html += `</div>`;
       }
     }
-
     feedDiv.innerHTML = html;
     attachSaveEvents();
     attachShareEvents();
     lazyLoadImages();
-    // Attach show more button handlers
     document.querySelectorAll('.show-more-btn').forEach(btn => {
       btn.removeEventListener('click', showMoreHandler);
       btn.addEventListener('click', showMoreHandler);
     });
+    // Sentinel for infinite scroll (All view uses feedPool)
+    ensureSentinel();
+    initInfiniteScroll();
   }
 
   function showMoreHandler(e) {
     const cat = this.dataset.cat;
     if (cat) {
-      switchCategory(cat);
+      if (cat === 'Local') {
+        switchCategory('Local');
+      } else {
+        switchCategory(cat);
+      }
     }
   }
 
-  // Render specific category feed (list with infinite scroll)
+  // Render specific category (list)
   function renderCategoryFeed(articles) {
     const feedDiv = document.getElementById('newsFeed');
     if (!articles || !articles.length) {
@@ -651,10 +813,426 @@
     attachSaveEvents();
     attachShareEvents();
     lazyLoadImages();
+    ensureSentinel();
+    initInfiniteScroll();
   }
 
   // =============================================================
-  // 12. TOP NEWS (only shown in "All" view)
+  // 12. LOCAL SECTIONS (with toggleable Show More)
+  // =============================================================
+
+  async function setupLocalSections() {
+    const statusDiv = document.getElementById('statusMsg');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = '<div class="loader"></div> Loading local news...';
+    const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+    const sections = ['top', 'politics', 'tech', 'health', 'football', 'discover'];
+    for (let section of sections) {
+      const feeds = countryData[section] || [];
+      localSectionFeeds[section] = feeds;
+      const articles = [];
+      const batch = feeds.slice(0, 10);
+      const results = await Promise.all(batch.map(f => fetchFeed(f)));
+      results.forEach(r => articles.push(...r));
+      const uniqueMap = new Map();
+      articles.forEach(a => {
+        const key = (a.link || '').split('?')[0];
+        if (!uniqueMap.has(key)) uniqueMap.set(key, a);
+      });
+      const uniqueArticles = Array.from(uniqueMap.values());
+      uniqueArticles.forEach(a => a.views = generateViews(a.title));
+      uniqueArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+      localSectionArticles[section] = uniqueArticles;
+      localSectionDisplay[section] = 5;
+      localSectionExpanded[section] = false;
+      localSectionAllFetched[section] = false;
+    }
+    statusDiv.style.display = 'none';
+    renderLocalSections();
+  }
+
+  function renderLocalSections() {
+    const feedDiv = document.getElementById('newsFeed');
+    let html = '';
+    const sections = ['top', 'politics', 'tech', 'health', 'football', 'discover'];
+    const sectionTitles = {
+      top: '🔥 Top Stories',
+      politics: '🏛️ Politics',
+      tech: '💻 Technology',
+      health: '🏥 Health',
+      football: '⚽ Football',
+      discover: '🔍 Discover More Local News'
+    };
+    for (let section of sections) {
+      const articles = localSectionArticles[section];
+      const limit = localSectionDisplay[section];
+      const toShow = articles.slice(0, limit);
+      if (toShow.length) {
+        html += `<div class="category-section" data-section="${section}">
+                    <div class="category-section-title">${sectionTitles[section]}</div>`;
+        toShow.forEach(art => {
+          html += renderArticleCard(art);
+        });
+        // Show More / Show Less button
+        const total = articles.length;
+        const expanded = localSectionExpanded[section];
+        if (total > 5 || !localSectionAllFetched[section] || expanded) {
+          const label = expanded ? 'Show Less' : 'Show More';
+          const loadText = (!localSectionAllFetched[section] && expanded) ? ' (load more...)' : '';
+          html += `<button class="show-more-section-btn" data-section="${section}" data-expanded="${expanded}">
+                      ${label} ${loadText}
+                    </button>`;
+        }
+        // For discover, we use a separate infinite scroll sentinel
+        if (section === 'discover') {
+          html += `<div id="loadSentinel" style="height:10px;margin:20px 0;"></div>`;
+        }
+        html += `</div>`;
+      }
+    }
+    feedDiv.innerHTML = html;
+    attachSaveEvents();
+    attachShareEvents();
+    lazyLoadImages();
+    // Attach section show more handlers
+    document.querySelectorAll('.show-more-section-btn').forEach(btn => {
+      btn.removeEventListener('click', sectionShowMoreHandler);
+      btn.addEventListener('click', sectionShowMoreHandler);
+    });
+    // Sentinel for discover
+    ensureSentinel();
+    initInfiniteScroll();
+  }
+
+  async function sectionShowMoreHandler(e) {
+    const btn = e.currentTarget;
+    const section = btn.dataset.section;
+    const expanded = localSectionExpanded[section];
+    if (expanded) {
+      // Collapse: set display back to 5
+      localSectionDisplay[section] = 5;
+      localSectionExpanded[section] = false;
+      renderLocalSections();
+      return;
+    } else {
+      // Expand: increase limit by 5 or fetch more if needed
+      const current = localSectionArticles[section].length;
+      if (current <= 5) {
+        // Fetch more articles for this section
+        const feeds = localSectionFeeds[section];
+        const usedUrls = new Set(localSectionArticles[section].map(a => (a.link || '').split('?')[0]));
+        const available = feeds.filter(f => !usedUrls.has(f.url));
+        if (available.length === 0) {
+          localSectionAllFetched[section] = true;
+          showToast('No more articles for this section.');
+          // Still expand to show all we have
+          localSectionDisplay[section] = current;
+          localSectionExpanded[section] = true;
+          renderLocalSections();
+          return;
+        }
+        const toFetch = available.sort(() => Math.random() - 0.5).slice(0, 5);
+        const results = await Promise.all(toFetch.map(f => fetchFeed(f)));
+        let newArticles = [];
+        results.forEach(r => newArticles.push(...r));
+        const unique = newArticles.filter(a => !usedUrls.has((a.link || '').split('?')[0]));
+        if (unique.length) {
+          unique.forEach(a => a.views = generateViews(a.title));
+          localSectionArticles[section] = [...localSectionArticles[section], ...unique];
+          localSectionArticles[section].sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+        }
+      }
+      const newLimit = Math.min(localSectionArticles[section].length, localSectionDisplay[section] + 5);
+      localSectionDisplay[section] = newLimit;
+      localSectionExpanded[section] = true;
+      renderLocalSections();
+    }
+  }
+
+  // =============================================================
+  // 13. INFINITE SCROLL (sentinel and observer)
+  // =============================================================
+
+  function ensureSentinel() {
+    const existing = document.getElementById('loadSentinel');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.id = 'loadSentinel';
+    el.style.height = '10px';
+    el.style.margin = '20px 0';
+    const feedDiv = document.getElementById('newsFeed');
+    if (feedDiv && feedDiv.parentNode) {
+      feedDiv.parentNode.insertBefore(el, feedDiv.nextSibling);
+    }
+    sentinel = el;
+  }
+
+  function initInfiniteScroll() {
+    if (observer) observer.disconnect();
+    ensureSentinel();
+    observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !isLoadingMore && !allFetched && navigator.onLine) {
+        loadMoreArticles();
+      }
+    }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
+    if (sentinel) observer.observe(sentinel);
+  }
+
+  function showEndSpinner(show) {
+    let spinner = document.getElementById('endSpinner');
+    if (show && !spinner) {
+      spinner = document.createElement('div');
+      spinner.id = "endSpinner";
+      spinner.className = "end-loader";
+      spinner.innerHTML = '<div class="loader"></div> Loading more...';
+      if (sentinel && sentinel.parentNode) sentinel.parentNode.insertBefore(spinner, sentinel);
+    } else if (!show && spinner) spinner.remove();
+  }
+
+  function showRetryButton(message, retryCallback) {
+    let retryDiv = document.getElementById('retryContainer');
+    if (retryDiv) retryDiv.remove();
+    const wrapper = document.createElement('div');
+    wrapper.id = 'retryContainer';
+    wrapper.className = 'end-loader';
+    wrapper.innerHTML = `<div><i class="fas fa-exclamation-triangle"></i> ${message}</div>
+                         <button class="retry-button">Retry</button>`;
+    const btn = wrapper.querySelector('.retry-button');
+    btn.onclick = async () => {
+      wrapper.innerHTML = '<div class="loader"></div> Retrying...';
+      await retryCallback();
+    };
+    if (sentinel && sentinel.parentNode) sentinel.parentNode.insertBefore(wrapper, sentinel);
+  }
+
+  // =============================================================
+  // 14. LOAD MORE ARTICLES (main infinite scroll logic)
+  // =============================================================
+
+  async function loadMoreArticles() {
+    if (isLoadingMore) return;
+    if (!navigator.onLine) {
+      showToast('Offline – cannot load more.');
+      return;
+    }
+
+    // For "All" category: use global feed pool
+    if (currentCategory === 'all') {
+      if (displayLimit < allArticles.length) {
+        displayLimit += 20;
+        renderAllCategoryGrouped();
+        return;
+      }
+      if (allFetched) {
+        refillMainFeedPool();
+        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+          if (sentinel) sentinel.style.display = 'none';
+          showEndSpinner(false);
+          return;
+        }
+        allFetched = false;
+      }
+      isLoadingMore = true;
+      showEndSpinner(true);
+      try {
+        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+          refillMainFeedPool();
+          if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+            allFetched = true;
+            if (sentinel) sentinel.style.display = 'none';
+            showEndSpinner(false);
+            isLoadingMore = false;
+            return;
+          }
+        }
+        const batchSize = 5;
+        const nextFeeds = feedPool.slice(feedIndex, feedIndex + batchSize);
+        feedIndex += batchSize;
+        if (nextFeeds.length === 0) {
+          refillMainFeedPool();
+          if (feedPool.length === 0 || feedIndex >= feedPool.length) {
+            allFetched = true;
+            if (sentinel) sentinel.style.display = 'none';
+            showEndSpinner(false);
+            isLoadingMore = false;
+            return;
+          }
+          isLoadingMore = false;
+          loadMoreArticles();
+          return;
+        }
+        const results = await Promise.all(nextFeeds.map(f => fetchFeed(f)));
+        let newArticles = [];
+        results.forEach(r => newArticles.push(...r));
+        const existingLinks = new Set(allArticles.map(a => (a.link || '').split('?')[0]));
+        const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
+        if (uniqueNew.length === 0) {
+          isLoadingMore = false;
+          showEndSpinner(false);
+          if (feedIndex < feedPool.length) {
+            setTimeout(() => loadMoreArticles(), 100);
+          } else {
+            refillMainFeedPool();
+            if (feedIndex < feedPool.length) {
+              setTimeout(() => loadMoreArticles(), 100);
+            } else {
+              allFetched = true;
+              if (sentinel) sentinel.style.display = 'none';
+            }
+          }
+          return;
+        }
+        uniqueNew.forEach(a => { a.views = generateViews(a.title); });
+        allArticles = [...allArticles, ...uniqueNew];
+        allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+        displayLimit = Math.min(displayLimit + uniqueNew.length, allArticles.length);
+        renderAllCategoryGrouped();
+        showToast(`✨ ${uniqueNew.length} new articles loaded`);
+        if (feedIndex >= feedPool.length) {
+          allFetched = true;
+          refillMainFeedPool();
+          if (feedPool.length > 0 && feedIndex < feedPool.length) {
+            allFetched = false;
+          }
+        }
+        showEndSpinner(false);
+      } catch (err) {
+        console.error(err);
+        showRetryButton("Failed to load more. Retry?", loadMoreArticles);
+      }
+      isLoadingMore = false;
+      showEndSpinner(false);
+      return;
+    }
+
+    // For Local category: discover section infinite scroll
+    if (currentCategory === 'Local') {
+      if (localSectionDisplay.discover < localSectionArticles.discover.length) {
+        localSectionDisplay.discover += 10;
+        renderLocalSections();
+        return;
+      }
+      if (localSectionAllFetched.discover) {
+        if (sentinel) sentinel.style.display = 'none';
+        showEndSpinner(false);
+        return;
+      }
+      isLoadingMore = true;
+      showEndSpinner(true);
+      try {
+        const feeds = localSectionFeeds.discover;
+        const available = feeds.filter(f => !usedFeedUrls.has(f.url));
+        if (available.length === 0) {
+          localSectionAllFetched.discover = true;
+          if (sentinel) sentinel.style.display = 'none';
+          showEndSpinner(false);
+          isLoadingMore = false;
+          return;
+        }
+        const toFetch = available.sort(() => Math.random() - 0.5).slice(0, 5);
+        const results = await Promise.all(toFetch.map(f => fetchFeed(f)));
+        let newArticles = [];
+        results.forEach(r => newArticles.push(...r));
+        toFetch.forEach(f => usedFeedUrls.add(f.url));
+        const existingLinks = new Set(localSectionArticles.discover.map(a => (a.link || '').split('?')[0]));
+        const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
+        if (uniqueNew.length === 0) {
+          isLoadingMore = false;
+          showEndSpinner(false);
+          setTimeout(() => loadMoreArticles(), 200);
+          return;
+        }
+        uniqueNew.forEach(a => { a.views = generateViews(a.title); });
+        localSectionArticles.discover = [...localSectionArticles.discover, ...uniqueNew];
+        localSectionArticles.discover.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+        localSectionDisplay.discover += uniqueNew.length;
+        renderLocalSections();
+        showToast(`✨ ${uniqueNew.length} new local articles`);
+        showEndSpinner(false);
+      } catch (err) {
+        console.error(err);
+        showRetryButton("Failed to load more. Retry?", loadMoreArticles);
+      }
+      isLoadingMore = false;
+      showEndSpinner(false);
+      return;
+    }
+
+    // For other specific categories: infinite scroll
+    if (displayLimit < currentFiltered.length) {
+      displayLimit += 20;
+      renderCategoryFeed(currentFiltered.slice(0, displayLimit));
+      return;
+    }
+    if (allFetched) {
+      if (sentinel) sentinel.style.display = 'none';
+      showEndSpinner(false);
+      return;
+    }
+    isLoadingMore = true;
+    showEndSpinner(true);
+    try {
+      const newArticles = await fetchMoreForCategory(currentCategory);
+      if (newArticles.length === 0) {
+        allFetched = true;
+        if (sentinel) sentinel.style.display = 'none';
+        showEndSpinner(false);
+        isLoadingMore = false;
+        return;
+      }
+      const existingLinks = new Set(allArticles.map(a => (a.link || '').split('?')[0]));
+      const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
+      if (uniqueNew.length === 0) {
+        isLoadingMore = false;
+        showEndSpinner(false);
+        setTimeout(() => loadMoreArticles(), 200);
+        return;
+      }
+      uniqueNew.forEach(a => { a.views = generateViews(a.title); });
+      allArticles = [...allArticles, ...uniqueNew];
+      allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+      currentFiltered = allArticles.filter(a => a.category === currentCategory);
+      displayLimit += uniqueNew.length;
+      renderCategoryFeed(currentFiltered.slice(0, displayLimit));
+      showToast(`✨ ${uniqueNew.length} new ${currentCategory} articles`);
+      showEndSpinner(false);
+    } catch (err) {
+      console.error(err);
+      showRetryButton("Failed to load more. Retry?", loadMoreArticles);
+    }
+    isLoadingMore = false;
+    showEndSpinner(false);
+  }
+
+  // Helper to fetch more for category (world categories)
+  async function fetchMoreForCategory(category) {
+    let feedsToFetch = [];
+    if (category === 'Local') return []; // handled separately
+    feedsToFetch = WORLD_FEEDS.filter(f => f.category === category);
+    if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
+    const available = feedsToFetch.filter(f => !usedFeedUrls.has(f.url));
+    if (available.length === 0) return [];
+    const toFetch = available.sort(() => Math.random() - 0.5).slice(0, 5);
+    const results = await Promise.all(toFetch.map(f => fetchFeed(f)));
+    let newArticles = [];
+    results.forEach(r => newArticles.push(...r));
+    toFetch.forEach(f => usedFeedUrls.add(f.url));
+    return newArticles;
+  }
+
+  function refillMainFeedPool() {
+    const available = WORLD_FEEDS.filter(f => !usedFeedUrls.has(f.url));
+    if (available.length === 0) {
+      usedFeedUrls.clear();
+      return refillMainFeedPool();
+    }
+    const newFeeds = available.sort(() => Math.random() - 0.5).slice(0, 10);
+    newFeeds.forEach(f => usedFeedUrls.add(f.url));
+    feedPool = feedPool.concat(newFeeds);
+  }
+
+  // =============================================================
+  // 15. TOP NEWS (infinite for "All" view)
   // =============================================================
 
   function initTopNewsPool() {
@@ -818,246 +1396,81 @@
   }
 
   // =============================================================
-  // 13. MAIN FEED INFINITE SCROLL (for both "All" and specific categories)
+  // 16. TRENDING CAROUSEL (with share button)
   // =============================================================
 
-  function ensureSentinel() {
-    const existing = document.getElementById('loadSentinel');
-    if (existing) existing.remove();
-    const el = document.createElement('div');
-    el.id = 'loadSentinel';
-    el.style.height = '10px';
-    el.style.margin = '20px 0';
-    const feedDiv = document.getElementById('newsFeed');
-    if (feedDiv && feedDiv.parentNode) {
-      feedDiv.parentNode.insertBefore(el, feedDiv.nextSibling);
+  function renderTrendingCarousel() {
+    const categories = ['Local','World','Politics','Technology','Sports','Entertainment','Business','Health'];
+    const selected = [];
+    for (const cat of categories) {
+      const catArticles = allArticles.filter(a => a.category === cat).slice(0, 2);
+      selected.push(...catArticles);
     }
-    sentinel = el;
+    const trendingItems = selected.slice(0, 16);
+    const carousel = document.getElementById('trendingCarousel');
+    if (!trendingItems.length) { carousel.innerHTML = '<div>No trending</div>'; return; }
+    carousel.innerHTML = trendingItems.map(art => {
+      const imgSrc = art.imageUrl;
+      return `<div class="trend-card-full">
+        <img class="trend-img" data-src="${imgSrc}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy">
+        <div class="trend-info">
+          <h3><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></h3>
+          <div class="trend-meta"><span><i class="fas fa-globe"></i> ${art.source}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
+          <div class="action-row" style="margin-top:0.5rem;">
+            <button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button>
+            <button class="btn-share share-trend" data-url="${art.link}" data-title="${escapeHtml(art.title)}"><i class="fas fa-share-alt"></i> Share</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    document.querySelectorAll('.save-trend').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const link = btn.dataset.link;
+        if (!savedArticles.some(s=>s.link===link)) {
+          savedArticles.push({ title: btn.dataset.title, link, imageUrl: btn.dataset.img, source: btn.dataset.source, description: btn.dataset.desc, savedAt: Date.now() });
+          localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
+          btn.innerHTML = '✅ Saved';
+          updateSavedCounter();
+          if (currentView === 'saved') renderSavedArticles();
+          showToast('Saved offline');
+        } else { showToast('Already saved'); }
+      });
+    });
+    document.querySelectorAll('.share-trend').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const title = btn.dataset.title;
+        const url = btn.dataset.url;
+        if (navigator.share) {
+          try { navigator.share({ title, url }); } catch (e) {}
+        } else {
+          navigator.clipboard.writeText(url);
+          showToast('Link copied!');
+        }
+      });
+    });
+    lazyLoadImages();
+    startCarouselScroll();
   }
 
-  function initInfiniteScroll() {
-    if (observer) observer.disconnect();
-    ensureSentinel();
-    observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !isLoadingMore && !allFetched && navigator.onLine) {
-        loadMoreArticles();
-      }
-    }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
-    if (sentinel) observer.observe(sentinel);
-  }
-
-  function showEndSpinner(show) {
-    let spinner = document.getElementById('endSpinner');
-    if (show && !spinner) {
-      spinner = document.createElement('div');
-      spinner.id = "endSpinner";
-      spinner.className = "end-loader";
-      spinner.innerHTML = '<div class="loader"></div> Loading more...';
-      if (sentinel && sentinel.parentNode) sentinel.parentNode.insertBefore(spinner, sentinel);
-    } else if (!show && spinner) spinner.remove();
-  }
-
-  function showRetryButton(message, retryCallback) {
-    let retryDiv = document.getElementById('retryContainer');
-    if (retryDiv) retryDiv.remove();
-    const wrapper = document.createElement('div');
-    wrapper.id = 'retryContainer';
-    wrapper.className = 'end-loader';
-    wrapper.innerHTML = `<div><i class="fas fa-exclamation-triangle"></i> ${message}</div>
-                         <button class="retry-button">Retry</button>`;
-    const btn = wrapper.querySelector('.retry-button');
-    btn.onclick = async () => {
-      wrapper.innerHTML = '<div class="loader"></div> Retrying...';
-      await retryCallback();
-    };
-    if (sentinel && sentinel.parentNode) sentinel.parentNode.insertBefore(wrapper, sentinel);
-  }
-
-  function refillMainFeedPool() {
-    const available = WORLD_FEEDS.filter(f => !usedFeedUrls.has(f.url));
-    if (available.length === 0) {
-      usedFeedUrls.clear();
-      return refillMainFeedPool();
-    }
-    const newFeeds = available.sort(() => Math.random() - 0.5).slice(0, 10);
-    newFeeds.forEach(f => usedFeedUrls.add(f.url));
-    feedPool = feedPool.concat(newFeeds);
-  }
-
-  async function fetchMoreForCategory(category) {
-    let feedsToFetch = [];
-    if (category === 'Local') {
-      feedsToFetch = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
-    } else {
-      feedsToFetch = WORLD_FEEDS.filter(f => f.category === category);
-    }
-    if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
-    // Filter out already used feeds
-    const available = feedsToFetch.filter(f => !usedFeedUrls.has(f.url));
-    if (available.length === 0) {
-      // Reset used feed URLs for this category? We'll just return empty.
-      return [];
-    }
-    const toFetch = available.sort(() => Math.random() - 0.5).slice(0, 5);
-    const results = await Promise.all(toFetch.map(f => fetchFeed(f)));
-    let newArticles = [];
-    results.forEach(r => newArticles.push(...r));
-    // Mark these feeds as used
-    toFetch.forEach(f => usedFeedUrls.add(f.url));
-    return newArticles;
-  }
-
-  async function loadMoreArticles() {
-    if (isLoadingMore) return;
-    if (!navigator.onLine) {
-      showToast('Offline – cannot load more.');
-      return;
-    }
-
-    if (currentCategory === 'all') {
-      // All category logic: use global feedPool
-      if (displayLimit < allArticles.length) {
-        displayLimit += 20;
-        renderAllCategoryGrouped();
-        ensureSentinel();
-        initInfiniteScroll();
-        return;
-      }
-      if (allFetched) {
-        refillMainFeedPool();
-        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
-          if (sentinel) sentinel.style.display = 'none';
-          showEndSpinner(false);
-          return;
-        }
-        allFetched = false;
-      }
-      isLoadingMore = true;
-      showEndSpinner(true);
-      try {
-        if (feedPool.length === 0 || feedIndex >= feedPool.length) {
-          refillMainFeedPool();
-          if (feedPool.length === 0 || feedIndex >= feedPool.length) {
-            allFetched = true;
-            if (sentinel) sentinel.style.display = 'none';
-            showEndSpinner(false);
-            isLoadingMore = false;
-            return;
-          }
-        }
-        const batchSize = 5;
-        const nextFeeds = feedPool.slice(feedIndex, feedIndex + batchSize);
-        feedIndex += batchSize;
-        if (nextFeeds.length === 0) {
-          refillMainFeedPool();
-          if (feedPool.length === 0 || feedIndex >= feedPool.length) {
-            allFetched = true;
-            if (sentinel) sentinel.style.display = 'none';
-            showEndSpinner(false);
-            isLoadingMore = false;
-            return;
-          }
-          isLoadingMore = false;
-          loadMoreArticles();
-          return;
-        }
-        const results = await Promise.all(nextFeeds.map(f => fetchFeed(f)));
-        let newArticles = [];
-        results.forEach(r => newArticles.push(...r));
-        const existingLinks = new Set(allArticles.map(a => (a.link || '').split('?')[0]));
-        const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
-        if (uniqueNew.length === 0) {
-          isLoadingMore = false;
-          showEndSpinner(false);
-          if (feedIndex < feedPool.length) {
-            setTimeout(() => loadMoreArticles(), 100);
-          } else {
-            refillMainFeedPool();
-            if (feedIndex < feedPool.length) {
-              setTimeout(() => loadMoreArticles(), 100);
-            } else {
-              allFetched = true;
-              if (sentinel) sentinel.style.display = 'none';
-            }
-          }
-          return;
-        }
-        uniqueNew.forEach(a => { a.views = generateViews(a.title); });
-        allArticles = [...allArticles, ...uniqueNew];
-        allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
-        displayLimit = Math.min(displayLimit + uniqueNew.length, allArticles.length);
-        renderAllCategoryGrouped();
-        showToast(`✨ ${uniqueNew.length} new articles loaded`);
-        if (feedIndex >= feedPool.length) {
-          allFetched = true;
-          refillMainFeedPool();
-          if (feedPool.length > 0 && feedIndex < feedPool.length) {
-            allFetched = false;
-          }
-        }
-        showEndSpinner(false);
-        ensureSentinel();
-        initInfiniteScroll();
-      } catch (err) {
-        console.error(err);
-        showRetryButton("Failed to load more. Retry?", loadMoreArticles);
-      }
-      isLoadingMore = false;
-      showEndSpinner(false);
-    } else {
-      // Specific category logic
-      if (displayLimit < currentFiltered.length) {
-        // We have more articles already in filtered list, just increase display
-        displayLimit += 20;
-        renderCategoryFeed(currentFiltered.slice(0, displayLimit));
-        ensureSentinel();
-        initInfiniteScroll();
-        return;
-      }
-      // Try to fetch more articles for this category
-      isLoadingMore = true;
-      showEndSpinner(true);
-      try {
-        const newArticles = await fetchMoreForCategory(currentCategory);
-        if (newArticles.length === 0) {
-          // No more feeds, mark as done
-          allFetched = true;
-          if (sentinel) sentinel.style.display = 'none';
-          showEndSpinner(false);
-          isLoadingMore = false;
-          return;
-        }
-        // Deduplicate against allArticles
-        const existingLinks = new Set(allArticles.map(a => (a.link || '').split('?')[0]));
-        const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
-        if (uniqueNew.length === 0) {
-          // No new articles, retry after a delay
-          isLoadingMore = false;
-          showEndSpinner(false);
-          setTimeout(() => loadMoreArticles(), 200);
-          return;
-        }
-        uniqueNew.forEach(a => { a.views = generateViews(a.title); });
-        allArticles = [...allArticles, ...uniqueNew];
-        allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
-        // Re-filter
-        currentFiltered = allArticles.filter(a => a.category === currentCategory);
-        displayLimit += uniqueNew.length;
-        renderCategoryFeed(currentFiltered.slice(0, displayLimit));
-        showToast(`✨ ${uniqueNew.length} new ${currentCategory} articles`);
-        showEndSpinner(false);
-        ensureSentinel();
-        initInfiniteScroll();
-      } catch (err) {
-        console.error(err);
-        showRetryButton("Failed to load more. Retry?", loadMoreArticles);
-      }
-      isLoadingMore = false;
-    }
+  function startCarouselScroll() {
+    if (carouselInterval) clearInterval(carouselInterval);
+    const container = document.getElementById('trendingCarousel');
+    if (!container) return;
+    autoScrollActive = true;
+    container.addEventListener('mouseenter', () => { autoScrollActive = false; });
+    container.addEventListener('mouseleave', () => { autoScrollActive = true; });
+    carouselInterval = setInterval(() => {
+      if (!autoScrollActive) return;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) return;
+      let newLeft = container.scrollLeft + (container.clientWidth * 0.8);
+      if (newLeft >= maxScroll) newLeft = 0;
+      container.scrollTo({ left: newLeft, behavior: 'smooth' });
+    }, 6000);
   }
 
   // =============================================================
-  // 14. SAVE / SHARE EVENTS
+  // 17. SAVE / SHARE EVENTS
   // =============================================================
 
   function attachSaveEvents() {
@@ -1068,7 +1481,7 @@
   }
 
   function attachShareEvents() {
-    document.querySelectorAll('.share-btn, .share-top-btn').forEach(btn => {
+    document.querySelectorAll('.share-btn, .share-top-btn, .share-trend').forEach(btn => {
       btn.removeEventListener('click', shareHandler);
       btn.addEventListener('click', shareHandler);
     });
@@ -1099,12 +1512,9 @@
     }
     updateSavedCounter();
     if (currentView === 'saved') renderSavedArticles();
-    // Re-render current view if needed
-    if (currentCategory === 'all') {
-      renderAllCategoryGrouped();
-    } else {
-      renderCategoryFeed(currentFiltered.slice(0, displayLimit));
-    }
+    if (currentCategory === 'all') renderAllCategoryGrouped();
+    else if (currentCategory === 'Local') renderLocalSections();
+    else renderCategoryFeed(currentFiltered.slice(0, displayLimit));
   }
 
   function shareHandler(e) {
@@ -1125,7 +1535,7 @@
   }
 
   // =============================================================
-  // 15. SAVED VIEW
+  // 18. SAVED VIEW
   // =============================================================
 
   function renderSavedArticles() {
@@ -1161,6 +1571,7 @@
         renderSavedArticles();
         if (currentView === 'home') {
           if (currentCategory === 'all') renderAllCategoryGrouped();
+          else if (currentCategory === 'Local') renderLocalSections();
           else renderCategoryFeed(currentFiltered.slice(0, displayLimit));
         }
         showToast('Removed');
@@ -1172,7 +1583,7 @@
   }
 
   // =============================================================
-  // 16. OTHER VIEWS (Tools, Live)
+  // 19. OTHER VIEWS (Tools, Live)
   // =============================================================
 
   function showHomeView() {
@@ -1189,7 +1600,10 @@
     if (currentCategory !== 'all') {
       switchCategory('all');
     } else {
-      applyCategoryFilter();
+      renderAllCategoryGrouped();
+      renderTopNews();
+      ensureSentinel();
+      initInfiniteScroll();
     }
   }
 
@@ -1244,75 +1658,200 @@
   }
 
   // =============================================================
-  // 17. TRENDING CAROUSEL
+  // 20. TOOLS (scan junk, big files, browse)
   // =============================================================
 
-  function renderTrendingCarousel() {
-    const categories = ['Local','World','Politics','Technology','Sports','Entertainment','Business','Health'];
-    const selected = [];
-    for (const cat of categories) {
-      const catArticles = allArticles.filter(a => a.category === cat).slice(0, 2);
-      selected.push(...catArticles);
+  async function requestDirectoryPermission() {
+    try {
+      if ('showDirectoryPicker' in window) {
+        return await window.showDirectoryPicker();
+      } else {
+        return null;
+      }
+    } catch (e) {
+      console.warn('Directory access denied or not supported', e);
+      return null;
     }
-    const trendingItems = selected.slice(0, 16);
-    const carousel = document.getElementById('trendingCarousel');
-    if (!trendingItems.length) { carousel.innerHTML = '<div>No trending</div>'; return; }
-    carousel.innerHTML = trendingItems.map(art => {
-      const imgSrc = art.imageUrl;
-      return `<div class="trend-card-full">
-        <img class="trend-img" data-src="${imgSrc}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" loading="lazy">
-        <div class="trend-info">
-          <h3><a href="${art.link}" target="_blank">${escapeHtml(art.title)}</a></h3>
-          <div class="trend-meta"><span><i class="fas fa-globe"></i> ${art.source}</span><span><i class="fas fa-eye"></i> ${formatViews(art.views)}</span></div>
-          <button class="btn-save save-trend" data-link="${art.link}" data-title="${escapeHtml(art.title)}" data-img="${imgSrc}" data-source="${art.source}" data-desc="${escapeHtml(art.description)}">💾 Save</button>
-        </div>
-      </div>`;
-    }).join('');
-    document.querySelectorAll('.save-trend').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const link = btn.dataset.link;
-        if (!savedArticles.some(s=>s.link===link)) {
-          savedArticles.push({ title: btn.dataset.title, link, imageUrl: btn.dataset.img, source: btn.dataset.source, description: btn.dataset.desc, savedAt: Date.now() });
-          localStorage.setItem("amimo_saved", JSON.stringify(savedArticles));
-          btn.innerHTML = '✅ Saved';
-          updateSavedCounter();
-          if (currentView === 'saved') renderSavedArticles();
-          showToast('Saved offline');
-        } else { showToast('Already saved'); }
-      });
-    });
-    lazyLoadImages();
-    startCarouselScroll();
   }
 
-  function startCarouselScroll() {
-    if (carouselInterval) clearInterval(carouselInterval);
-    const container = document.getElementById('trendingCarousel');
-    if (!container) return;
-    autoScrollActive = true;
-    container.addEventListener('mouseenter', () => { autoScrollActive = false; });
-    container.addEventListener('mouseleave', () => { autoScrollActive = true; });
-    carouselInterval = setInterval(() => {
-      if (!autoScrollActive) return;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      if (maxScroll <= 0) return;
-      let newLeft = container.scrollLeft + (container.clientWidth * 0.8);
-      if (newLeft >= maxScroll) newLeft = 0;
-      container.scrollTo({ left: newLeft, behavior: 'smooth' });
-    }, 6000);
+  async function scanJunkFiles() {
+    const output = document.getElementById('toolOutput');
+    output.innerHTML = '<div class="loader"></div> Scanning for junk files...';
+    try {
+      const dirHandle = await requestDirectoryPermission();
+      if (!dirHandle) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.multiple = true;
+        input.onchange = async (e) => {
+          const files = e.target.files;
+          if (!files.length) {
+            output.innerHTML = '<p>No folder selected.</p>';
+            return;
+          }
+          let junk = [];
+          for (let f of files) {
+            if (f.size > 10 * 1024 * 1024 || /\.(tmp|log|cache|temp)$/i.test(f.name)) {
+              junk.push({ name: f.name, size: f.size, lastModified: f.lastModified });
+            }
+          }
+          if (!junk.length) {
+            output.innerHTML = '<p>✅ No junk files found.</p>';
+          } else {
+            let html = `<p>Found ${junk.length} junk files:</p><ul style="list-style:none;padding:0;">`;
+            junk.forEach(j => {
+              html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;">
+                <span>${escapeHtml(j.name)} (${(j.size/1024/1024).toFixed(2)} MB)</span>
+                <button class="delete-file-btn" data-name="${escapeHtml(j.name)}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
+              </li>`;
+            });
+            html += '</ul>';
+            output.innerHTML = html;
+            document.querySelectorAll('.delete-file-btn').forEach(btn => {
+              btn.onclick = () => {
+                showToast('⚠️ File deletion requires native app permissions.');
+              };
+            });
+          }
+        };
+        input.click();
+        output.innerHTML = '<p>Select a folder to scan.</p>';
+        return;
+      }
+      let junk = [];
+      const dirIterator = dirHandle.values();
+      for await (const entry of dirIterator) {
+        if (entry.kind === 'file') {
+          const file = await entry.getFile();
+          if (file.size > 10 * 1024 * 1024 || /\.(tmp|log|cache|temp)$/i.test(file.name)) {
+            junk.push({ name: file.name, size: file.size, lastModified: file.lastModified, handle: entry });
+          }
+        }
+      }
+      if (!junk.length) {
+        output.innerHTML = '<p>✅ No junk files found.</p>';
+      } else {
+        let html = `<p>Found ${junk.length} junk files:</p><ul style="list-style:none;padding:0;">`;
+        junk.forEach(j => {
+          html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;">
+            <span>${escapeHtml(j.name)} (${(j.size/1024/1024).toFixed(2)} MB)</span>
+            <button class="delete-file-btn" data-handle="${j.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
+          </li>`;
+        });
+        html += '</ul>';
+        output.innerHTML = html;
+        document.querySelectorAll('.delete-file-btn').forEach(btn => {
+          btn.onclick = async () => {
+            try {
+              const handle = btn.dataset.handle;
+              if (handle) {
+                await handle.remove();
+                showToast('File deleted');
+                btn.closest('li').remove();
+              } else {
+                showToast('Deletion not supported in this browser.');
+              }
+            } catch(e) { showToast('Error deleting'); }
+          };
+        });
+      }
+    } catch (err) {
+      output.innerHTML = `<p>Error: ${err.message}</p>`;
+    }
+  }
+
+  async function scanBigFiles() {
+    const output = document.getElementById('toolOutput');
+    output.innerHTML = '<div class="loader"></div> Scanning for large files (>50MB)...';
+    try {
+      const dirHandle = await requestDirectoryPermission();
+      if (!dirHandle) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.webkitdirectory = true;
+        input.multiple = true;
+        input.onchange = (e) => {
+          const files = e.target.files;
+          if (!files.length) {
+            output.innerHTML = '<p>No folder selected.</p>';
+            return;
+          }
+          let big = [];
+          for (let f of files) {
+            if (f.size > 50 * 1024 * 1024) {
+              big.push({ name: f.name, size: f.size });
+            }
+          }
+          if (!big.length) {
+            output.innerHTML = '<p>✅ No files larger than 50MB.</p>';
+          } else {
+            let html = `<p>Found ${big.length} large files:</p><ul>`;
+            big.forEach(b => {
+              html += `<li>${escapeHtml(b.name)} (${(b.size/1024/1024).toFixed(2)} MB)</li>`;
+            });
+            html += '</ul>';
+            output.innerHTML = html;
+          }
+        };
+        input.click();
+        output.innerHTML = '<p>Select a folder to scan.</p>';
+        return;
+      }
+      let big = [];
+      const dirIterator = dirHandle.values();
+      for await (const entry of dirIterator) {
+        if (entry.kind === 'file') {
+          const file = await entry.getFile();
+          if (file.size > 50 * 1024 * 1024) {
+            big.push({ name: file.name, size: file.size });
+          }
+        }
+      }
+      if (!big.length) {
+        output.innerHTML = '<p>✅ No files larger than 50MB.</p>';
+      } else {
+        let html = `<p>Found ${big.length} large files:</p><ul>`;
+        big.forEach(b => {
+          html += `<li>${escapeHtml(b.name)} (${(b.size/1024/1024).toFixed(2)} MB)</li>`;
+        });
+        html += '</ul>';
+        output.innerHTML = html;
+      }
+    } catch (err) {
+      output.innerHTML = `<p>Error: ${err.message}</p>`;
+    }
+  }
+
+  async function browseFiles() {
+    const output = document.getElementById('toolOutput');
+    output.innerHTML = '<div class="loader"></div> Opening file browser...';
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true;
+      input.onchange = (e) => {
+        const files = e.target.files;
+        if (!files.length) {
+          output.innerHTML = '<p>No files selected.</p>';
+          return;
+        }
+        let html = `<p>Selected ${files.length} files:</p><ul>`;
+        for (let f of files) {
+          html += `<li>${escapeHtml(f.name)} (${(f.size/1024).toFixed(1)} KB)</li>`;
+        }
+        html += '</ul>';
+        output.innerHTML = html;
+      };
+      input.click();
+      output.innerHTML = '<p>Select files to browse.</p>';
+    } catch(err) {
+      output.innerHTML = `<p>Error: ${err.message}</p>`;
+    }
   }
 
   // =============================================================
-  // 18. TOOLS – JUNK FILES, BIG FILES, BROWSE (unchanged)
-  // =============================================================
-
-  async function requestDirectoryPermission() { /* ... */ }
-  async function scanJunkFiles() { /* ... */ }
-  async function scanBigFiles() { /* ... */ }
-  async function browseFiles() { /* ... */ }
-
-  // =============================================================
-  // 19. SEARCH (unchanged)
+  // 21. SEARCH
   // =============================================================
 
   function storeAllArticlesForSearch() {
@@ -1329,21 +1868,26 @@
   }
 
   // =============================================================
-  // 20. MAIN LOAD ALL FEEDS
+  // 22. MAIN LOAD ALL FEEDS
   // =============================================================
 
   async function loadAllFeeds() {
     const statusDiv = document.getElementById('statusMsg');
     statusDiv.innerHTML = '<div class="loader"></div> Loading...';
 
-    // Initialize feed pools
+    // Initialize pools
     feedPool = [];
     feedIndex = 0;
     usedFeedUrls.clear();
     allFetched = false;
 
-    // Fetch local feeds
-    let localFeeds = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+    // Fetch local feeds (all sections)
+    let localFeeds = [];
+    const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+    for (let section of ['top', 'politics', 'tech', 'health', 'football', 'discover']) {
+      const feeds = countryData[section] || [];
+      localFeeds = localFeeds.concat(feeds);
+    }
     let localArticles = [];
     for (let feed of localFeeds) {
       const arts = await fetchFeed(feed);
@@ -1400,9 +1944,19 @@
     hasMoreTopNews = true;
 
     storeAllArticlesForSearch();
-    renderAllCategoryGrouped();
 
-    // Place top news container after main feed
+    // Render based on current category
+    if (currentCategory === 'Local') {
+      await setupLocalSections();
+    } else if (currentCategory === 'all') {
+      renderAllCategoryGrouped();
+    } else {
+      currentFiltered = allArticles.filter(a => a.category === currentCategory);
+      displayLimit = Math.min(20, currentFiltered.length);
+      renderCategoryFeed(currentFiltered.slice(0, displayLimit));
+    }
+
+    // Place top news container
     const topContainer = document.getElementById('topNewsContainer');
     const feedDiv = document.getElementById('newsFeed');
     if (topContainer && feedDiv && feedDiv.parentNode) {
@@ -1413,6 +1967,7 @@
     updateSavedCounter();
     statusDiv.style.display = 'none';
 
+    // Sentinel for main feed
     ensureSentinel();
     initInfiniteScroll();
 
@@ -1421,10 +1976,9 @@
   }
 
   // =============================================================
-  // 21. EVENT LISTENERS
+  // 23. EVENT LISTENERS
   // =============================================================
 
-  // Category pills
   document.querySelectorAll('.cat-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       const cat = pill.dataset.cat;
@@ -1432,7 +1986,6 @@
     });
   });
 
-  // Theme switch
   const themeSwitch = document.getElementById('themeSwitch');
   if (themeSwitch) {
     themeSwitch.addEventListener('change', (e) => {
@@ -1445,7 +1998,6 @@
     }
   }
 
-  // Side menu
   const sideMenu = document.getElementById('sideMenu');
   const overlay = document.getElementById('overlay');
   function closeMenu() {
@@ -1477,7 +2029,7 @@
   if (menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
   if (menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
   if (menuAbout) menuAbout.addEventListener('click', () => {
-    alert("Amimo Discovery v42.0\n✅ Single-page category filtering\n✅ Infinite scroll for all categories\n✅ Offline support with cache");
+    alert("Amimo Discovery v43.0\n✅ Local sections with toggleable Show More\n✅ Infinite scroll for all categories\n✅ Offline support\n✅ All features included");
     closeMenu();
   });
   if (menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
@@ -1485,7 +2037,6 @@
   if (menuLive) menuLive.addEventListener('click', () => { showLiveView(); closeMenu(); });
   if (viewSavedBtn) viewSavedBtn.onclick = () => showSavedView();
 
-  // Search
   const searchInput = document.getElementById('searchInput');
   const searchBtn = document.getElementById('searchBtn');
   if (searchBtn) searchBtn.addEventListener('click', () => {
@@ -1496,7 +2047,6 @@
     if (e.key === 'Enter') searchBtn?.click();
   });
 
-  // Floating search
   const searchZone = document.getElementById('searchZone');
   if (searchInput) searchInput.addEventListener('focus', () => {
     if (!searchZone) return;
@@ -1512,7 +2062,6 @@
     setTimeout(() => document.addEventListener('click', removeFloat), 50);
   });
 
-  // Bottom nav
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const nav = btn.dataset.nav;
@@ -1523,13 +2072,12 @@
     });
   });
 
-  // Tool buttons
   document.getElementById('scanJunkBtn')?.addEventListener('click', scanJunkFiles);
   document.getElementById('scanBigFilesBtn')?.addEventListener('click', scanBigFiles);
   document.getElementById('accessFilesBtn')?.addEventListener('click', browseFiles);
 
   // =============================================================
-  // 22. START
+  // 24. START
   // =============================================================
 
   detectLocation().then(() => {
