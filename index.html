@@ -173,6 +173,13 @@
             } catch (e) { console.log('SW registration skipped:', e); }
         });
     }
+navigator.serviceWorker.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SYNC_NEWS') {
+    // Trigger a fresh news fetch (e.g., call loadAllFeeds() or fetchMoreArticles())
+    // Or show a notification saying "New articles available"
+    showToast('Background sync triggered! Fetching fresh news...');
+  }
+});
 </script>
 </body>
 </html>
