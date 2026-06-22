@@ -1,5 +1,5 @@
 // ================================================================
-//  main.js – FULL with All view showing Local sub‑sections & Discover
+//  main.js – FULL with welcome, enhanced file manager, all features
 // ================================================================
 
 (function() {
@@ -58,9 +58,14 @@
     { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
   ];
 
-  // ---- LOCAL FEEDS with category: "Local" and section ----
+  // ---- LOCAL FEEDS with Google News fallback ----
   const localMap = new Map();
 
+  function googleNewsRss(query, country = 'US') {
+    return `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=${country}&ceid=${country}:en`;
+  }
+
+  // --- ZAMBIA ---
   localMap.set("ZM", {
     top: [
       { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", section: "top", category: "Local" },
@@ -87,6 +92,7 @@
     discover: []
   });
 
+  // --- USA ---
   localMap.set("US", {
     top: [
       { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", section: "top", category: "Local" },
@@ -117,6 +123,7 @@
     discover: []
   });
 
+  // --- UK ---
   localMap.set("GB", {
     top: [
       { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", section: "top", category: "Local" },
@@ -141,6 +148,7 @@
     discover: []
   });
 
+  // --- INDIA ---
   localMap.set("IN", {
     top: [
       { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", section: "top", category: "Local" },
@@ -163,6 +171,7 @@
     discover: []
   });
 
+  // --- NIGERIA ---
   localMap.set("NG", {
     top: [
       { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", section: "top", category: "Local" },
@@ -183,6 +192,7 @@
     discover: []
   });
 
+  // --- SOUTH AFRICA ---
   localMap.set("ZA", {
     top: [
       { name: "News24", url: "https://www.news24.com/feeds", section: "top", category: "Local" },
@@ -203,6 +213,7 @@
     discover: []
   });
 
+  // --- KENYA ---
   localMap.set("KE", {
     top: [
       { name: "Daily Nation", url: "https://www.nation.co.ke/rss", section: "top", category: "Local" },
@@ -223,6 +234,7 @@
     discover: []
   });
 
+  // --- BRAZIL ---
   localMap.set("BR", {
     top: [
       { name: "CNN Brasil", url: "https://www.cnnbrasil.com.br/feed/", section: "top", category: "Local" },
@@ -244,6 +256,7 @@
     discover: []
   });
 
+  // --- FRANCE ---
   localMap.set("FR", {
     top: [
       { name: "Le Monde", url: "https://www.lemonde.fr/rss/une.xml", section: "top", category: "Local" },
@@ -265,6 +278,7 @@
     discover: []
   });
 
+  // --- GERMANY ---
   localMap.set("DE", {
     top: [
       { name: "DW News", url: "https://rss.dw.com/rdf/rss-en-top", section: "top", category: "Local" },
@@ -286,6 +300,7 @@
     discover: []
   });
 
+  // --- ITALY ---
   localMap.set("IT", {
     top: [
       { name: "Corriere della Sera", url: "https://www.corriere.it/rss/", section: "top", category: "Local" },
@@ -306,6 +321,7 @@
     discover: []
   });
 
+  // --- SPAIN ---
   localMap.set("ES", {
     top: [
       { name: "El País", url: "https://feeds.elpais.com/rss/", section: "top", category: "Local" },
@@ -326,26 +342,8 @@
     discover: []
   });
 
-  const FALLBACK_LOCAL_FEEDS = {
-    top: [
-      { name: "World News (VOA)", url: "https://www.voanews.com/rss", section: "top", category: "Local" }
-    ],
-    politics: [
-      { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", section: "politics", category: "Local" }
-    ],
-    tech: [
-      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
-    ],
-    health: [
-      { name: "WHO News", url: "https://www.who.int/rss-feeds/news-english.xml", section: "health", category: "Local" }
-    ],
-    football: [
-      { name: "ESPN", url: "https://www.espn.com/espn/rss/news", section: "football", category: "Local" }
-    ],
-    discover: [
-      { name: "Google News (Global)", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", section: "discover", category: "Local" }
-    ]
-  };
+  // Fallback (if country not in map)
+  const FALLBACK_LOCAL_FEEDS = {};
 
   const TOP_NEWS_FEEDS = [
     { name: "Google News", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", category: "Top", imgFallback: "https://placehold.co/800x450/f59e0b/white?text=Google+News" },
@@ -878,8 +876,8 @@
   // ---- ALL view ----
   function renderAllCategoryGrouped() {
     const feedDiv = document.getElementById('newsFeed');
-    if (!allArticles.length) {
-      feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles available</div>';
+    if (!allArticles.length && !localSectionArticles.top.length) {
+      feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;"><div class="loader"></div> Loading articles...</div>';
       return;
     }
 
@@ -891,7 +889,6 @@
         // --- Local: render sub-sections ---
         html += `<div class="category-section" data-cat="Local">
                     <div class="category-section-title"><i class="fas fa-location-dot"></i> Local</div>`;
-        // Sub-sections: Top, Politics, Tech, Health, Football
         const subSections = ['top', 'politics', 'tech', 'health', 'football'];
         const sectionTitles = {
           top: '🔥 Top Stories',
@@ -904,18 +901,30 @@
           const articles = localSectionArticles[sec] || [];
           const limit = 5;
           const toShow = articles.slice(0, limit);
+          const hasArticles = toShow.length > 0;
           html += `<div class="sub-section" data-section="${sec}">
                       <div class="sub-section-title">${sectionTitles[sec]}</div>`;
-          if (toShow.length) {
+          if (hasArticles) {
             toShow.forEach(art => {
               html += renderArticleCard(art);
             });
           } else {
-            html += `<p style="padding:0.5rem 0;color:var(--text-muted);font-style:italic;">No articles in this section yet.</p>`;
+            html += `<div class="loading-placeholder" style="padding:0.5rem 0;color:var(--text-muted);font-style:italic;">
+                        <span class="loader" style="width:16px;height:16px;display:inline-block;margin-right:0.5rem;"></span> Loading articles...
+                     </div>`;
           }
           html += `</div>`;
         }
-        // Discover section – with sentinel for infinite scroll
+
+        // ---- Top News (global) inline ----
+        html += `<div class="top-news-inline" style="margin:1.5rem 0;">
+                    <div class="category-section-title" style="border-left-color:#f59e0b;color:#f59e0b;">
+                        <i class="fas fa-chart-line"></i> 🔥 Top News
+                    </div>
+                    <div id="topNewsContainer" style="display:block;padding:0;"></div>
+                  </div>`;
+
+        // ---- Discover section ----
         html += `<div class="sub-section" id="discoverSection">
                     <div class="sub-section-title">🔍 Discover More Local News</div>`;
         const discoverArticles = localSectionArticles.discover || [];
@@ -926,14 +935,15 @@
             html += renderArticleCard(art);
           });
         } else {
-          html += `<p style="padding:0.5rem 0;color:var(--text-muted);font-style:italic;">Loading discover articles...</p>`;
+          html += `<div class="loading-placeholder" style="padding:0.5rem 0;color:var(--text-muted);font-style:italic;">
+                      <span class="loader" style="width:16px;height:16px;display:inline-block;margin-right:0.5rem;"></span> Loading discover articles...
+                   </div>`;
         }
-        // Sentinel for Discover
         html += `<div id="discoverSentinel" style="height:10px;margin:20px 0;"></div>`;
         html += `</div>`;
         html += `</div>`;
       } else {
-        // Other categories: show 5 articles + "Show More" button
+        // Other categories
         const limit = 5;
         const catArticles = allArticles.filter(a => a.category === cat).slice(0, limit);
         if (catArticles.length) {
@@ -957,18 +967,70 @@
     attachShareEvents();
     lazyLoadImages();
 
-    // Attach show more handlers for non-Local categories
     document.querySelectorAll('.show-more-btn').forEach(btn => {
       btn.removeEventListener('click', showMoreHandler);
       btn.addEventListener('click', showMoreHandler);
     });
 
-    // Set up sentinel for the main feed (All view – loads more world articles)
     ensureSentinel();
     initInfiniteScroll();
-
-    // Set up discover sentinel for local articles
     setupDiscoverSentinel();
+    renderTopNewsInline();
+  }
+
+  function renderTopNewsInline() {
+    const container = document.getElementById('topNewsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!topNewsArticles.length) {
+      container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted);">Loading top news...</div>';
+      return;
+    }
+    const toShow = topNewsArticles.slice(0, topNewsDisplayed);
+    let html = '';
+    toShow.forEach((art, index) => {
+      html += renderArticleCard(art);
+      if ((index + 1) % 5 === 0 && (index + 1) < toShow.length) {
+        html += renderAdBanner();
+      }
+    });
+    container.innerHTML = html;
+    attachSaveEvents();
+    attachShareEvents();
+    lazyLoadImages();
+    if (hasMoreTopNews && topNewsDisplayed < topNewsArticles.length) {
+      const sentinelEl = document.createElement('div');
+      sentinelEl.id = 'topNewsInlineSentinel';
+      sentinelEl.style.height = '10px';
+      sentinelEl.style.margin = '20px 0';
+      container.appendChild(sentinelEl);
+      setupTopNewsInlineInfinite();
+    } else if (!hasMoreTopNews && topNewsDisplayed >= topNewsArticles.length && topNewsArticles.length > 0) {
+      const msg = document.createElement('div');
+      msg.style.textAlign = 'center';
+      msg.style.padding = '1rem';
+      msg.style.color = 'var(--text-muted)';
+      msg.textContent = '— No more top news —';
+      container.appendChild(msg);
+    }
+  }
+
+  let topNewsInlineObserver = null;
+  function setupTopNewsInlineInfinite() {
+    if (topNewsInlineObserver) topNewsInlineObserver.disconnect();
+    const sentinel = document.getElementById('topNewsInlineSentinel');
+    if (!sentinel) return;
+    topNewsInlineObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !isLoadingTopNews && currentCategory === 'all' && navigator.onLine) {
+        loadMoreTopNewsInline();
+      }
+    }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
+    topNewsInlineObserver.observe(sentinel);
+  }
+
+  async function loadMoreTopNewsInline() {
+    await loadMoreTopNews();
+    renderTopNewsInline();
   }
 
   function showMoreHandler(e) {
@@ -1023,7 +1085,6 @@
         toShow.forEach(art => {
           html += renderArticleCard(art);
         });
-        // Show More / Show Less button
         const total = articles.length;
         const expanded = localSectionExpanded[section];
         if (total > 5 || !localSectionAllFetched[section] || expanded) {
@@ -1043,7 +1104,6 @@
     attachSaveEvents();
     attachShareEvents();
     lazyLoadImages();
-    // Attach section show more handlers
     document.querySelectorAll('.show-more-section-btn').forEach(btn => {
       btn.removeEventListener('click', sectionShowMoreHandler);
       btn.addEventListener('click', sectionShowMoreHandler);
@@ -1053,14 +1113,24 @@
   }
 
   // =============================================================
-  // 12. LOCAL SECTIONS – POPULATE DATA (called once during load)
+  // 12. LOCAL SECTIONS – POPULATE DATA (with Google News fallback)
   // =============================================================
 
   async function populateLocalSections() {
-    const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+    const countryData = localMap.get(userCountry) || {};
     const sections = ['top', 'politics', 'tech', 'health', 'football', 'discover'];
     for (let section of sections) {
-      const feeds = countryData[section] || [];
+      let feeds = countryData[section] || [];
+      if (!feeds.length) {
+        const query = `${userCountryName} ${section}`.trim();
+        const url = googleNewsRss(query, userCountry);
+        feeds = [{
+          name: `Google News (${section})`,
+          url: url,
+          section: section,
+          category: 'Local'
+        }];
+      }
       localSectionFeeds[section] = feeds;
       const articles = [];
       const batch = feeds.slice(0, 10);
@@ -1103,10 +1173,9 @@
       showToast('Offline – cannot load more.');
       return;
     }
-    // If we already have enough in array, just show more
     if (localSectionDisplay.discover < localSectionArticles.discover.length) {
       localSectionDisplay.discover += 10;
-      renderAllCategoryGrouped(); // re-render All view with updated display
+      renderAllCategoryGrouped();
       return;
     }
     if (localSectionAllFetched.discover) {
@@ -1138,7 +1207,6 @@
         renderAllCategoryGrouped();
         showToast(`✨ ${uniqueNew.length} new local articles`);
       } else {
-        // no new articles – try again later
         setTimeout(() => loadMoreDiscoverArticles(), 200);
       }
     } catch (e) {
@@ -1157,23 +1225,19 @@
     const section = btn.dataset.section;
     const expanded = localSectionExpanded[section];
     if (expanded) {
-      // Collapse: set display back to 5
       localSectionDisplay[section] = 5;
       localSectionExpanded[section] = false;
       renderLocalSections();
       return;
     } else {
-      // Expand: increase limit by 5 or fetch more if needed
       const current = localSectionArticles[section].length;
       if (current <= 5) {
-        // Fetch more articles for this section
         const feeds = localSectionFeeds[section];
         const usedUrls = new Set(localSectionArticles[section].map(a => (a.link || '').split('?')[0]));
         const available = feeds.filter(f => !usedUrls.has(f.url));
         if (available.length === 0) {
           localSectionAllFetched[section] = true;
           showToast('No more articles for this section.');
-          // Still expand to show all we have
           localSectionDisplay[section] = current;
           localSectionExpanded[section] = true;
           renderLocalSections();
@@ -1353,7 +1417,7 @@
       return;
     }
 
-    // For Local category: discover section infinite scroll (already handled separately)
+    // For Local category: discover section infinite scroll
     if (currentCategory === 'Local') {
       if (localSectionDisplay.discover < localSectionArticles.discover.length) {
         localSectionDisplay.discover += 10;
@@ -1455,7 +1519,7 @@
   // Helper to fetch more for category (world categories)
   async function fetchMoreForCategory(category) {
     let feedsToFetch = [];
-    if (category === 'Local') return []; // handled separately
+    if (category === 'Local') return [];
     feedsToFetch = WORLD_FEEDS.filter(f => f.category === category);
     if (feedsToFetch.length === 0) feedsToFetch = WORLD_FEEDS.slice(0, 15);
     const available = feedsToFetch.filter(f => !usedFeedUrls.has(f.url));
@@ -1502,122 +1566,33 @@
     topNewsFeedPool = topNewsFeedPool.concat(newFeeds);
   }
 
-  function renderTopNews() {
-    const container = document.getElementById('topNewsContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!topNewsArticles.length || currentCategory !== 'all') {
-      container.style.display = 'none';
-      return;
-    }
-    container.style.display = 'block';
-    container.style.padding = '0 1.5rem 2rem';
-
-    const toShow = topNewsArticles.slice(0, topNewsDisplayed);
-    let html = `<div class="top-news-section">
-                    <div class="top-news-title"><i class="fas fa-chart-line"></i> 🔥 Top News</div>
-                    <div class="top-news-grid" style="display:flex;flex-direction:column;gap:1.25rem;">`;
-
-    toShow.forEach((art, index) => {
-      html += renderArticleCard(art);
-      if ((index + 1) % 5 === 0 && (index + 1) < toShow.length) {
-        html += renderAdBanner();
-      }
-    });
-
-    html += `</div>`;
-    if (topNewsFeedIndex < topNewsFeedPool.length || hasMoreTopNews) {
-      html += `<div id="topNewsSentinel" style="height:10px;margin:20px 0;"></div>`;
-    } else if (!hasMoreTopNews && topNewsDisplayed >= topNewsArticles.length && topNewsArticles.length > 0) {
-      html += `<div style="text-align:center;padding:1rem;color:var(--text-muted);font-size:0.9rem;">— No more top news —</div>`;
-    }
-    html += `</div>`;
-    container.innerHTML = html;
-
-    attachSaveEvents();
-    attachShareEvents();
-    lazyLoadImages();
-
-    topNewsSentinel = document.getElementById('topNewsSentinel');
-    if (topNewsSentinel) {
-      setupTopNewsInfinite();
-    } else if (topNewsObserver) {
-      topNewsObserver.disconnect();
-      topNewsObserver = null;
-    }
-  }
-
-  function setupTopNewsInfinite() {
-    if (topNewsObserver) topNewsObserver.disconnect();
-    if (!topNewsSentinel) return;
-    topNewsObserver = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !isLoadingTopNews && currentCategory === 'all' && navigator.onLine) {
-        loadMoreTopNews();
-      }
-    }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
-    topNewsObserver.observe(topNewsSentinel);
-  }
-
-  function showTopNewsSpinner(show) {
-    let spinner = document.getElementById('topNewsEndSpinner');
-    if (show && !spinner && topNewsSentinel) {
-      spinner = document.createElement('div');
-      spinner.id = 'topNewsEndSpinner';
-      spinner.className = 'end-loader';
-      spinner.innerHTML = '<div class="loader"></div> Loading more top news...';
-      topNewsSentinel.parentNode.insertBefore(spinner, topNewsSentinel);
-    } else if (!show && spinner) spinner.remove();
-  }
-
-  function showTopNewsRetry(msg) {
-    if (!topNewsSentinel) return;
-    let retryDiv = document.getElementById('topNewsRetry');
-    if (retryDiv) retryDiv.remove();
-    retryDiv = document.createElement('div');
-    retryDiv.id = 'topNewsRetry';
-    retryDiv.className = 'end-loader';
-    retryDiv.innerHTML = `<div><i class="fas fa-exclamation-triangle"></i> ${msg}</div>
-                          <button class="retry-button" id="topNewsRetryBtn">Retry</button>`;
-    topNewsSentinel.parentNode.insertBefore(retryDiv, topNewsSentinel);
-    document.getElementById('topNewsRetryBtn').onclick = () => {
-      retryDiv.remove();
-      loadMoreTopNews();
-    };
-  }
-
   async function loadMoreTopNews() {
     if (isLoadingTopNews) return;
     isLoadingTopNews = true;
-    showTopNewsSpinner(true);
-
     try {
       if (topNewsFeedIndex >= topNewsFeedPool.length) {
         refillTopNewsPool();
         if (topNewsFeedIndex >= topNewsFeedPool.length) {
           hasMoreTopNews = false;
-          renderTopNews();
-          showTopNewsSpinner(false);
           isLoadingTopNews = false;
           return;
         }
       }
-
       const batchSize = 3;
       const feeds = topNewsFeedPool.slice(topNewsFeedIndex, topNewsFeedIndex + batchSize);
       topNewsFeedIndex += batchSize;
-
       const results = await Promise.all(feeds.map(f => fetchFeed({ ...f, category: "Top" })));
       let fresh = [];
       results.forEach(r => fresh.push(...r));
-
       const existingLinks = new Set(topNewsArticles.map(a => (a.link || '').split('?')[0]));
       const newUnique = fresh.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
-
       if (newUnique.length) {
         topNewsArticles.push(...newUnique);
         topNewsDisplayed += 5;
         if (topNewsDisplayed > topNewsArticles.length) topNewsDisplayed = topNewsArticles.length;
-        renderTopNews();
+        if (currentCategory === 'all') {
+          renderTopNewsInline();
+        }
         showToast(`✨ ${newUnique.length} new top stories`);
         hasMoreTopNews = true;
       } else {
@@ -1629,18 +1604,13 @@
             setTimeout(() => loadMoreTopNews(), 100);
           } else {
             hasMoreTopNews = false;
-            renderTopNews();
-            showTopNewsRetry("No new top news. Retry?");
           }
         }
       }
     } catch (e) {
       console.error("Top news load error:", e);
-      showTopNewsRetry("Failed to load. Retry?");
     }
-
     isLoadingTopNews = false;
-    showTopNewsSpinner(false);
   }
 
   // =============================================================
@@ -1849,7 +1819,6 @@
       switchCategory('all');
     } else {
       renderAllCategoryGrouped();
-      renderTopNews();
       ensureSentinel();
       initInfiniteScroll();
     }
@@ -1871,9 +1840,304 @@
     if (observer) observer.disconnect();
   }
 
-  // ------ TOOLS with real file management ------
+  // =============================================================
+  // 22. TOOLS – ENHANCED FILE MANAGER
+  // =============================================================
+
   let currentDirectoryHandle = null;
 
+  // -- Storage Info with progress bar --
+  async function updateStorageInfo(containerId = 'storageInfo') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    try {
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        const estimate = await navigator.storage.estimate();
+        const used = estimate.usage || 0;
+        const quota = estimate.quota || 0;
+        const free = quota - used;
+        const usedMB = (used / (1024 * 1024)).toFixed(2);
+        const quotaMB = (quota / (1024 * 1024)).toFixed(2);
+        const freeMB = (free / (1024 * 1024)).toFixed(2);
+        const percent = quota ? ((used / quota) * 100).toFixed(1) : 0;
+        container.innerHTML = `
+          <div style="margin-bottom: 0.5rem;">
+            <span style="font-weight:600;">Storage</span>
+            <span style="float:right;">${usedMB} MB / ${quotaMB} MB</span>
+          </div>
+          <div style="background: #e2e8f0; border-radius: 20px; overflow: hidden; height: 8px; margin-bottom: 0.3rem;">
+            <div style="background: var(--accent-blue); width: ${percent}%; height: 100%; transition: width 0.3s;"></div>
+          </div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Free: ${freeMB} MB · ${percent}% used</div>
+          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.2rem;">
+            <i class="fas fa-database"></i> Total: ${quotaMB} MB
+          </div>
+        `;
+      } else {
+        container.textContent = 'Storage API not supported.';
+      }
+    } catch (e) {
+      container.textContent = 'Error retrieving storage info.';
+    }
+  }
+
+  // -- Clear browser cache --
+  async function clearBrowserCache() {
+    if (confirm('Clear all browser caches? This may affect offline performance.')) {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+        showToast('Browser cache cleared.');
+        updateStorageInfo('storageInfo');
+      } catch (e) {
+        showToast('Error clearing cache.');
+      }
+    }
+  }
+
+  // -- Clear saved articles --
+  function clearSavedArticles() {
+    if (confirm('Delete all saved articles from local storage?')) {
+      localStorage.removeItem('amimo_saved');
+      savedArticles = [];
+      updateSavedCounter();
+      if (currentView === 'saved') renderSavedArticles();
+      showToast('Saved articles cleared.');
+    }
+  }
+
+  // -- File browsing and management --
+  async function requestDirectoryPermission() {
+    try {
+      if ('showDirectoryPicker' in window) {
+        const dirHandle = await window.showDirectoryPicker();
+        currentDirectoryHandle = dirHandle;
+        return dirHandle;
+      } else {
+        showToast('File System Access API not supported in this browser.');
+        return null;
+      }
+    } catch (e) {
+      console.warn('Directory access denied or not supported', e);
+      return null;
+    }
+  }
+
+  async function browseDirectory(dirHandle, path = '') {
+    const output = window._fileOutput || document.getElementById('fileManagerOutput');
+    if (!output) return;
+    output.innerHTML = '<div class="loader"></div> Loading directory...';
+    let fileList = [];
+    try {
+      for await (const [name, handle] of dirHandle.entries()) {
+        const entry = { name, handle, path: path + '/' + name };
+        if (handle.kind === 'file') {
+          const file = await handle.getFile();
+          entry.size = file.size;
+          entry.lastModified = file.lastModified;
+          fileList.push(entry);
+        } else {
+          entry.isDirectory = true;
+          fileList.push(entry);
+        }
+      }
+      fileList.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      let html = `<p><strong>Current folder:</strong> ${path || '/'}</p>`;
+      html += `<ul style="list-style:none;padding:0;">`;
+      for (let entry of fileList) {
+        const icon = entry.isDirectory ? '<i class="fas fa-folder"></i>' : '<i class="fas fa-file"></i>';
+        const size = entry.size ? ` (${(entry.size / 1024).toFixed(1)} KB)` : '';
+        const deleteBtn = !entry.isDirectory ? `<button class="delete-file-btn" data-handle="${entry.handle}" data-name="${entry.name}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;font-size:0.7rem;">Delete</button>` : '';
+        html += `<li style="padding:0.3rem 0;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
+          <span>${icon} ${escapeHtml(entry.name)}${size}</span>
+          ${deleteBtn}
+        </li>`;
+      }
+      html += `</ul>`;
+      if (path !== '') {
+        html += `<button class="tool-btn" style="margin-top:1rem;" onclick="window.browseParentDir()"><i class="fas fa-arrow-up"></i> Parent Directory</button>`;
+      }
+      output.innerHTML = html;
+      updateStorageInfo('storageInfo');
+      output.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const handle = btn.dataset.handle;
+          const name = btn.dataset.name;
+          if (confirm(`Delete "${name}"?`)) {
+            try {
+              await handle.remove();
+              showToast(`Deleted "${name}"`);
+              browseDirectory(currentDirectoryHandle, path);
+            } catch (e) {
+              showToast('Error deleting file.');
+            }
+          }
+        });
+      });
+    } catch (e) {
+      output.innerHTML = `<p>Error reading directory: ${e.message}</p>`;
+    }
+  }
+
+  async function browseFiles() {
+    const dirHandle = await requestDirectoryPermission();
+    if (dirHandle) {
+      browseDirectory(dirHandle);
+    } else {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.webkitdirectory = true;
+      input.multiple = true;
+      input.onchange = (e) => {
+        const files = e.target.files;
+        const output = window._fileOutput || document.getElementById('fileManagerOutput');
+        if (!output) return;
+        if (!files.length) {
+          output.innerHTML = '<p>No files selected.</p>';
+          return;
+        }
+        let html = `<p>Selected ${files.length} files. (Read-only)</p><ul>`;
+        for (let f of files) {
+          html += `<li>${escapeHtml(f.name)} (${(f.size/1024).toFixed(1)} KB)</li>`;
+        }
+        html += '</ul>';
+        output.innerHTML = html;
+        updateStorageInfo('storageInfo');
+      };
+      input.click();
+    }
+  }
+
+  window.browseParentDir = async function() {
+    if (currentDirectoryHandle) {
+      const parent = await requestDirectoryPermission();
+      if (parent) {
+        browseDirectory(parent);
+      }
+    }
+  };
+
+  window.browseFiles = browseFiles;
+  window.scanJunkFiles = scanJunkFiles;
+  window.scanBigFiles = scanBigFiles;
+  window.clearBrowserCache = clearBrowserCache;
+  window.clearSavedArticles = clearSavedArticles;
+
+  // -- Junk and Big file scanning --
+  async function scanJunkFiles() {
+    const output = window._fileOutput || document.getElementById('fileManagerOutput');
+    if (!output) return;
+    output.innerHTML = '<div class="loader"></div> Scanning for junk files...';
+    try {
+      const dirHandle = await requestDirectoryPermission();
+      if (!dirHandle) {
+        output.innerHTML = '<p>Permission denied or not supported.</p>';
+        return;
+      }
+      let junk = [];
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === 'file') {
+          const file = await handle.getFile();
+          const isJunk = file.size > 10 * 1024 * 1024 || /\.(tmp|log|cache|temp)$/i.test(name);
+          if (isJunk) {
+            junk.push({ name, size: file.size, handle });
+          }
+        }
+      }
+      if (!junk.length) {
+        output.innerHTML = '<p>✅ No junk files found.</p>';
+        updateStorageInfo('storageInfo');
+        return;
+      }
+      let html = `<p>Found ${junk.length} junk files:</p><ul style="list-style:none;padding:0;">`;
+      junk.forEach(j => {
+        html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
+          <span>${escapeHtml(j.name)} (${(j.size / (1024 * 1024)).toFixed(2)} MB)</span>
+          <button class="delete-file-btn" data-handle="${j.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
+        </li>`;
+      });
+      html += '</ul>';
+      output.innerHTML = html;
+      output.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const handle = btn.dataset.handle;
+          if (confirm('Delete this junk file?')) {
+            try {
+              await handle.remove();
+              showToast('File deleted');
+              btn.closest('li').remove();
+              updateStorageInfo('storageInfo');
+            } catch (e) {
+              showToast('Error deleting file.');
+            }
+          }
+        });
+      });
+      updateStorageInfo('storageInfo');
+    } catch (e) {
+      output.innerHTML = `<p>Error: ${e.message}</p>`;
+    }
+  }
+
+  async function scanBigFiles() {
+    const output = window._fileOutput || document.getElementById('fileManagerOutput');
+    if (!output) return;
+    output.innerHTML = '<div class="loader"></div> Scanning for large files (>50MB)...';
+    try {
+      const dirHandle = await requestDirectoryPermission();
+      if (!dirHandle) {
+        output.innerHTML = '<p>Permission denied or not supported.</p>';
+        return;
+      }
+      let big = [];
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === 'file') {
+          const file = await handle.getFile();
+          if (file.size > 50 * 1024 * 1024) {
+            big.push({ name, size: file.size, handle });
+          }
+        }
+      }
+      if (!big.length) {
+        output.innerHTML = '<p>✅ No files larger than 50MB.</p>';
+        updateStorageInfo('storageInfo');
+        return;
+      }
+      let html = `<p>Found ${big.length} large files:</p><ul style="list-style:none;padding:0;">`;
+      big.forEach(b => {
+        html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
+          <span>${escapeHtml(b.name)} (${(b.size / (1024 * 1024)).toFixed(2)} MB)</span>
+          <button class="delete-file-btn" data-handle="${b.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
+        </li>`;
+      });
+      html += '</ul>';
+      output.innerHTML = html;
+      output.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const handle = btn.dataset.handle;
+          if (confirm('Delete this file?')) {
+            try {
+              await handle.remove();
+              showToast('File deleted');
+              btn.closest('li').remove();
+              updateStorageInfo('storageInfo');
+            } catch (e) {
+              showToast('Error deleting file.');
+            }
+          }
+        });
+      });
+      updateStorageInfo('storageInfo');
+    } catch (e) {
+      output.innerHTML = `<p>Error: ${e.message}</p>`;
+    }
+  }
+
+  // -- Enhanced Tools View --
   async function showToolsView() {
     currentView = 'tools';
     document.getElementById('appView').style.display = 'none';
@@ -1887,15 +2151,27 @@
     carouselInterval = null;
     if (topNewsObserver) topNewsObserver.disconnect();
     if (observer) observer.disconnect();
-    // Show initial storage info
-    updateStorageInfo();
+
+    const output = document.getElementById('toolOutput');
+    output.innerHTML = `
+      <div style="margin-bottom:1.5rem;">
+        <div id="storageInfo" style="background:var(--card-bg); padding:1rem; border-radius:20px; box-shadow:var(--shadow-sm);"></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.8rem;margin-bottom:1.5rem;">
+        <button class="tool-btn" onclick="window.browseFiles()"><i class="fas fa-folder-open"></i> Browse Files</button>
+        <button class="tool-btn" onclick="window.scanJunkFiles()"><i class="fas fa-trash-alt"></i> Scan Junk</button>
+        <button class="tool-btn" onclick="window.scanBigFiles()"><i class="fas fa-file-archive"></i> Find Big Files</button>
+        <button class="tool-btn" onclick="window.clearBrowserCache()"><i class="fas fa-broom"></i> Clear Cache</button>
+        <button class="tool-btn" onclick="window.clearSavedArticles()"><i class="fas fa-bookmark"></i> Clear Saved</button>
+      </div>
+      <div id="fileManagerOutput" style="background:var(--card-bg); border-radius:28px; padding:1rem; max-height:400px; overflow-y:auto;">
+        <p>Select a folder using "Browse Files" to manage your files.</p>
+      </div>
+    `;
+    window._fileOutput = document.getElementById('fileManagerOutput');
+    updateStorageInfo('storageInfo');
     if (currentDirectoryHandle) {
       browseDirectory(currentDirectoryHandle);
-    } else {
-      document.getElementById('toolOutput').innerHTML = `
-        <p>Click "Browse Files" to select a folder and manage files.</p>
-        <p><strong>Storage Info:</strong> <span id="storageInfo">Loading...</span></p>
-      `;
     }
   }
 
@@ -1919,261 +2195,74 @@
   }
 
   // =============================================================
-  // 22. TOOLS FUNCTIONS – REAL FILE MANAGEMENT
+  // 23. FIRST VISIT WELCOME with permission guide
   // =============================================================
 
-  async function updateStorageInfo() {
-    try {
-      if ('storage' in navigator && 'estimate' in navigator.storage) {
-        const estimate = await navigator.storage.estimate();
-        const used = estimate.usage || 0;
-        const quota = estimate.quota || 0;
-        const free = quota - used;
-        const usedMB = (used / (1024 * 1024)).toFixed(2);
-        const quotaMB = (quota / (1024 * 1024)).toFixed(2);
-        const freeMB = (free / (1024 * 1024)).toFixed(2);
-        const percent = quota ? ((used / quota) * 100).toFixed(1) : 0;
-        const info = `Used: ${usedMB} MB / ${quotaMB} MB (${percent}%) · Free: ${freeMB} MB`;
-        const infoEl = document.getElementById('storageInfo');
-        if (infoEl) infoEl.textContent = info;
-        return info;
-      } else {
-        const msg = 'Storage API not supported.';
-        const infoEl = document.getElementById('storageInfo');
-        if (infoEl) infoEl.textContent = msg;
-        return msg;
-      }
-    } catch (e) {
-      const msg = 'Error retrieving storage info.';
-      const infoEl = document.getElementById('storageInfo');
-      if (infoEl) infoEl.textContent = msg;
-      return msg;
-    }
-  }
+  function showWelcomeIfFirstVisit() {
+    const visited = localStorage.getItem('amimo_welcome_shown');
+    if (!visited) {
+      const overlay = document.createElement('div');
+      overlay.id = 'welcomeOverlay';
+      overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+        z-index: 10000; backdrop-filter: blur(10px);
+      `;
+      overlay.innerHTML = `
+        <div style="background: var(--card-bg); border-radius: 32px; padding: 2rem; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
+          <h2 style="margin: 0 0 0.5rem 0; color: var(--accent-blue); font-size: 1.8rem;">
+            <i class="fas fa-cloud-moon"></i> Welcome!
+          </h2>
+          <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+            Your personal news hub. Browse local and world news, save articles for offline reading, and manage your device storage with built‑in tools.
+          </p>
+          <div style="background: var(--ad-bg); border-radius: 16px; padding: 1rem; margin: 1rem 0; text-align: left;">
+            <p style="font-weight:600; margin-bottom:0.3rem;"><i class="fas fa-shield-alt"></i> File Access Permission</p>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
+              To use the file manager, you'll need to grant access to your device storage.
+              <br><br>
+              <strong>On Android/Chrome:</strong> The browser will prompt you to select a folder when you click "Browse Files".<br>
+              <strong>Permission management:</strong> If you denied access, you can re‑enable it in your browser settings.
+            </p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.5rem;">
+            <button id="welcomeBtn" style="padding: 0.8rem 2rem; border: none; border-radius: 60px; background: var(--accent-blue); color: white; font-weight: 600; font-size: 1rem; cursor: pointer;">
+              <i class="fas fa-rocket"></i> Get Started
+            </button>
+            <button id="welcomeSettingsBtn" style="padding: 0.6rem 1.5rem; border: none; border-radius: 60px; background: transparent; color: var(--text-secondary); font-size: 0.85rem; cursor: pointer; text-decoration: underline;">
+              <i class="fas fa-cog"></i> Open Settings (Manage Permissions)
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
 
-  async function requestDirectoryPermission() {
-    try {
-      if ('showDirectoryPicker' in window) {
-        const dirHandle = await window.showDirectoryPicker();
-        currentDirectoryHandle = dirHandle;
-        return dirHandle;
-      } else {
-        showToast('File System Access API not supported in this browser.');
-        return null;
-      }
-    } catch (e) {
-      console.warn('Directory access denied or not supported', e);
-      return null;
-    }
-  }
+      document.getElementById('welcomeBtn').addEventListener('click', () => {
+        overlay.remove();
+        localStorage.setItem('amimo_welcome_shown', 'true');
+      });
 
-  async function browseDirectory(dirHandle, path = '') {
-    const output = document.getElementById('toolOutput');
-    output.innerHTML = '<div class="loader"></div> Loading directory...';
-    let fileList = [];
-    try {
-      for await (const [name, handle] of dirHandle.entries()) {
-        const entry = { name, handle, path: path + '/' + name };
-        if (handle.kind === 'file') {
-          const file = await handle.getFile();
-          entry.size = file.size;
-          entry.lastModified = file.lastModified;
-          fileList.push(entry);
+      document.getElementById('welcomeSettingsBtn').addEventListener('click', () => {
+        // Try to open browser settings (Android Chrome specific)
+        if (navigator.userAgent.toLowerCase().includes('android')) {
+          // For Android, try to open app settings
+          try {
+            window.location.href = 'about:blank#settings';
+            // Also try to open Chrome settings
+            window.open('chrome://settings/content/files', '_blank');
+          } catch (e) {
+            showToast('Please go to your browser settings and enable file access for this site.');
+          }
         } else {
-          entry.isDirectory = true;
-          fileList.push(entry);
+          showToast('Please go to your browser settings to manage file permissions.');
         }
-      }
-      fileList.sort((a, b) => {
-        if (a.isDirectory && !b.isDirectory) return -1;
-        if (!a.isDirectory && b.isDirectory) return 1;
-        return a.name.localeCompare(b.name);
+        // Keep overlay open so user can still get started
       });
-      let html = `<p><strong>Current folder:</strong> ${path || '/'}</p>`;
-      html += `<p><strong>Storage Info:</strong> <span id="storageInfo">Loading...</span></p>`;
-      html += `<ul style="list-style:none;padding:0;">`;
-      for (let entry of fileList) {
-        const icon = entry.isDirectory ? '<i class="fas fa-folder"></i>' : '<i class="fas fa-file"></i>';
-        const size = entry.size ? ` (${(entry.size / 1024).toFixed(1)} KB)` : '';
-        const deleteBtn = !entry.isDirectory ? `<button class="delete-file-btn" data-handle="${entry.handle}" data-name="${entry.name}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;font-size:0.7rem;">Delete</button>` : '';
-        html += `<li style="padding:0.3rem 0;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
-          <span>${icon} ${escapeHtml(entry.name)}${size}</span>
-          ${deleteBtn}
-        </li>`;
-      }
-      html += `</ul>`;
-      if (path !== '') {
-        html += `<button class="tool-btn" style="margin-top:1rem;" onclick="window.browseParentDir()"><i class="fas fa-arrow-up"></i> Parent Directory</button>`;
-      }
-      output.innerHTML = html;
-      updateStorageInfo();
-      document.querySelectorAll('.delete-file-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const handle = btn.dataset.handle;
-          const name = btn.dataset.name;
-          if (confirm(`Delete "${name}"?`)) {
-            try {
-              await handle.remove();
-              showToast(`Deleted "${name}"`);
-              browseDirectory(currentDirectoryHandle, path);
-            } catch (e) {
-              showToast('Error deleting file.');
-            }
-          }
-        });
-      });
-    } catch (e) {
-      output.innerHTML = `<p>Error reading directory: ${e.message}</p>`;
     }
   }
-
-  async function scanJunkFiles() {
-    const output = document.getElementById('toolOutput');
-    output.innerHTML = '<div class="loader"></div> Scanning for junk files...';
-    try {
-      const dirHandle = await requestDirectoryPermission();
-      if (!dirHandle) {
-        output.innerHTML = '<p>Permission denied or not supported.</p>';
-        return;
-      }
-      let junk = [];
-      for await (const [name, handle] of dirHandle.entries()) {
-        if (handle.kind === 'file') {
-          const file = await handle.getFile();
-          const isJunk = file.size > 10 * 1024 * 1024 || /\.(tmp|log|cache|temp)$/i.test(name);
-          if (isJunk) {
-            junk.push({ name, size: file.size, handle });
-          }
-        }
-      }
-      if (!junk.length) {
-        output.innerHTML = '<p>✅ No junk files found.</p>';
-        updateStorageInfo();
-        return;
-      }
-      let html = `<p>Found ${junk.length} junk files:</p><ul style="list-style:none;padding:0;">`;
-      junk.forEach(j => {
-        html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
-          <span>${escapeHtml(j.name)} (${(j.size / (1024 * 1024)).toFixed(2)} MB)</span>
-          <button class="delete-file-btn" data-handle="${j.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
-        </li>`;
-      });
-      html += '</ul>';
-      output.innerHTML = html;
-      document.querySelectorAll('.delete-file-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const handle = btn.dataset.handle;
-          if (confirm('Delete this junk file?')) {
-            try {
-              await handle.remove();
-              showToast('File deleted');
-              btn.closest('li').remove();
-              updateStorageInfo();
-            } catch (e) {
-              showToast('Error deleting file.');
-            }
-          }
-        });
-      });
-      updateStorageInfo();
-    } catch (e) {
-      output.innerHTML = `<p>Error: ${e.message}</p>`;
-    }
-  }
-
-  async function scanBigFiles() {
-    const output = document.getElementById('toolOutput');
-    output.innerHTML = '<div class="loader"></div> Scanning for large files (>50MB)...';
-    try {
-      const dirHandle = await requestDirectoryPermission();
-      if (!dirHandle) {
-        output.innerHTML = '<p>Permission denied or not supported.</p>';
-        return;
-      }
-      let big = [];
-      for await (const [name, handle] of dirHandle.entries()) {
-        if (handle.kind === 'file') {
-          const file = await handle.getFile();
-          if (file.size > 50 * 1024 * 1024) {
-            big.push({ name, size: file.size, handle });
-          }
-        }
-      }
-      if (!big.length) {
-        output.innerHTML = '<p>✅ No files larger than 50MB.</p>';
-        updateStorageInfo();
-        return;
-      }
-      let html = `<p>Found ${big.length} large files:</p><ul style="list-style:none;padding:0;">`;
-      big.forEach(b => {
-        html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
-          <span>${escapeHtml(b.name)} (${(b.size / (1024 * 1024)).toFixed(2)} MB)</span>
-          <button class="delete-file-btn" data-handle="${b.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
-        </li>`;
-      });
-      html += '</ul>';
-      output.innerHTML = html;
-      document.querySelectorAll('.delete-file-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const handle = btn.dataset.handle;
-          if (confirm('Delete this file?')) {
-            try {
-              await handle.remove();
-              showToast('File deleted');
-              btn.closest('li').remove();
-              updateStorageInfo();
-            } catch (e) {
-              showToast('Error deleting file.');
-            }
-          }
-        });
-      });
-      updateStorageInfo();
-    } catch (e) {
-      output.innerHTML = `<p>Error: ${e.message}</p>`;
-    }
-  }
-
-  async function browseFiles() {
-    const dirHandle = await requestDirectoryPermission();
-    if (dirHandle) {
-      browseDirectory(dirHandle);
-    } else {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.webkitdirectory = true;
-      input.multiple = true;
-      input.onchange = (e) => {
-        const files = e.target.files;
-        if (!files.length) {
-          document.getElementById('toolOutput').innerHTML = '<p>No files selected.</p>';
-          return;
-        }
-        let html = `<p>Selected ${files.length} files. (Read-only)</p><ul>`;
-        for (let f of files) {
-          html += `<li>${escapeHtml(f.name)} (${(f.size/1024).toFixed(1)} KB)</li>`;
-        }
-        html += '</ul>';
-        document.getElementById('toolOutput').innerHTML = html;
-        updateStorageInfo();
-      };
-      input.click();
-    }
-  }
-
-  window.browseParentDir = async function() {
-    if (currentDirectoryHandle) {
-      const parent = await requestDirectoryPermission();
-      if (parent) {
-        browseDirectory(parent);
-      }
-    }
-  };
-
-  window.browseFiles = browseFiles;
 
   // =============================================================
-  // 23. SEARCH
+  // 24. SEARCH
   // =============================================================
 
   function storeAllArticlesForSearch() {
@@ -2190,29 +2279,25 @@
   }
 
   // =============================================================
-  // 24. MAIN LOAD ALL FEEDS
+  // 25. MAIN LOAD ALL FEEDS
   // =============================================================
 
   async function loadAllFeeds() {
     const statusDiv = document.getElementById('statusMsg');
     statusDiv.innerHTML = '<div class="loader"></div> Loading...';
 
-    // Initialize pools
     feedPool = [];
     feedIndex = 0;
     usedFeedUrls.clear();
     allFetched = false;
 
-    // Populate local sections
     await populateLocalSections();
 
-    // Collect local articles
     let localArticles = [];
     for (let sec of ['top', 'politics', 'tech', 'health', 'football', 'discover']) {
       localArticles = localArticles.concat(localSectionArticles[sec]);
     }
 
-    // Fetch world feeds
     let worldArticles = [];
     for (let i = 0; i < WORLD_FEEDS.length; i += 8) {
       const batch = WORLD_FEEDS.slice(i, i+8);
@@ -2227,7 +2312,6 @@
       await new Promise(r => setTimeout(r, 100));
     }
     allArticles = [...localArticles, ...worldArticles];
-    // Deduplicate
     const uniqueMap = new Map();
     allArticles.forEach(a => {
       const key = (a.link || '').split('?')[0];
@@ -2240,7 +2324,6 @@
     statusDiv.innerHTML = 'Ensuring each category has articles (Local→10)...';
     await ensureCategoryCounts();
 
-    // Load top news
     statusDiv.innerHTML = 'Loading top news...';
     initTopNewsPool();
     const topRes = await Promise.all(TOP_NEWS_FEEDS.map(f => fetchFeed({ ...f, category: "Top" })));
@@ -2260,17 +2343,9 @@
 
     storeAllArticlesForSearch();
 
-    // Render initial view (All)
     currentCategory = 'all';
     renderAllCategoryGrouped();
 
-    // Place top news container
-    const topContainer = document.getElementById('topNewsContainer');
-    const feedDiv = document.getElementById('newsFeed');
-    if (topContainer && feedDiv && feedDiv.parentNode) {
-      feedDiv.parentNode.insertBefore(topContainer, feedDiv.nextSibling);
-    }
-    renderTopNews();
     renderTrendingCarousel();
     updateSavedCounter();
     statusDiv.style.display = 'none';
@@ -2283,7 +2358,7 @@
   }
 
   // =============================================================
-  // 25. EVENT LISTENERS
+  // 26. EVENT LISTENERS
   // =============================================================
 
   document.querySelectorAll('.cat-pill').forEach(pill => {
@@ -2336,7 +2411,7 @@
   if (menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
   if (menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
   if (menuAbout) menuAbout.addEventListener('click', () => {
-    alert("Amimo Discovery v46.0\n✅ All view shows Local sub-sections (Top, Politics, Tech, Health, Football)\n✅ Discover infinite scroll for local articles\n✅ All features working");
+    alert("Amimo Discovery v48.0\n✅ Welcome with permission guide\n✅ Enhanced file manager with storage analysis\n✅ All features working");
     closeMenu();
   });
   if (menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
@@ -2379,16 +2454,14 @@
     });
   });
 
-  document.getElementById('scanJunkBtn')?.addEventListener('click', scanJunkFiles);
-  document.getElementById('scanBigFilesBtn')?.addEventListener('click', scanBigFiles);
-  document.getElementById('accessFilesBtn')?.addEventListener('click', browseFiles);
-
   // =============================================================
-  // 26. START
+  // 27. START
   // =============================================================
 
   detectLocation().then(() => {
     loadAllFeeds();
+    // Show welcome on first visit after load
+    setTimeout(showWelcomeIfFirstVisit, 1500);
   });
 
 })();
