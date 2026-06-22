@@ -1,5 +1,5 @@
 // ================================================================
-//  main.js – FULL with fixed filtering, real file management
+//  main.js – FULL with All view showing Local sub‑sections & Discover
 // ================================================================
 
 (function() {
@@ -58,7 +58,7 @@
     { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
   ];
 
-  // ---- LOCAL FEEDS with category: "Local" ----
+  // ---- LOCAL FEEDS with category: "Local" and section ----
   const localMap = new Map();
 
   localMap.set("ZM", {
@@ -499,6 +499,7 @@
           description: (item.description || '').replace(/<[^>]*>/g, '').substring(0, 200),
           source: feedCfg.name,
           category: feedCfg.category || 'World',
+          section: feedCfg.section || null,
           imageUrl: imageUrl,
           views: generateViews(item.title)
         };
@@ -627,6 +628,11 @@
     football: false,
     discover: false
   };
+
+  // Discover sentinel for All view
+  let discoverSentinel = null;
+  let discoverObserver = null;
+  let isLoadingDiscover = false;
 
   // =============================================================
   // 7. LOCATION & OFFLINE DETECTION
@@ -793,18 +799,16 @@
   window.addEventListener('beforeunload', saveState);
 
   // =============================================================
-  // 10. CATEGORY SWITCH & FILTER (FIXED)
+  // 10. CATEGORY SWITCH & FILTER
   // =============================================================
 
   function switchCategory(cat) {
     if (currentCategory === cat) return;
     currentCategory = cat;
-    // Update active pill
     document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
     const active = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
     if (active) active.classList.add('active');
 
-    // Show/hide top news container
     const topContainer = document.getElementById('topNewsContainer');
     if (currentCategory === 'all') {
       if (topContainer) topContainer.style.display = 'block';
@@ -812,25 +816,21 @@
       if (topContainer) topContainer.style.display = 'none';
     }
 
-    // Reset infinite scroll state
     allFetched = false;
     displayLimit = 20;
     isLoadingMore = false;
+    isLoadingDiscover = false;
 
-    // Clear the news feed and show loading message
     const feedDiv = document.getElementById('newsFeed');
     feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;"><div class="loader"></div> Loading articles...</div>';
 
     if (currentCategory === 'all') {
-      currentFiltered = allArticles;
       renderAllCategoryGrouped();
     } else if (currentCategory === 'Local') {
-      setupLocalSections();
+      renderLocalSections();
     } else {
-      // Filter articles by category
       currentFiltered = allArticles.filter(a => a.category === currentCategory);
       if (currentFiltered.length === 0) {
-        // Try to fetch more from this category
         fetchMoreForCategory(currentCategory).then(newArticles => {
           if (newArticles.length) {
             const unique = newArticles.filter(a => !allArticles.some(ex => (ex.link || '').split('?')[0] === (a.link || '').split('?')[0]));
@@ -851,7 +851,6 @@
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Re-attach sentinel after render
     setTimeout(() => {
       ensureSentinel();
       initInfiniteScroll();
@@ -876,56 +875,110 @@
     return icons[cat] || 'fa-newspaper';
   }
 
+  // ---- ALL view ----
   function renderAllCategoryGrouped() {
     const feedDiv = document.getElementById('newsFeed');
     if (!allArticles.length) {
       feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles available</div>';
       return;
     }
+
     const categoriesOrder = ['Local', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Business', 'Health'];
     let html = '';
+
     for (let cat of categoriesOrder) {
-      const limit = 5;
-      const catArticles = allArticles.filter(a => a.category === cat).slice(0, limit);
-      if (catArticles.length) {
-        const icon = getCategoryIcon(cat);
-        html += `<div class="category-section" data-cat="${cat}">
-                    <div class="category-section-title"><i class="fas ${icon}"></i> ${cat}</div>`;
-        catArticles.forEach(art => {
-          html += renderArticleCard(art);
-        });
-        html += `<button class="show-more-btn" data-cat="${cat}">
-                    <i class="fas fa-chevron-right"></i> Show More ${cat} News
-                </button>`;
-        html += renderAdBanner();
+      if (cat === 'Local') {
+        // --- Local: render sub-sections ---
+        html += `<div class="category-section" data-cat="Local">
+                    <div class="category-section-title"><i class="fas fa-location-dot"></i> Local</div>`;
+        // Sub-sections: Top, Politics, Tech, Health, Football
+        const subSections = ['top', 'politics', 'tech', 'health', 'football'];
+        const sectionTitles = {
+          top: '🔥 Top Stories',
+          politics: '🏛️ Politics',
+          tech: '💻 Technology',
+          health: '🏥 Health',
+          football: '⚽ Football'
+        };
+        for (let sec of subSections) {
+          const articles = localSectionArticles[sec] || [];
+          const limit = 5;
+          const toShow = articles.slice(0, limit);
+          html += `<div class="sub-section" data-section="${sec}">
+                      <div class="sub-section-title">${sectionTitles[sec]}</div>`;
+          if (toShow.length) {
+            toShow.forEach(art => {
+              html += renderArticleCard(art);
+            });
+          } else {
+            html += `<p style="padding:0.5rem 0;color:var(--text-muted);font-style:italic;">No articles in this section yet.</p>`;
+          }
+          html += `</div>`;
+        }
+        // Discover section – with sentinel for infinite scroll
+        html += `<div class="sub-section" id="discoverSection">
+                    <div class="sub-section-title">🔍 Discover More Local News</div>`;
+        const discoverArticles = localSectionArticles.discover || [];
+        const discoverLimit = localSectionDisplay.discover;
+        const toShowDiscover = discoverArticles.slice(0, discoverLimit);
+        if (toShowDiscover.length) {
+          toShowDiscover.forEach(art => {
+            html += renderArticleCard(art);
+          });
+        } else {
+          html += `<p style="padding:0.5rem 0;color:var(--text-muted);font-style:italic;">Loading discover articles...</p>`;
+        }
+        // Sentinel for Discover
+        html += `<div id="discoverSentinel" style="height:10px;margin:20px 0;"></div>`;
         html += `</div>`;
+        html += `</div>`;
+      } else {
+        // Other categories: show 5 articles + "Show More" button
+        const limit = 5;
+        const catArticles = allArticles.filter(a => a.category === cat).slice(0, limit);
+        if (catArticles.length) {
+          const icon = getCategoryIcon(cat);
+          html += `<div class="category-section" data-cat="${cat}">
+                      <div class="category-section-title"><i class="fas ${icon}"></i> ${cat}</div>`;
+          catArticles.forEach(art => {
+            html += renderArticleCard(art);
+          });
+          html += `<button class="show-more-btn" data-cat="${cat}">
+                      <i class="fas fa-chevron-right"></i> Show More ${cat} News
+                  </button>`;
+          html += renderAdBanner();
+          html += `</div>`;
+        }
       }
     }
+
     feedDiv.innerHTML = html;
     attachSaveEvents();
     attachShareEvents();
     lazyLoadImages();
+
+    // Attach show more handlers for non-Local categories
     document.querySelectorAll('.show-more-btn').forEach(btn => {
       btn.removeEventListener('click', showMoreHandler);
       btn.addEventListener('click', showMoreHandler);
     });
-    // Sentinel for infinite scroll (All view uses feedPool)
+
+    // Set up sentinel for the main feed (All view – loads more world articles)
     ensureSentinel();
     initInfiniteScroll();
+
+    // Set up discover sentinel for local articles
+    setupDiscoverSentinel();
   }
 
   function showMoreHandler(e) {
     const cat = this.dataset.cat;
     if (cat) {
-      if (cat === 'Local') {
-        switchCategory('Local');
-      } else {
-        switchCategory(cat);
-      }
+      switchCategory(cat);
     }
   }
 
-  // Render specific category (list)
+  // ---- Category Feed (for non-Local, non-All) ----
   function renderCategoryFeed(articles) {
     const feedDiv = document.getElementById('newsFeed');
     if (!articles || !articles.length) {
@@ -947,40 +1000,7 @@
     initInfiniteScroll();
   }
 
-  // =============================================================
-  // 12. LOCAL SECTIONS (with toggleable Show More)
-  // =============================================================
-
-  async function setupLocalSections() {
-    const statusDiv = document.getElementById('statusMsg');
-    statusDiv.style.display = 'block';
-    statusDiv.innerHTML = '<div class="loader"></div> Loading local news...';
-    const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
-    const sections = ['top', 'politics', 'tech', 'health', 'football', 'discover'];
-    for (let section of sections) {
-      const feeds = countryData[section] || [];
-      localSectionFeeds[section] = feeds;
-      const articles = [];
-      const batch = feeds.slice(0, 10);
-      const results = await Promise.all(batch.map(f => fetchFeed(f)));
-      results.forEach(r => articles.push(...r));
-      const uniqueMap = new Map();
-      articles.forEach(a => {
-        const key = (a.link || '').split('?')[0];
-        if (!uniqueMap.has(key)) uniqueMap.set(key, a);
-      });
-      const uniqueArticles = Array.from(uniqueMap.values());
-      uniqueArticles.forEach(a => a.views = generateViews(a.title));
-      uniqueArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
-      localSectionArticles[section] = uniqueArticles;
-      localSectionDisplay[section] = 5;
-      localSectionExpanded[section] = false;
-      localSectionAllFetched[section] = false;
-    }
-    statusDiv.style.display = 'none';
-    renderLocalSections();
-  }
-
+  // ---- Local sections (for Local category) ----
   function renderLocalSections() {
     const feedDiv = document.getElementById('newsFeed');
     let html = '';
@@ -1013,7 +1033,6 @@
                       ${label} ${loadText}
                     </button>`;
         }
-        // For discover, we use a separate infinite scroll sentinel
         if (section === 'discover') {
           html += `<div id="loadSentinel" style="height:10px;margin:20px 0;"></div>`;
         }
@@ -1029,10 +1048,109 @@
       btn.removeEventListener('click', sectionShowMoreHandler);
       btn.addEventListener('click', sectionShowMoreHandler);
     });
-    // Sentinel for discover
     ensureSentinel();
     initInfiniteScroll();
   }
+
+  // =============================================================
+  // 12. LOCAL SECTIONS – POPULATE DATA (called once during load)
+  // =============================================================
+
+  async function populateLocalSections() {
+    const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
+    const sections = ['top', 'politics', 'tech', 'health', 'football', 'discover'];
+    for (let section of sections) {
+      const feeds = countryData[section] || [];
+      localSectionFeeds[section] = feeds;
+      const articles = [];
+      const batch = feeds.slice(0, 10);
+      const results = await Promise.all(batch.map(f => fetchFeed(f)));
+      results.forEach(r => articles.push(...r));
+      const uniqueMap = new Map();
+      articles.forEach(a => {
+        const key = (a.link || '').split('?')[0];
+        if (!uniqueMap.has(key)) uniqueMap.set(key, a);
+      });
+      const uniqueArticles = Array.from(uniqueMap.values());
+      uniqueArticles.forEach(a => a.views = generateViews(a.title));
+      uniqueArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+      localSectionArticles[section] = uniqueArticles;
+      localSectionDisplay[section] = (section === 'discover') ? 10 : 5;
+      localSectionExpanded[section] = false;
+      localSectionAllFetched[section] = false;
+    }
+  }
+
+  // =============================================================
+  // 13. DISCOVER SENTINEL (for All view)
+  // =============================================================
+
+  function setupDiscoverSentinel() {
+    const sentinelEl = document.getElementById('discoverSentinel');
+    if (!sentinelEl) return;
+    if (discoverObserver) discoverObserver.disconnect();
+    discoverObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !isLoadingDiscover && !localSectionAllFetched.discover && navigator.onLine) {
+        loadMoreDiscoverArticles();
+      }
+    }, { threshold: 0.1, rootMargin: "0px 0px 200px 0px" });
+    discoverObserver.observe(sentinelEl);
+  }
+
+  async function loadMoreDiscoverArticles() {
+    if (isLoadingDiscover) return;
+    if (!navigator.onLine) {
+      showToast('Offline – cannot load more.');
+      return;
+    }
+    // If we already have enough in array, just show more
+    if (localSectionDisplay.discover < localSectionArticles.discover.length) {
+      localSectionDisplay.discover += 10;
+      renderAllCategoryGrouped(); // re-render All view with updated display
+      return;
+    }
+    if (localSectionAllFetched.discover) {
+      showToast('No more local articles.');
+      return;
+    }
+    isLoadingDiscover = true;
+    try {
+      const feeds = localSectionFeeds.discover;
+      const available = feeds.filter(f => !usedFeedUrls.has(f.url));
+      if (available.length === 0) {
+        localSectionAllFetched.discover = true;
+        showToast('No more local articles.');
+        isLoadingDiscover = false;
+        return;
+      }
+      const toFetch = available.sort(() => Math.random() - 0.5).slice(0, 5);
+      const results = await Promise.all(toFetch.map(f => fetchFeed(f)));
+      let newArticles = [];
+      results.forEach(r => newArticles.push(...r));
+      toFetch.forEach(f => usedFeedUrls.add(f.url));
+      const existingLinks = new Set(localSectionArticles.discover.map(a => (a.link || '').split('?')[0]));
+      const uniqueNew = newArticles.filter(a => !existingLinks.has((a.link || '').split('?')[0]));
+      if (uniqueNew.length) {
+        uniqueNew.forEach(a => a.views = generateViews(a.title));
+        localSectionArticles.discover = [...localSectionArticles.discover, ...uniqueNew];
+        localSectionArticles.discover.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+        localSectionDisplay.discover += uniqueNew.length;
+        renderAllCategoryGrouped();
+        showToast(`✨ ${uniqueNew.length} new local articles`);
+      } else {
+        // no new articles – try again later
+        setTimeout(() => loadMoreDiscoverArticles(), 200);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Error loading more local articles.');
+    }
+    isLoadingDiscover = false;
+  }
+
+  // =============================================================
+  // 14. SECTION SHOW MORE (for Local category)
+  // =============================================================
 
   async function sectionShowMoreHandler(e) {
     const btn = e.currentTarget;
@@ -1080,7 +1198,7 @@
   }
 
   // =============================================================
-  // 13. INFINITE SCROLL (sentinel and observer)
+  // 15. INFINITE SCROLL (sentinel and observer)
   // =============================================================
 
   function ensureSentinel() {
@@ -1136,7 +1254,7 @@
   }
 
   // =============================================================
-  // 14. LOAD MORE ARTICLES (main infinite scroll logic)
+  // 16. LOAD MORE ARTICLES (main infinite scroll logic)
   // =============================================================
 
   async function loadMoreArticles() {
@@ -1235,7 +1353,7 @@
       return;
     }
 
-    // For Local category: discover section infinite scroll
+    // For Local category: discover section infinite scroll (already handled separately)
     if (currentCategory === 'Local') {
       if (localSectionDisplay.discover < localSectionArticles.discover.length) {
         localSectionDisplay.discover += 10;
@@ -1362,7 +1480,7 @@
   }
 
   // =============================================================
-  // 15. TOP NEWS (infinite for "All" view)
+  // 17. TOP NEWS (infinite for "All" view)
   // =============================================================
 
   function initTopNewsPool() {
@@ -1526,7 +1644,7 @@
   }
 
   // =============================================================
-  // 16. TRENDING CAROUSEL (with share button)
+  // 18. TRENDING CAROUSEL (with share button)
   // =============================================================
 
   function renderTrendingCarousel() {
@@ -1600,7 +1718,7 @@
   }
 
   // =============================================================
-  // 17. SAVE / SHARE EVENTS
+  // 19. SAVE / SHARE EVENTS
   // =============================================================
 
   function attachSaveEvents() {
@@ -1665,7 +1783,7 @@
   }
 
   // =============================================================
-  // 18. SAVED VIEW
+  // 20. SAVED VIEW
   // =============================================================
 
   function renderSavedArticles() {
@@ -1713,7 +1831,7 @@
   }
 
   // =============================================================
-  // 19. VIEWS (Home, Saved, Tools, Live)
+  // 21. VIEWS (Home, Saved, Tools, Live)
   // =============================================================
 
   function showHomeView() {
@@ -1771,7 +1889,6 @@
     if (observer) observer.disconnect();
     // Show initial storage info
     updateStorageInfo();
-    // If we already have a directory handle, show it
     if (currentDirectoryHandle) {
       browseDirectory(currentDirectoryHandle);
     } else {
@@ -1802,7 +1919,7 @@
   }
 
   // =============================================================
-  // 20. TOOLS FUNCTIONS – REAL FILE MANAGEMENT
+  // 22. TOOLS FUNCTIONS – REAL FILE MANAGEMENT
   // =============================================================
 
   async function updateStorageInfo() {
@@ -1850,7 +1967,6 @@
     }
   }
 
-  // Browse files recursively and display in toolOutput
   async function browseDirectory(dirHandle, path = '') {
     const output = document.getElementById('toolOutput');
     output.innerHTML = '<div class="loader"></div> Loading directory...';
@@ -1868,13 +1984,11 @@
           fileList.push(entry);
         }
       }
-      // Sort: directories first, then files
       fileList.sort((a, b) => {
         if (a.isDirectory && !b.isDirectory) return -1;
         if (!a.isDirectory && b.isDirectory) return 1;
         return a.name.localeCompare(b.name);
       });
-      // Display the list
       let html = `<p><strong>Current folder:</strong> ${path || '/'}</p>`;
       html += `<p><strong>Storage Info:</strong> <span id="storageInfo">Loading...</span></p>`;
       html += `<ul style="list-style:none;padding:0;">`;
@@ -1893,7 +2007,6 @@
       }
       output.innerHTML = html;
       updateStorageInfo();
-      // Attach delete handlers
       document.querySelectorAll('.delete-file-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const handle = btn.dataset.handle;
@@ -1902,7 +2015,6 @@
             try {
               await handle.remove();
               showToast(`Deleted "${name}"`);
-              // Re-browse current directory
               browseDirectory(currentDirectoryHandle, path);
             } catch (e) {
               showToast('Error deleting file.');
@@ -1915,7 +2027,6 @@
     }
   }
 
-  // Public functions for tools buttons
   async function scanJunkFiles() {
     const output = document.getElementById('toolOutput');
     output.innerHTML = '<div class="loader"></div> Scanning for junk files...';
@@ -2028,7 +2139,6 @@
     if (dirHandle) {
       browseDirectory(dirHandle);
     } else {
-      // Fallback: use input element to get files (read-only)
       const input = document.createElement('input');
       input.type = 'file';
       input.webkitdirectory = true;
@@ -2051,10 +2161,8 @@
     }
   }
 
-  // Parent directory browsing
   window.browseParentDir = async function() {
     if (currentDirectoryHandle) {
-      // Try to get parent – not directly supported, so we prompt to re-select
       const parent = await requestDirectoryPermission();
       if (parent) {
         browseDirectory(parent);
@@ -2062,11 +2170,10 @@
     }
   };
 
-  // Expose functions globally for onclick in generated HTML
   window.browseFiles = browseFiles;
 
   // =============================================================
-  // 21. SEARCH
+  // 23. SEARCH
   // =============================================================
 
   function storeAllArticlesForSearch() {
@@ -2083,7 +2190,7 @@
   }
 
   // =============================================================
-  // 22. MAIN LOAD ALL FEEDS
+  // 24. MAIN LOAD ALL FEEDS
   // =============================================================
 
   async function loadAllFeeds() {
@@ -2096,21 +2203,14 @@
     usedFeedUrls.clear();
     allFetched = false;
 
-    // Fetch local feeds (all sections)
-    let localFeeds = [];
-    const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
-    for (let section of ['top', 'politics', 'tech', 'health', 'football', 'discover']) {
-      const feeds = countryData[section] || [];
-      localFeeds = localFeeds.concat(feeds);
-    }
+    // Populate local sections
+    await populateLocalSections();
+
+    // Collect local articles
     let localArticles = [];
-    for (let feed of localFeeds) {
-      const arts = await fetchFeed(feed);
-      localArticles.push(...arts);
-      usedFeedUrls.add(feed.url);
-      feedPool.push(feed);
+    for (let sec of ['top', 'politics', 'tech', 'health', 'football', 'discover']) {
+      localArticles = localArticles.concat(localSectionArticles[sec]);
     }
-    statusDiv.innerHTML = `✅ Local: ${localArticles.length}. Fetching world...`;
 
     // Fetch world feeds
     let worldArticles = [];
@@ -2160,16 +2260,9 @@
 
     storeAllArticlesForSearch();
 
-    // Render based on current category
-    if (currentCategory === 'Local') {
-      await setupLocalSections();
-    } else if (currentCategory === 'all') {
-      renderAllCategoryGrouped();
-    } else {
-      currentFiltered = allArticles.filter(a => a.category === currentCategory);
-      displayLimit = Math.min(20, currentFiltered.length);
-      renderCategoryFeed(currentFiltered.slice(0, displayLimit));
-    }
+    // Render initial view (All)
+    currentCategory = 'all';
+    renderAllCategoryGrouped();
 
     // Place top news container
     const topContainer = document.getElementById('topNewsContainer');
@@ -2182,7 +2275,6 @@
     updateSavedCounter();
     statusDiv.style.display = 'none';
 
-    // Sentinel for main feed
     ensureSentinel();
     initInfiniteScroll();
 
@@ -2191,7 +2283,7 @@
   }
 
   // =============================================================
-  // 23. EVENT LISTENERS
+  // 25. EVENT LISTENERS
   // =============================================================
 
   document.querySelectorAll('.cat-pill').forEach(pill => {
@@ -2244,7 +2336,7 @@
   if (menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
   if (menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
   if (menuAbout) menuAbout.addEventListener('click', () => {
-    alert("Amimo Discovery v45.0\n✅ Fixed category filtering\n✅ Real file management tools\n✅ All features working");
+    alert("Amimo Discovery v46.0\n✅ All view shows Local sub-sections (Top, Politics, Tech, Health, Football)\n✅ Discover infinite scroll for local articles\n✅ All features working");
     closeMenu();
   });
   if (menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
@@ -2292,7 +2384,7 @@
   document.getElementById('accessFilesBtn')?.addEventListener('click', browseFiles);
 
   // =============================================================
-  // 24. START
+  // 26. START
   // =============================================================
 
   detectLocation().then(() => {
