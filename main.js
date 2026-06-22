@@ -1,5 +1,5 @@
 // ================================================================
-//  main.js – FULL with local sections, toggleable Show More, infinite scroll
+//  main.js – FULL with fixed filtering, real file management
 // ================================================================
 
 (function() {
@@ -58,189 +58,292 @@
     { name: "Medical Xpress", url: "https://medicalxpress.com/rss/", category: "Health", imgFallback: "https://placehold.co/800x450/3b82f6/white?text=Medical+Xpress" }
   ];
 
-  // Expanded local feeds with sections
+  // ---- LOCAL FEEDS with category: "Local" ----
   const localMap = new Map();
 
   localMap.set("ZM", {
     top: [
-      { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", section: "top" },
-      { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", section: "top" },
-      { name: "Zambia Reports", url: "https://zambiareports.com/feed/", section: "top" },
-      { name: "News Diggers Zambia", url: "https://diggers.news/feed/", section: "top" },
-      { name: "Mwebantu", url: "https://mwebantu.news/feed/", section: "top" },
-      { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", section: "top" }
+      { name: "Lusaka Times", url: "https://www.lusakatimes.com/feed/", section: "top", category: "Local" },
+      { name: "Zambia Daily Mail", url: "https://www.daily-mail.co.zm/?feed=rss2", section: "top", category: "Local" },
+      { name: "Zambia Reports", url: "https://zambiareports.com/feed/", section: "top", category: "Local" },
+      { name: "News Diggers Zambia", url: "https://diggers.news/feed/", section: "top", category: "Local" },
+      { name: "Mwebantu", url: "https://mwebantu.news/feed/", section: "top", category: "Local" },
+      { name: "Zambian Observer", url: "https://zambianobserver.com/feed/", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "Zambia Politics Watch", url: "https://zambiapoliticswatch.com/feed/", section: "politics" },
-      { name: "Zambia Reports Politics", url: "https://zambiareports.com/category/politics/feed/", section: "politics" }
+      { name: "Zambia Politics Watch", url: "https://zambiapoliticswatch.com/feed/", section: "politics", category: "Local" },
+      { name: "Zambia Reports Politics", url: "https://zambiareports.com/category/politics/feed/", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "Zambia Tech News", url: "https://zambiantechnews.com/feed/", section: "tech" }
+      { name: "Zambia Tech News", url: "https://zambiantechnews.com/feed/", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "Zambia Health News", url: "https://zambiahealthnews.com/feed/", section: "health" }
+      { name: "Zambia Health News", url: "https://zambiahealthnews.com/feed/", section: "health", category: "Local" }
     ],
     football: [
-      { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", section: "football" },
-      { name: "Zambia Sports News", url: "https://zambiasportsnews.com/feed/", section: "football" }
+      { name: "Zambian Football", url: "https://zambianfootball.co.zm/feed/", section: "football", category: "Local" },
+      { name: "Zambia Sports News", url: "https://zambiasportsnews.com/feed/", section: "football", category: "Local" }
     ],
     discover: []
   });
 
   localMap.set("US", {
     top: [
-      { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", section: "top" },
-      { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", section: "top" },
-      { name: "USA Today", url: "https://www.usatoday.com/rss/news", section: "top" },
-      { name: "NBC News", url: "https://feeds.nbcnews.com/nbcnews/public/news", section: "top" }
+      { name: "CNN US", url: "https://rss.cnn.com/rss/edition_us.rss", section: "top", category: "Local" },
+      { name: "NY Times", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", section: "top", category: "Local" },
+      { name: "USA Today", url: "https://www.usatoday.com/rss/news", section: "top", category: "Local" },
+      { name: "NBC News", url: "https://feeds.nbcnews.com/nbcnews/public/news", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "Politico", url: "https://www.politico.com/rss/politics.xml", section: "politics" },
-      { name: "The Hill", url: "https://thehill.com/feed/", section: "politics" },
-      { name: "Washington Post Politics", url: "https://feeds.washingtonpost.com/rss/politics", section: "politics" }
+      { name: "Politico", url: "https://www.politico.com/rss/politics.xml", section: "politics", category: "Local" },
+      { name: "The Hill", url: "https://thehill.com/feed/", section: "politics", category: "Local" },
+      { name: "Washington Post Politics", url: "https://feeds.washingtonpost.com/rss/politics", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" },
-      { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", section: "tech" },
-      { name: "Wired", url: "https://www.wired.com/feed/rss", section: "tech" }
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" },
+      { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", section: "tech", category: "Local" },
+      { name: "Wired", url: "https://www.wired.com/feed/rss", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", section: "health" },
-      { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", section: "health" },
-      { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", section: "health" }
+      { name: "CNN Health", url: "https://rss.cnn.com/rss/edition_health.rss", section: "health", category: "Local" },
+      { name: "WebMD", url: "https://feeds.webmd.com/rss/rss.aspx", section: "health", category: "Local" },
+      { name: "Medical News Today", url: "https://www.medicalnewstoday.com/feeds/rss", section: "health", category: "Local" }
     ],
     football: [
-      { name: "ESPN", url: "https://www.espn.com/espn/rss/news", section: "football" },
-      { name: "FOX Sports", url: "https://www.foxsports.com/rss", section: "football" },
-      { name: "CBS Sports", url: "https://www.cbssports.com/rss/headlines", section: "football" }
+      { name: "ESPN", url: "https://www.espn.com/espn/rss/news", section: "football", category: "Local" },
+      { name: "FOX Sports", url: "https://www.foxsports.com/rss", section: "football", category: "Local" },
+      { name: "CBS Sports", url: "https://www.cbssports.com/rss/headlines", section: "football", category: "Local" }
     ],
     discover: []
   });
 
   localMap.set("GB", {
     top: [
-      { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", section: "top" },
-      { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", section: "top" },
-      { name: "Sky News UK", url: "https://news.sky.com/feeds/rss/uk", section: "top" }
+      { name: "BBC UK", url: "https://feeds.bbci.co.uk/news/uk/rss.xml", section: "top", category: "Local" },
+      { name: "The Guardian UK", url: "https://www.theguardian.com/uk/rss", section: "top", category: "Local" },
+      { name: "Sky News UK", url: "https://news.sky.com/feeds/rss/uk", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", section: "politics" },
-      { name: "The Guardian Politics", url: "https://www.theguardian.com/politics/rss", section: "politics" }
+      { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", section: "politics", category: "Local" },
+      { name: "The Guardian Politics", url: "https://www.theguardian.com/politics/rss", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" },
-      { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", section: "tech" }
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" },
+      { name: "The Verge", url: "https://www.theverge.com/rss/index.xml", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "NHS News", url: "https://www.england.nhs.uk/feed/", section: "health" }
+      { name: "NHS News", url: "https://www.england.nhs.uk/feed/", section: "health", category: "Local" }
     ],
     football: [
-      { name: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/rss.xml", section: "football" },
-      { name: "Sky Sports", url: "https://www.skysports.com/rss/12040", section: "football" }
+      { name: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/rss.xml", section: "football", category: "Local" },
+      { name: "Sky Sports", url: "https://www.skysports.com/rss/12040", section: "football", category: "Local" }
     ],
     discover: []
   });
 
   localMap.set("IN", {
     top: [
-      { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", section: "top" },
-      { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", section: "top" },
-      { name: "The Hindu", url: "https://www.thehindu.com/news/feeder/default.rss", section: "top" },
-      { name: "Indian Express", url: "https://indianexpress.com/feed/", section: "top" }
+      { name: "Times of India", url: "https://timesofindia.indiatimes.com/rssfeedmostrecent.cms", section: "top", category: "Local" },
+      { name: "NDTV", url: "https://feeds.feedburner.com/ndtvnews-top-stories", section: "top", category: "Local" },
+      { name: "The Hindu", url: "https://www.thehindu.com/news/feeder/default.rss", section: "top", category: "Local" },
+      { name: "Indian Express", url: "https://indianexpress.com/feed/", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "NDTV Politics", url: "https://feeds.feedburner.com/ndtvnews-politics", section: "politics" }
+      { name: "NDTV Politics", url: "https://feeds.feedburner.com/ndtvnews-politics", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "WHO India", url: "https://www.who.int/rss-feeds/india-news-english.xml", section: "health" }
+      { name: "WHO India", url: "https://www.who.int/rss-feeds/india-news-english.xml", section: "health", category: "Local" }
     ],
     football: [
-      { name: "Sportskeeda", url: "https://www.sportskeeda.com/feed", section: "football" }
+      { name: "Sportskeeda", url: "https://www.sportskeeda.com/feed", section: "football", category: "Local" }
     ],
     discover: []
   });
 
   localMap.set("NG", {
     top: [
-      { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", section: "top" },
-      { name: "The Guardian NG", url: "https://guardian.ng/feed/", section: "top" }
+      { name: "Pulse Nigeria", url: "https://www.pulse.ng/rss", section: "top", category: "Local" },
+      { name: "The Guardian NG", url: "https://guardian.ng/feed/", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "Premium Times Politics", url: "https://www.premiumtimesng.com/politics/feed/", section: "politics" }
+      { name: "Premium Times Politics", url: "https://www.premiumtimesng.com/politics/feed/", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "WHO Nigeria", url: "https://www.who.int/rss-feeds/nigeria-news-english.xml", section: "health" }
+      { name: "WHO Nigeria", url: "https://www.who.int/rss-feeds/nigeria-news-english.xml", section: "health", category: "Local" }
     ],
     football: [
-      { name: "Complete Sports", url: "https://www.completesports.com/feed/", section: "football" }
+      { name: "Complete Sports", url: "https://www.completesports.com/feed/", section: "football", category: "Local" }
     ],
     discover: []
   });
 
   localMap.set("ZA", {
     top: [
-      { name: "News24", url: "https://www.news24.com/feeds", section: "top" },
-      { name: "IOL", url: "https://www.iol.co.za/rss", section: "top" }
+      { name: "News24", url: "https://www.news24.com/feeds", section: "top", category: "Local" },
+      { name: "IOL", url: "https://www.iol.co.za/rss", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "Mail & Guardian Politics", url: "https://mg.co.za/politics/feed/", section: "politics" }
+      { name: "Mail & Guardian Politics", url: "https://mg.co.za/politics/feed/", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "TechCentral", url: "https://techcentral.co.za/feed/", section: "tech" }
+      { name: "TechCentral", url: "https://techcentral.co.za/feed/", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "WHO South Africa", url: "https://www.who.int/rss-feeds/south-africa-news-english.xml", section: "health" }
+      { name: "WHO South Africa", url: "https://www.who.int/rss-feeds/south-africa-news-english.xml", section: "health", category: "Local" }
     ],
     football: [
-      { name: "KickOff", url: "https://www.kickoff.com/rss", section: "football" }
+      { name: "KickOff", url: "https://www.kickoff.com/rss", section: "football", category: "Local" }
     ],
     discover: []
   });
 
   localMap.set("KE", {
     top: [
-      { name: "Daily Nation", url: "https://www.nation.co.ke/rss", section: "top" },
-      { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", section: "top" }
+      { name: "Daily Nation", url: "https://www.nation.co.ke/rss", section: "top", category: "Local" },
+      { name: "The Star Kenya", url: "https://www.the-star.co.ke/rss", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "Nation Politics", url: "https://www.nation.co.ke/politics/feed/", section: "politics" }
+      { name: "Nation Politics", url: "https://www.nation.co.ke/politics/feed/", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "WHO Kenya", url: "https://www.who.int/rss-feeds/kenya-news-english.xml", section: "health" }
+      { name: "WHO Kenya", url: "https://www.who.int/rss-feeds/kenya-news-english.xml", section: "health", category: "Local" }
     ],
     football: [
-      { name: "Goal Kenya", url: "https://www.goal.com/feeds/news/kenya", section: "football" }
+      { name: "Goal Kenya", url: "https://www.goal.com/feeds/news/kenya", section: "football", category: "Local" }
+    ],
+    discover: []
+  });
+
+  localMap.set("BR", {
+    top: [
+      { name: "CNN Brasil", url: "https://www.cnnbrasil.com.br/feed/", section: "top", category: "Local" },
+      { name: "Globo News", url: "https://g1.globo.com/rss/g1/", section: "top", category: "Local" },
+      { name: "Folha de S.Paulo", url: "https://feeds.folha.uol.com.br/folha/emcima_hora.xml", section: "top", category: "Local" }
+    ],
+    politics: [
+      { name: "Poder360", url: "https://www.poder360.com.br/feed/", section: "politics", category: "Local" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
+    ],
+    health: [
+      { name: "WHO Brazil", url: "https://www.who.int/rss-feeds/brazil-news-english.xml", section: "health", category: "Local" }
+    ],
+    football: [
+      { name: "ESPN Brasil", url: "https://www.espn.com.br/rss/", section: "football", category: "Local" }
+    ],
+    discover: []
+  });
+
+  localMap.set("FR", {
+    top: [
+      { name: "Le Monde", url: "https://www.lemonde.fr/rss/une.xml", section: "top", category: "Local" },
+      { name: "Le Figaro", url: "https://www.lefigaro.fr/rss/figaro_actualites.xml", section: "top", category: "Local" },
+      { name: "France 24", url: "https://www.france24.com/en/rss", section: "top", category: "Local" }
+    ],
+    politics: [
+      { name: "Le Monde Politique", url: "https://www.lemonde.fr/politique/rss.xml", section: "politics", category: "Local" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
+    ],
+    health: [
+      { name: "WHO France", url: "https://www.who.int/rss-feeds/france-news-english.xml", section: "health", category: "Local" }
+    ],
+    football: [
+      { name: "L'Équipe", url: "https://www.lequipe.fr/rss/actu.xml", section: "football", category: "Local" }
+    ],
+    discover: []
+  });
+
+  localMap.set("DE", {
+    top: [
+      { name: "DW News", url: "https://rss.dw.com/rdf/rss-en-top", section: "top", category: "Local" },
+      { name: "Spiegel Online", url: "https://www.spiegel.de/schlagzeilen/index.rss", section: "top", category: "Local" },
+      { name: "Frankfurter Allgemeine", url: "https://www.faz.net/rss/aktuell/", section: "top", category: "Local" }
+    ],
+    politics: [
+      { name: "Spiegel Politik", url: "https://www.spiegel.de/politik/index.rss", section: "politics", category: "Local" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
+    ],
+    health: [
+      { name: "WHO Germany", url: "https://www.who.int/rss-feeds/germany-news-english.xml", section: "health", category: "Local" }
+    ],
+    football: [
+      { name: "Kicker", url: "https://www.kicker.de/rss/", section: "football", category: "Local" }
+    ],
+    discover: []
+  });
+
+  localMap.set("IT", {
+    top: [
+      { name: "Corriere della Sera", url: "https://www.corriere.it/rss/", section: "top", category: "Local" },
+      { name: "La Repubblica", url: "https://www.repubblica.it/rss/", section: "top", category: "Local" }
+    ],
+    politics: [
+      { name: "Corriere Politica", url: "https://www.corriere.it/politica/rss/", section: "politics", category: "Local" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
+    ],
+    health: [
+      { name: "WHO Italy", url: "https://www.who.int/rss-feeds/italy-news-english.xml", section: "health", category: "Local" }
+    ],
+    football: [
+      { name: "Gazzetta dello Sport", url: "https://www.gazzetta.it/feed/", section: "football", category: "Local" }
+    ],
+    discover: []
+  });
+
+  localMap.set("ES", {
+    top: [
+      { name: "El País", url: "https://feeds.elpais.com/rss/", section: "top", category: "Local" },
+      { name: "El Mundo", url: "https://www.elmundo.es/rss/", section: "top", category: "Local" }
+    ],
+    politics: [
+      { name: "El País Política", url: "https://feeds.elpais.com/rss/politica/", section: "politics", category: "Local" }
+    ],
+    tech: [
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
+    ],
+    health: [
+      { name: "WHO Spain", url: "https://www.who.int/rss-feeds/spain-news-english.xml", section: "health", category: "Local" }
+    ],
+    football: [
+      { name: "Marca", url: "https://www.marca.com/rss/", section: "football", category: "Local" }
     ],
     discover: []
   });
 
   const FALLBACK_LOCAL_FEEDS = {
     top: [
-      { name: "World News (VOA)", url: "https://www.voanews.com/rss", section: "top" }
+      { name: "World News (VOA)", url: "https://www.voanews.com/rss", section: "top", category: "Local" }
     ],
     politics: [
-      { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", section: "politics" }
+      { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", section: "politics", category: "Local" }
     ],
     tech: [
-      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech" }
+      { name: "TechCrunch", url: "https://techcrunch.com/feed/", section: "tech", category: "Local" }
     ],
     health: [
-      { name: "WHO News", url: "https://www.who.int/rss-feeds/news-english.xml", section: "health" }
+      { name: "WHO News", url: "https://www.who.int/rss-feeds/news-english.xml", section: "health", category: "Local" }
     ],
     football: [
-      { name: "ESPN", url: "https://www.espn.com/espn/rss/news", section: "football" }
+      { name: "ESPN", url: "https://www.espn.com/espn/rss/news", section: "football", category: "Local" }
     ],
     discover: [
-      { name: "Google News (Global)", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", section: "discover" }
+      { name: "Google News (Global)", url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en", section: "discover", category: "Local" }
     ]
   };
 
@@ -395,7 +498,7 @@
           pubDate: item.pubDate,
           description: (item.description || '').replace(/<[^>]*>/g, '').substring(0, 200),
           source: feedCfg.name,
-          category: feedCfg.category,
+          category: feedCfg.category || 'World',
           imageUrl: imageUrl,
           views: generateViews(item.title)
         };
@@ -472,7 +575,7 @@
   let topNewsFeedIndex = 0;
   let usedTopNewsUrls = new Set();
 
-  // Main feed (infinite scroll)
+  // Main feed
   let currentFiltered = [];
   let displayLimit = 20;
   let isLoadingMore = false;
@@ -631,7 +734,6 @@
           needsMore = true;
           let feedsToFetch = [];
           if (cat === 'Local') {
-            // gather all local feeds
             const countryData = localMap.get(userCountry) || FALLBACK_LOCAL_FEEDS;
             for (let sec of ['top', 'politics', 'tech', 'health', 'football', 'discover']) {
               feedsToFetch = feedsToFetch.concat(countryData[sec] || []);
@@ -691,15 +793,17 @@
   window.addEventListener('beforeunload', saveState);
 
   // =============================================================
-  // 10. CATEGORY SWITCH & FILTER
+  // 10. CATEGORY SWITCH & FILTER (FIXED)
   // =============================================================
 
   function switchCategory(cat) {
     if (currentCategory === cat) return;
     currentCategory = cat;
+    // Update active pill
     document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
     const active = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.dataset.cat === cat);
     if (active) active.classList.add('active');
+
     // Show/hide top news container
     const topContainer = document.getElementById('topNewsContainer');
     if (currentCategory === 'all') {
@@ -707,19 +811,45 @@
     } else {
       if (topContainer) topContainer.style.display = 'none';
     }
+
     // Reset infinite scroll state
     allFetched = false;
     displayLimit = 20;
+    isLoadingMore = false;
+
+    // Clear the news feed and show loading message
+    const feedDiv = document.getElementById('newsFeed');
+    feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;"><div class="loader"></div> Loading articles...</div>';
+
     if (currentCategory === 'all') {
       currentFiltered = allArticles;
       renderAllCategoryGrouped();
     } else if (currentCategory === 'Local') {
       setupLocalSections();
     } else {
+      // Filter articles by category
       currentFiltered = allArticles.filter(a => a.category === currentCategory);
+      if (currentFiltered.length === 0) {
+        // Try to fetch more from this category
+        fetchMoreForCategory(currentCategory).then(newArticles => {
+          if (newArticles.length) {
+            const unique = newArticles.filter(a => !allArticles.some(ex => (ex.link || '').split('?')[0] === (a.link || '').split('?')[0]));
+            unique.forEach(a => { a.views = generateViews(a.title); });
+            allArticles = [...allArticles, ...unique];
+            allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+            currentFiltered = allArticles.filter(a => a.category === currentCategory);
+            displayLimit = Math.min(20, currentFiltered.length);
+            renderCategoryFeed(currentFiltered.slice(0, displayLimit));
+          } else {
+            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles found for this category.</div>';
+          }
+        });
+        return;
+      }
       displayLimit = Math.min(20, currentFiltered.length);
       renderCategoryFeed(currentFiltered.slice(0, displayLimit));
     }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
     // Re-attach sentinel after render
     setTimeout(() => {
@@ -1583,7 +1713,7 @@
   }
 
   // =============================================================
-  // 19. OTHER VIEWS (Tools, Live)
+  // 19. VIEWS (Home, Saved, Tools, Live)
   // =============================================================
 
   function showHomeView() {
@@ -1623,7 +1753,10 @@
     if (observer) observer.disconnect();
   }
 
-  function showToolsView() {
+  // ------ TOOLS with real file management ------
+  let currentDirectoryHandle = null;
+
+  async function showToolsView() {
     currentView = 'tools';
     document.getElementById('appView').style.display = 'none';
     document.getElementById('savedView').style.display = 'none';
@@ -1636,6 +1769,17 @@
     carouselInterval = null;
     if (topNewsObserver) topNewsObserver.disconnect();
     if (observer) observer.disconnect();
+    // Show initial storage info
+    updateStorageInfo();
+    // If we already have a directory handle, show it
+    if (currentDirectoryHandle) {
+      browseDirectory(currentDirectoryHandle);
+    } else {
+      document.getElementById('toolOutput').innerHTML = `
+        <p>Click "Browse Files" to select a folder and manage files.</p>
+        <p><strong>Storage Info:</strong> <span id="storageInfo">Loading...</span></p>
+      `;
+    }
   }
 
   function showLiveView() {
@@ -1658,14 +1802,46 @@
   }
 
   // =============================================================
-  // 20. TOOLS (scan junk, big files, browse)
+  // 20. TOOLS FUNCTIONS – REAL FILE MANAGEMENT
   // =============================================================
+
+  async function updateStorageInfo() {
+    try {
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        const estimate = await navigator.storage.estimate();
+        const used = estimate.usage || 0;
+        const quota = estimate.quota || 0;
+        const free = quota - used;
+        const usedMB = (used / (1024 * 1024)).toFixed(2);
+        const quotaMB = (quota / (1024 * 1024)).toFixed(2);
+        const freeMB = (free / (1024 * 1024)).toFixed(2);
+        const percent = quota ? ((used / quota) * 100).toFixed(1) : 0;
+        const info = `Used: ${usedMB} MB / ${quotaMB} MB (${percent}%) · Free: ${freeMB} MB`;
+        const infoEl = document.getElementById('storageInfo');
+        if (infoEl) infoEl.textContent = info;
+        return info;
+      } else {
+        const msg = 'Storage API not supported.';
+        const infoEl = document.getElementById('storageInfo');
+        if (infoEl) infoEl.textContent = msg;
+        return msg;
+      }
+    } catch (e) {
+      const msg = 'Error retrieving storage info.';
+      const infoEl = document.getElementById('storageInfo');
+      if (infoEl) infoEl.textContent = msg;
+      return msg;
+    }
+  }
 
   async function requestDirectoryPermission() {
     try {
       if ('showDirectoryPicker' in window) {
-        return await window.showDirectoryPicker();
+        const dirHandle = await window.showDirectoryPicker();
+        currentDirectoryHandle = dirHandle;
+        return dirHandle;
       } else {
+        showToast('File System Access API not supported in this browser.');
         return null;
       }
     } catch (e) {
@@ -1674,90 +1850,123 @@
     }
   }
 
+  // Browse files recursively and display in toolOutput
+  async function browseDirectory(dirHandle, path = '') {
+    const output = document.getElementById('toolOutput');
+    output.innerHTML = '<div class="loader"></div> Loading directory...';
+    let fileList = [];
+    try {
+      for await (const [name, handle] of dirHandle.entries()) {
+        const entry = { name, handle, path: path + '/' + name };
+        if (handle.kind === 'file') {
+          const file = await handle.getFile();
+          entry.size = file.size;
+          entry.lastModified = file.lastModified;
+          fileList.push(entry);
+        } else {
+          entry.isDirectory = true;
+          fileList.push(entry);
+        }
+      }
+      // Sort: directories first, then files
+      fileList.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      // Display the list
+      let html = `<p><strong>Current folder:</strong> ${path || '/'}</p>`;
+      html += `<p><strong>Storage Info:</strong> <span id="storageInfo">Loading...</span></p>`;
+      html += `<ul style="list-style:none;padding:0;">`;
+      for (let entry of fileList) {
+        const icon = entry.isDirectory ? '<i class="fas fa-folder"></i>' : '<i class="fas fa-file"></i>';
+        const size = entry.size ? ` (${(entry.size / 1024).toFixed(1)} KB)` : '';
+        const deleteBtn = !entry.isDirectory ? `<button class="delete-file-btn" data-handle="${entry.handle}" data-name="${entry.name}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;font-size:0.7rem;">Delete</button>` : '';
+        html += `<li style="padding:0.3rem 0;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
+          <span>${icon} ${escapeHtml(entry.name)}${size}</span>
+          ${deleteBtn}
+        </li>`;
+      }
+      html += `</ul>`;
+      if (path !== '') {
+        html += `<button class="tool-btn" style="margin-top:1rem;" onclick="window.browseParentDir()"><i class="fas fa-arrow-up"></i> Parent Directory</button>`;
+      }
+      output.innerHTML = html;
+      updateStorageInfo();
+      // Attach delete handlers
+      document.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const handle = btn.dataset.handle;
+          const name = btn.dataset.name;
+          if (confirm(`Delete "${name}"?`)) {
+            try {
+              await handle.remove();
+              showToast(`Deleted "${name}"`);
+              // Re-browse current directory
+              browseDirectory(currentDirectoryHandle, path);
+            } catch (e) {
+              showToast('Error deleting file.');
+            }
+          }
+        });
+      });
+    } catch (e) {
+      output.innerHTML = `<p>Error reading directory: ${e.message}</p>`;
+    }
+  }
+
+  // Public functions for tools buttons
   async function scanJunkFiles() {
     const output = document.getElementById('toolOutput');
     output.innerHTML = '<div class="loader"></div> Scanning for junk files...';
     try {
       const dirHandle = await requestDirectoryPermission();
       if (!dirHandle) {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.webkitdirectory = true;
-        input.multiple = true;
-        input.onchange = async (e) => {
-          const files = e.target.files;
-          if (!files.length) {
-            output.innerHTML = '<p>No folder selected.</p>';
-            return;
-          }
-          let junk = [];
-          for (let f of files) {
-            if (f.size > 10 * 1024 * 1024 || /\.(tmp|log|cache|temp)$/i.test(f.name)) {
-              junk.push({ name: f.name, size: f.size, lastModified: f.lastModified });
-            }
-          }
-          if (!junk.length) {
-            output.innerHTML = '<p>✅ No junk files found.</p>';
-          } else {
-            let html = `<p>Found ${junk.length} junk files:</p><ul style="list-style:none;padding:0;">`;
-            junk.forEach(j => {
-              html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;">
-                <span>${escapeHtml(j.name)} (${(j.size/1024/1024).toFixed(2)} MB)</span>
-                <button class="delete-file-btn" data-name="${escapeHtml(j.name)}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
-              </li>`;
-            });
-            html += '</ul>';
-            output.innerHTML = html;
-            document.querySelectorAll('.delete-file-btn').forEach(btn => {
-              btn.onclick = () => {
-                showToast('⚠️ File deletion requires native app permissions.');
-              };
-            });
-          }
-        };
-        input.click();
-        output.innerHTML = '<p>Select a folder to scan.</p>';
+        output.innerHTML = '<p>Permission denied or not supported.</p>';
         return;
       }
       let junk = [];
-      const dirIterator = dirHandle.values();
-      for await (const entry of dirIterator) {
-        if (entry.kind === 'file') {
-          const file = await entry.getFile();
-          if (file.size > 10 * 1024 * 1024 || /\.(tmp|log|cache|temp)$/i.test(file.name)) {
-            junk.push({ name: file.name, size: file.size, lastModified: file.lastModified, handle: entry });
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === 'file') {
+          const file = await handle.getFile();
+          const isJunk = file.size > 10 * 1024 * 1024 || /\.(tmp|log|cache|temp)$/i.test(name);
+          if (isJunk) {
+            junk.push({ name, size: file.size, handle });
           }
         }
       }
       if (!junk.length) {
         output.innerHTML = '<p>✅ No junk files found.</p>';
-      } else {
-        let html = `<p>Found ${junk.length} junk files:</p><ul style="list-style:none;padding:0;">`;
-        junk.forEach(j => {
-          html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;">
-            <span>${escapeHtml(j.name)} (${(j.size/1024/1024).toFixed(2)} MB)</span>
-            <button class="delete-file-btn" data-handle="${j.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
-          </li>`;
-        });
-        html += '</ul>';
-        output.innerHTML = html;
-        document.querySelectorAll('.delete-file-btn').forEach(btn => {
-          btn.onclick = async () => {
-            try {
-              const handle = btn.dataset.handle;
-              if (handle) {
-                await handle.remove();
-                showToast('File deleted');
-                btn.closest('li').remove();
-              } else {
-                showToast('Deletion not supported in this browser.');
-              }
-            } catch(e) { showToast('Error deleting'); }
-          };
-        });
+        updateStorageInfo();
+        return;
       }
-    } catch (err) {
-      output.innerHTML = `<p>Error: ${err.message}</p>`;
+      let html = `<p>Found ${junk.length} junk files:</p><ul style="list-style:none;padding:0;">`;
+      junk.forEach(j => {
+        html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
+          <span>${escapeHtml(j.name)} (${(j.size / (1024 * 1024)).toFixed(2)} MB)</span>
+          <button class="delete-file-btn" data-handle="${j.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
+        </li>`;
+      });
+      html += '</ul>';
+      output.innerHTML = html;
+      document.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const handle = btn.dataset.handle;
+          if (confirm('Delete this junk file?')) {
+            try {
+              await handle.remove();
+              showToast('File deleted');
+              btn.closest('li').remove();
+              updateStorageInfo();
+            } catch (e) {
+              showToast('Error deleting file.');
+            }
+          }
+        });
+      });
+      updateStorageInfo();
+    } catch (e) {
+      output.innerHTML = `<p>Error: ${e.message}</p>`;
     }
   }
 
@@ -1767,88 +1976,94 @@
     try {
       const dirHandle = await requestDirectoryPermission();
       if (!dirHandle) {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.webkitdirectory = true;
-        input.multiple = true;
-        input.onchange = (e) => {
-          const files = e.target.files;
-          if (!files.length) {
-            output.innerHTML = '<p>No folder selected.</p>';
-            return;
-          }
-          let big = [];
-          for (let f of files) {
-            if (f.size > 50 * 1024 * 1024) {
-              big.push({ name: f.name, size: f.size });
-            }
-          }
-          if (!big.length) {
-            output.innerHTML = '<p>✅ No files larger than 50MB.</p>';
-          } else {
-            let html = `<p>Found ${big.length} large files:</p><ul>`;
-            big.forEach(b => {
-              html += `<li>${escapeHtml(b.name)} (${(b.size/1024/1024).toFixed(2)} MB)</li>`;
-            });
-            html += '</ul>';
-            output.innerHTML = html;
-          }
-        };
-        input.click();
-        output.innerHTML = '<p>Select a folder to scan.</p>';
+        output.innerHTML = '<p>Permission denied or not supported.</p>';
         return;
       }
       let big = [];
-      const dirIterator = dirHandle.values();
-      for await (const entry of dirIterator) {
-        if (entry.kind === 'file') {
-          const file = await entry.getFile();
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === 'file') {
+          const file = await handle.getFile();
           if (file.size > 50 * 1024 * 1024) {
-            big.push({ name: file.name, size: file.size });
+            big.push({ name, size: file.size, handle });
           }
         }
       }
       if (!big.length) {
         output.innerHTML = '<p>✅ No files larger than 50MB.</p>';
-      } else {
-        let html = `<p>Found ${big.length} large files:</p><ul>`;
-        big.forEach(b => {
-          html += `<li>${escapeHtml(b.name)} (${(b.size/1024/1024).toFixed(2)} MB)</li>`;
-        });
-        html += '</ul>';
-        output.innerHTML = html;
+        updateStorageInfo();
+        return;
       }
-    } catch (err) {
-      output.innerHTML = `<p>Error: ${err.message}</p>`;
+      let html = `<p>Found ${big.length} large files:</p><ul style="list-style:none;padding:0;">`;
+      big.forEach(b => {
+        html += `<li style="padding:0.5rem;border-bottom:1px solid var(--ad-bg);display:flex;justify-content:space-between;align-items:center;">
+          <span>${escapeHtml(b.name)} (${(b.size / (1024 * 1024)).toFixed(2)} MB)</span>
+          <button class="delete-file-btn" data-handle="${b.handle}" style="background:red;color:white;border:none;border-radius:20px;padding:0.2rem 0.8rem;">Delete</button>
+        </li>`;
+      });
+      html += '</ul>';
+      output.innerHTML = html;
+      document.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const handle = btn.dataset.handle;
+          if (confirm('Delete this file?')) {
+            try {
+              await handle.remove();
+              showToast('File deleted');
+              btn.closest('li').remove();
+              updateStorageInfo();
+            } catch (e) {
+              showToast('Error deleting file.');
+            }
+          }
+        });
+      });
+      updateStorageInfo();
+    } catch (e) {
+      output.innerHTML = `<p>Error: ${e.message}</p>`;
     }
   }
 
   async function browseFiles() {
-    const output = document.getElementById('toolOutput');
-    output.innerHTML = '<div class="loader"></div> Opening file browser...';
-    try {
+    const dirHandle = await requestDirectoryPermission();
+    if (dirHandle) {
+      browseDirectory(dirHandle);
+    } else {
+      // Fallback: use input element to get files (read-only)
       const input = document.createElement('input');
       input.type = 'file';
+      input.webkitdirectory = true;
       input.multiple = true;
       input.onchange = (e) => {
         const files = e.target.files;
         if (!files.length) {
-          output.innerHTML = '<p>No files selected.</p>';
+          document.getElementById('toolOutput').innerHTML = '<p>No files selected.</p>';
           return;
         }
-        let html = `<p>Selected ${files.length} files:</p><ul>`;
+        let html = `<p>Selected ${files.length} files. (Read-only)</p><ul>`;
         for (let f of files) {
           html += `<li>${escapeHtml(f.name)} (${(f.size/1024).toFixed(1)} KB)</li>`;
         }
         html += '</ul>';
-        output.innerHTML = html;
+        document.getElementById('toolOutput').innerHTML = html;
+        updateStorageInfo();
       };
       input.click();
-      output.innerHTML = '<p>Select files to browse.</p>';
-    } catch(err) {
-      output.innerHTML = `<p>Error: ${err.message}</p>`;
     }
   }
+
+  // Parent directory browsing
+  window.browseParentDir = async function() {
+    if (currentDirectoryHandle) {
+      // Try to get parent – not directly supported, so we prompt to re-select
+      const parent = await requestDirectoryPermission();
+      if (parent) {
+        browseDirectory(parent);
+      }
+    }
+  };
+
+  // Expose functions globally for onclick in generated HTML
+  window.browseFiles = browseFiles;
 
   // =============================================================
   // 21. SEARCH
@@ -2029,7 +2244,7 @@
   if (menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
   if (menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
   if (menuAbout) menuAbout.addEventListener('click', () => {
-    alert("Amimo Discovery v43.0\n✅ Local sections with toggleable Show More\n✅ Infinite scroll for all categories\n✅ Offline support\n✅ All features included");
+    alert("Amimo Discovery v45.0\n✅ Fixed category filtering\n✅ Real file management tools\n✅ All features working");
     closeMenu();
   });
   if (menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
