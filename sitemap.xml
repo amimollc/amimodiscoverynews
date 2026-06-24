@@ -3,7 +3,7 @@
   
   <!-- Homepage -->
   <url>
-    <loc>https://amimollc.github.io/</loc>
+    <loc>https://amimollc.github.io/amimodiscoverynews/</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -19,23 +19,16 @@
 
   <!-- Discovery News -->
   <url>
-    <loc>https://amimollc.github.io/amimodiscoverynews</loc>
+    <loc>https://amimollc.github.io/seachresult.html</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
-  <!-- Zed Tuition -->
-  <url>
-    <loc>https://amimollc.github.io/zedtuition</loc>
-    <lastmod>2026-06-24</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
 
   <!-- About Page (spelled as "about.html" exactly as you typed) -->
   <url>
-    <loc>https://amimollc.github.io/about.htmk</loc>
+    <loc>https://amimollc.github.io/about.html/</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
