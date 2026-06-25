@@ -1,56 +1,26 @@
 "icons": [
-  {
-    "src": "/amimodiscoverynews/icon-192.png",
-    "sizes": "192x192",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/amimodiscoverynews/icon-512.png",
-    "sizes": "720x800",
-    "type": "image/jpeg",
-    "purpose": "any"
-  },
-  {
-    "src": "/amimodiscoverynews/icon-maskable-512.png",
-    "sizes": "720x800",
-    "type": "image/jpeg",
-    "purpose": "maskable"
-  },
-  {
-    "src": "/amimodiscoverynews/icon-maskable-512.png",
-    "sizes": "720x800",
-    "type": "image/jpeg",
-    "purpose": "any maskable"
-  },
-  {
-    "src": "/amimodiscoverynews/favicon.png",
-    "sizes": "72x72",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/amimodiscoverynews/favicon.png",
-    "sizes": "96x96",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/amimodiscoverynews/favicon.png",
-    "sizes": "128x128",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/amimodiscoverynews/favicon.png",
-    "sizes": "144x144",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/amimodiscoverynews/favicon.png",
-    "sizes": "152x152",
-    "type": "image/png",
-    "purpose": "any"
-  }
+{
+"src": "/amimodiscoverynews/icon-192.png",
+"sizes": "192x192",
+"type": "image/png",
+"purpose": "any"
+},
+{
+"src": "/amimodiscoverynews/icon-512.png",
+"sizes": "512x512",
+"type": "image/png",
+"purpose": "any"
+},
+{
+"src": "/amimodiscoverynews/icon-maskable-512.png",
+"sizes": "512x512",
+"type": "image/png",
+"purpose": "maskable"
+},
+
+{ "src": "/amimodiscoverynews/favicon.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+{ "src": "/amimodiscoverynews/favicon.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+{ "src": "/amimodiscoverynews/favicon.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+{ "src": "/amimodiscoverynews/favicon.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+{ "src": "/amimodiscoverynews/favicon.png", "sizes": "152x152", "type": "image/png", "purpose": "any" }
 ]
