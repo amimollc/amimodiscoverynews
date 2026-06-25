@@ -7,20 +7,20 @@
   },
   {
     "src": "/amimodiscoverynews/icon-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
+    "sizes": "720x800",
+    "type": "image/jpeg",
     "purpose": "any"
   },
   {
     "src": "/amimodiscoverynews/icon-maskable-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
+    "sizes": "720x800",
+    "type": "image/jpeg",
     "purpose": "maskable"
   },
   {
     "src": "/amimodiscoverynews/icon-maskable-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
+    "sizes": "720x800",
+    "type": "image/jpeg",
     "purpose": "any maskable"
   },
   {
