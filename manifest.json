@@ -7,7 +7,7 @@
   "scope": "/amimodiscoverynews/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "tabbed", "fullscreen"],
-  "orientation": "any",
+  "orientation": "portrait",
   "theme_color": "#0659ef",
   "background_color": "#ffffff",
   "lang": "en",
