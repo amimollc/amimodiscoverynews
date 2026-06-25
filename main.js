@@ -1,5 +1,5 @@
 // ================================================================
-//  main.js – FULL with welcome, enhanced file manager, all features
+//  main.js – FULL COMPLETE with all features, feeds, helpers
 // ================================================================
 
 (function() {
@@ -342,7 +342,6 @@
     discover: []
   });
 
-  // Fallback (if country not in map)
   const FALLBACK_LOCAL_FEEDS = {};
 
   const TOP_NEWS_FEEDS = [
@@ -632,6 +631,9 @@
   let discoverObserver = null;
   let isLoadingDiscover = false;
 
+  // Offline state
+  let isOffline = false;
+
   // =============================================================
   // 7. LOCATION & OFFLINE DETECTION
   // =============================================================
@@ -695,27 +697,34 @@
     }
   });
 
-  function showOfflineOverlay(show) {
-    const overlay = document.getElementById('offlineOverlay');
-    if (overlay) overlay.style.display = show ? 'flex' : 'none';
+  // ---- Offline detection – show inline message in feed ----
+  function showOfflineMessage(show) {
+    const feedDiv = document.getElementById('newsFeed');
+    if (!feedDiv) return;
+    const existing = document.getElementById('offlineMessage');
+    if (existing) existing.remove();
+    if (show && currentView === 'home') {
+      const msg = document.createElement('div');
+      msg.id = 'offlineMessage';
+      msg.style.cssText = 'padding:1rem;margin:0.5rem 0;background:var(--ad-bg);border-radius:20px;text-align:center;color:var(--text-muted);font-size:0.9rem;';
+      msg.innerHTML = '<i class="fas fa-wifi"></i> You are offline – showing cached content. <button onclick="location.reload()" style="background:var(--accent-blue);color:white;border:none;border-radius:20px;padding:0.2rem 1rem;cursor:pointer;margin-left:0.5rem;">Retry</button>';
+      feedDiv.prepend(msg);
+    }
   }
 
   function checkOnlineStatus() {
-    if (!navigator.onLine) {
-      showOfflineOverlay(true);
-    } else {
-      showOfflineOverlay(false);
-    }
+    isOffline = !navigator.onLine;
+    showOfflineMessage(isOffline);
   }
-  window.addEventListener('online', () => showOfflineOverlay(false));
-  window.addEventListener('offline', () => showOfflineOverlay(true));
-  document.getElementById('offlineRetryBtn')?.addEventListener('click', () => {
-    if (navigator.onLine) {
-      showOfflineOverlay(false);
-      location.reload();
-    } else {
-      showToast('Still offline. Check your connection.');
-    }
+
+  window.addEventListener('online', () => {
+    isOffline = false;
+    showOfflineMessage(false);
+    loadAllFeeds();
+  });
+  window.addEventListener('offline', () => {
+    isOffline = true;
+    showOfflineMessage(true);
   });
 
   // =============================================================
@@ -797,7 +806,7 @@
   window.addEventListener('beforeunload', saveState);
 
   // =============================================================
-  // 10. CATEGORY SWITCH & FILTER
+  // 10. CATEGORY SWITCH & FILTER (with auto-retry)
   // =============================================================
 
   function switchCategory(cat) {
@@ -829,19 +838,28 @@
     } else {
       currentFiltered = allArticles.filter(a => a.category === currentCategory);
       if (currentFiltered.length === 0) {
-        fetchMoreForCategory(currentCategory).then(newArticles => {
-          if (newArticles.length) {
-            const unique = newArticles.filter(a => !allArticles.some(ex => (ex.link || '').split('?')[0] === (a.link || '').split('?')[0]));
-            unique.forEach(a => { a.views = generateViews(a.title); });
-            allArticles = [...allArticles, ...unique];
-            allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
-            currentFiltered = allArticles.filter(a => a.category === currentCategory);
-            displayLimit = Math.min(20, currentFiltered.length);
-            renderCategoryFeed(currentFiltered.slice(0, displayLimit));
-          } else {
-            feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles found for this category.</div>';
-          }
-        });
+        let attempts = 0;
+        const maxAttempts = 3;
+        const retry = () => {
+          attempts++;
+          fetchMoreForCategory(currentCategory).then(newArticles => {
+            if (newArticles.length) {
+              const unique = newArticles.filter(a => !allArticles.some(ex => (ex.link || '').split('?')[0] === (a.link || '').split('?')[0]));
+              unique.forEach(a => { a.views = generateViews(a.title); });
+              allArticles = [...allArticles, ...unique];
+              allArticles.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+              currentFiltered = allArticles.filter(a => a.category === currentCategory);
+              displayLimit = Math.min(20, currentFiltered.length);
+              renderCategoryFeed(currentFiltered.slice(0, displayLimit));
+            } else if (attempts < maxAttempts) {
+              feedDiv.innerHTML = `<div style="padding:2rem; text-align:center;"><div class="loader"></div> Retrying (${attempts}/${maxAttempts})...</div>`;
+              setTimeout(retry, 2000);
+            } else {
+              feedDiv.innerHTML = '<div style="padding:2rem; text-align:center;">📭 No articles found for this category. Please try again later.</div>';
+            }
+          });
+        };
+        retry();
         return;
       }
       displayLimit = Math.min(20, currentFiltered.length);
@@ -886,7 +904,6 @@
 
     for (let cat of categoriesOrder) {
       if (cat === 'Local') {
-        // --- Local: render sub-sections ---
         html += `<div class="category-section" data-cat="Local">
                     <div class="category-section-title"><i class="fas fa-location-dot"></i> Local</div>`;
         const subSections = ['top', 'politics', 'tech', 'health', 'football'];
@@ -916,7 +933,6 @@
           html += `</div>`;
         }
 
-        // ---- Top News (global) inline ----
         html += `<div class="top-news-inline" style="margin:1.5rem 0;">
                     <div class="category-section-title" style="border-left-color:#f59e0b;color:#f59e0b;">
                         <i class="fas fa-chart-line"></i> 🔥 Top News
@@ -924,7 +940,6 @@
                     <div id="topNewsContainer" style="display:block;padding:0;"></div>
                   </div>`;
 
-        // ---- Discover section ----
         html += `<div class="sub-section" id="discoverSection">
                     <div class="sub-section-title">🔍 Discover More Local News</div>`;
         const discoverArticles = localSectionArticles.discover || [];
@@ -943,7 +958,6 @@
         html += `</div>`;
         html += `</div>`;
       } else {
-        // Other categories
         const limit = 5;
         const catArticles = allArticles.filter(a => a.category === cat).slice(0, limit);
         if (catArticles.length) {
@@ -976,6 +990,8 @@
     initInfiniteScroll();
     setupDiscoverSentinel();
     renderTopNewsInline();
+
+    if (isOffline) showOfflineMessage(true);
   }
 
   function renderTopNewsInline() {
@@ -1040,7 +1056,6 @@
     }
   }
 
-  // ---- Category Feed (for non-Local, non-All) ----
   function renderCategoryFeed(articles) {
     const feedDiv = document.getElementById('newsFeed');
     if (!articles || !articles.length) {
@@ -1062,7 +1077,6 @@
     initInfiniteScroll();
   }
 
-  // ---- Local sections (for Local category) ----
   function renderLocalSections() {
     const feedDiv = document.getElementById('newsFeed');
     let html = '';
@@ -1113,7 +1127,7 @@
   }
 
   // =============================================================
-  // 12. LOCAL SECTIONS – POPULATE DATA (with Google News fallback)
+  // 12. LOCAL SECTIONS – POPULATE DATA
   // =============================================================
 
   async function populateLocalSections() {
@@ -1152,7 +1166,7 @@
   }
 
   // =============================================================
-  // 13. DISCOVER SENTINEL (for All view)
+  // 13. DISCOVER SENTINEL
   // =============================================================
 
   function setupDiscoverSentinel() {
@@ -1318,7 +1332,7 @@
   }
 
   // =============================================================
-  // 16. LOAD MORE ARTICLES (main infinite scroll logic)
+  // 16. LOAD MORE ARTICLES (main infinite scroll)
   // =============================================================
 
   async function loadMoreArticles() {
@@ -1328,7 +1342,6 @@
       return;
     }
 
-    // For "All" category: use global feed pool
     if (currentCategory === 'all') {
       if (displayLimit < allArticles.length) {
         displayLimit += 20;
@@ -1417,7 +1430,6 @@
       return;
     }
 
-    // For Local category: discover section infinite scroll
     if (currentCategory === 'Local') {
       if (localSectionDisplay.discover < localSectionArticles.discover.length) {
         localSectionDisplay.discover += 10;
@@ -1470,7 +1482,6 @@
       return;
     }
 
-    // For other specific categories: infinite scroll
     if (displayLimit < currentFiltered.length) {
       displayLimit += 20;
       renderCategoryFeed(currentFiltered.slice(0, displayLimit));
@@ -1516,7 +1527,6 @@
     showEndSpinner(false);
   }
 
-  // Helper to fetch more for category (world categories)
   async function fetchMoreForCategory(category) {
     let feedsToFetch = [];
     if (category === 'Local') return [];
@@ -1544,7 +1554,7 @@
   }
 
   // =============================================================
-  // 17. TOP NEWS (infinite for "All" view)
+  // 17. TOP NEWS (global)
   // =============================================================
 
   function initTopNewsPool() {
@@ -1614,7 +1624,7 @@
   }
 
   // =============================================================
-  // 18. TRENDING CAROUSEL (with share button)
+  // 18. TRENDING CAROUSEL
   // =============================================================
 
   function renderTrendingCarousel() {
@@ -1822,6 +1832,7 @@
       ensureSentinel();
       initInfiniteScroll();
     }
+    if (isOffline) showOfflineMessage(true);
   }
 
   function showSavedView() {
@@ -1838,15 +1849,13 @@
     renderSavedArticles();
     if (topNewsObserver) topNewsObserver.disconnect();
     if (observer) observer.disconnect();
+    showOfflineMessage(false);
   }
 
-  // =============================================================
-  // 22. TOOLS – ENHANCED FILE MANAGER
-  // =============================================================
-
+  // Tools with file manager
   let currentDirectoryHandle = null;
+  let _fileOutput = null;
 
-  // -- Storage Info with progress bar --
   async function updateStorageInfo(containerId = 'storageInfo') {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1881,7 +1890,6 @@
     }
   }
 
-  // -- Clear browser cache --
   async function clearBrowserCache() {
     if (confirm('Clear all browser caches? This may affect offline performance.')) {
       try {
@@ -1895,7 +1903,6 @@
     }
   }
 
-  // -- Clear saved articles --
   function clearSavedArticles() {
     if (confirm('Delete all saved articles from local storage?')) {
       localStorage.removeItem('amimo_saved');
@@ -1906,7 +1913,6 @@
     }
   }
 
-  // -- File browsing and management --
   async function requestDirectoryPermission() {
     try {
       if ('showDirectoryPicker' in window) {
@@ -1924,7 +1930,7 @@
   }
 
   async function browseDirectory(dirHandle, path = '') {
-    const output = window._fileOutput || document.getElementById('fileManagerOutput');
+    const output = _fileOutput || document.getElementById('fileManagerOutput');
     if (!output) return;
     output.innerHTML = '<div class="loader"></div> Loading directory...';
     let fileList = [];
@@ -1994,7 +2000,7 @@
       input.multiple = true;
       input.onchange = (e) => {
         const files = e.target.files;
-        const output = window._fileOutput || document.getElementById('fileManagerOutput');
+        const output = _fileOutput || document.getElementById('fileManagerOutput');
         if (!output) return;
         if (!files.length) {
           output.innerHTML = '<p>No files selected.</p>';
@@ -2022,14 +2028,9 @@
   };
 
   window.browseFiles = browseFiles;
-  window.scanJunkFiles = scanJunkFiles;
-  window.scanBigFiles = scanBigFiles;
-  window.clearBrowserCache = clearBrowserCache;
-  window.clearSavedArticles = clearSavedArticles;
 
-  // -- Junk and Big file scanning --
   async function scanJunkFiles() {
-    const output = window._fileOutput || document.getElementById('fileManagerOutput');
+    const output = _fileOutput || document.getElementById('fileManagerOutput');
     if (!output) return;
     output.innerHTML = '<div class="loader"></div> Scanning for junk files...';
     try {
@@ -2084,7 +2085,7 @@
   }
 
   async function scanBigFiles() {
-    const output = window._fileOutput || document.getElementById('fileManagerOutput');
+    const output = _fileOutput || document.getElementById('fileManagerOutput');
     if (!output) return;
     output.innerHTML = '<div class="loader"></div> Scanning for large files (>50MB)...';
     try {
@@ -2137,7 +2138,11 @@
     }
   }
 
-  // -- Enhanced Tools View --
+  window.scanJunkFiles = scanJunkFiles;
+  window.scanBigFiles = scanBigFiles;
+  window.clearBrowserCache = clearBrowserCache;
+  window.clearSavedArticles = clearSavedArticles;
+
   async function showToolsView() {
     currentView = 'tools';
     document.getElementById('appView').style.display = 'none';
@@ -2168,7 +2173,7 @@
         <p>Select a folder using "Browse Files" to manage your files.</p>
       </div>
     `;
-    window._fileOutput = document.getElementById('fileManagerOutput');
+    _fileOutput = document.getElementById('fileManagerOutput');
     updateStorageInfo('storageInfo');
     if (currentDirectoryHandle) {
       browseDirectory(currentDirectoryHandle);
@@ -2195,74 +2200,7 @@
   }
 
   // =============================================================
-  // 23. FIRST VISIT WELCOME with permission guide
-  // =============================================================
-
-  function showWelcomeIfFirstVisit() {
-    const visited = localStorage.getItem('amimo_welcome_shown');
-    if (!visited) {
-      const overlay = document.createElement('div');
-      overlay.id = 'welcomeOverlay';
-      overlay.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
-        z-index: 10000; backdrop-filter: blur(10px);
-      `;
-      overlay.innerHTML = `
-        <div style="background: var(--card-bg); border-radius: 32px; padding: 2rem; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
-          <h2 style="margin: 0 0 0.5rem 0; color: var(--accent-blue); font-size: 1.8rem;">
-            <i class="fas fa-cloud-moon"></i> Welcome!
-          </h2>
-          <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
-            Your personal news hub. Browse local and world news, save articles for offline reading, and manage your device storage with built‑in tools.
-          </p>
-          <div style="background: var(--ad-bg); border-radius: 16px; padding: 1rem; margin: 1rem 0; text-align: left;">
-            <p style="font-weight:600; margin-bottom:0.3rem;"><i class="fas fa-shield-alt"></i> File Access Permission</p>
-            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
-              To use the file manager, you'll need to grant access to your device storage.
-              <br><br>
-              <strong>On Android/Chrome:</strong> The browser will prompt you to select a folder when you click "Browse Files".<br>
-              <strong>Permission management:</strong> If you denied access, you can re‑enable it in your browser settings.
-            </p>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:0.5rem;">
-            <button id="welcomeBtn" style="padding: 0.8rem 2rem; border: none; border-radius: 60px; background: var(--accent-blue); color: white; font-weight: 600; font-size: 1rem; cursor: pointer;">
-              <i class="fas fa-rocket"></i> Get Started
-            </button>
-            <button id="welcomeSettingsBtn" style="padding: 0.6rem 1.5rem; border: none; border-radius: 60px; background: transparent; color: var(--text-secondary); font-size: 0.85rem; cursor: pointer; text-decoration: underline;">
-              <i class="fas fa-cog"></i> Open Settings (Manage Permissions)
-            </button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-
-      document.getElementById('welcomeBtn').addEventListener('click', () => {
-        overlay.remove();
-        localStorage.setItem('amimo_welcome_shown', 'true');
-      });
-
-      document.getElementById('welcomeSettingsBtn').addEventListener('click', () => {
-        // Try to open browser settings (Android Chrome specific)
-        if (navigator.userAgent.toLowerCase().includes('android')) {
-          // For Android, try to open app settings
-          try {
-            window.location.href = 'about:blank#settings';
-            // Also try to open Chrome settings
-            window.open('chrome://settings/content/files', '_blank');
-          } catch (e) {
-            showToast('Please go to your browser settings and enable file access for this site.');
-          }
-        } else {
-          showToast('Please go to your browser settings to manage file permissions.');
-        }
-        // Keep overlay open so user can still get started
-      });
-    }
-  }
-
-  // =============================================================
-  // 24. SEARCH
+  // 22. SEARCH
   // =============================================================
 
   function storeAllArticlesForSearch() {
@@ -2279,7 +2217,7 @@
   }
 
   // =============================================================
-  // 25. MAIN LOAD ALL FEEDS
+  // 23. MAIN LOAD ALL FEEDS
   // =============================================================
 
   async function loadAllFeeds() {
@@ -2358,7 +2296,7 @@
   }
 
   // =============================================================
-  // 26. EVENT LISTENERS
+  // 24. EVENT LISTENERS
   // =============================================================
 
   document.querySelectorAll('.cat-pill').forEach(pill => {
@@ -2411,7 +2349,7 @@
   if (menuNotification) menuNotification.addEventListener('click', () => { alert("🔔 Notifications coming soon."); closeMenu(); });
   if (menuSearch) menuSearch.addEventListener('click', () => { closeMenu(); document.getElementById('searchInput')?.focus(); });
   if (menuAbout) menuAbout.addEventListener('click', () => {
-    alert("Amimo Discovery v48.0\n✅ Welcome with permission guide\n✅ Enhanced file manager with storage analysis\n✅ All features working");
+    alert("Amimo Discovery v49.0\n✅ Top News in All view\n✅ Auto-retry for empty categories\n✅ Inline offline message\n✅ All features working");
     closeMenu();
   });
   if (menuSaved) menuSaved.addEventListener('click', () => { showSavedView(); closeMenu(); });
@@ -2455,13 +2393,11 @@
   });
 
   // =============================================================
-  // 27. START
+  // 25. START
   // =============================================================
 
   detectLocation().then(() => {
     loadAllFeeds();
-    // Show welcome on first visit after load
-    setTimeout(showWelcomeIfFirstVisit, 1500);
   });
 
 })();
