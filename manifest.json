@@ -6,71 +6,32 @@
   "start_url": "/amimodiscoverynews/",
   "scope": "/amimodiscoverynews/",
   "display": "fullscreen",
-  "display_override": ["window-controls-overlay", "tabbed", "fullscreen"],
+  "display_override": [
+    "window-controls-overlay",
+    "tabbed",
+    "fullscreen"
+  ],
   "orientation": "portrait",
   "theme_color": "#0659ef",
   "background_color": "#ffffff",
   "lang": "en",
   "dir": "auto",
-  "categories": ["news", "magazines", "sports", "weather"],
+  "categories": [
+    "news",
+    "magazines",
+    "sports",
+    "weather"
+  ],
 
   "icons": [
     {
-      "src": "/amimodiscoverynews/icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-256.png",
-      "sizes": "256x256",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-512.png?v=1.0.1",
+      "src": "/amimodiscoverynews/icon-512.jpeg?v=1.0.1",
       "sizes": "720x800",
       "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/amimodiscoverynews/icon-maskable-512.png",
+      "src": "/amimodiscoverynews/icon-maskable-512.jpeg",
       "sizes": "720x800",
       "type": "image/jpeg",
       "purpose": "maskable"
@@ -102,8 +63,8 @@
       "url": "/amimodiscoverynews/top",
       "icons": [
         {
-          "src": "/amimodiscoverynews/icon-96.png",
-          "sizes": "96x96",
+          "src": "/amimodiscoverynews/icon-512.png",
+          "sizes": "512x512",
           "type": "image/png"
         }
       ]
@@ -115,8 +76,8 @@
       "url": "/amimodiscoverynews/saved",
       "icons": [
         {
-          "src": "/amimodiscoverynews/icon-96.png",
-          "sizes": "96x96",
+          "src": "/amimodiscoverynews/icon-512.png",
+          "sizes": "512x512",
           "type": "image/png"
         }
       ]
@@ -136,7 +97,9 @@
   "url_handlers": [
     {
       "origin": "https://amimollc.github.io",
-      "paths": ["/amimodiscoverynews/*"]
+      "paths": [
+        "/amimodiscoverynews/*"
+      ]
     }
   ],
 
@@ -151,8 +114,14 @@
     {
       "action": "/amimodiscoverynews/open-news",
       "accept": {
-        "text/html": [".html", ".htm"],
-        "application/rss+xml": [".rss", ".xml"]
+        "text/html": [
+          ".html",
+          ".htm"
+        ],
+        "application/rss+xml": [
+          ".rss",
+          ".xml"
+        ]
       }
     }
   ],
@@ -192,8 +161,8 @@
       },
       "icons": [
         {
-          "src": "/amimodiscoverynews/icon-96.png",
-          "sizes": "96x96",
+          "src": "/amimodiscoverynews/icon-512.png",
+          "sizes": "512x512",
           "type": "image/png"
         }
       ]
