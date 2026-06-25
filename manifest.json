@@ -1,176 +1,56 @@
-{
-  "name": "Amimo Discovery",
-  "short_name": "Amimo News",
-  "description": "Discovering and browsing local and worldwide news.",
-  "id": "com.amimodiscovery.app",
-  "start_url": "/amimodiscoverynews/",
-  "scope": "/amimodiscoverynews/",
-  "display": "fullscreen",
-  "display_override": [
-    "window-controls-overlay",
-    "tabbed",
-    "fullscreen"
-  ],
-  "orientation": "portrait",
-  "theme_color": "#0659ef",
-  "background_color": "#ffffff",
-  "lang": "en",
-  "dir": "auto",
-  "categories": [
-    "news",
-    "magazines",
-    "sports",
-    "weather"
-  ],
-
-  "icons": [
-    {
-      "src": "/amimodiscoverynews/icon-512.png?v=1.0.1",
-      "sizes": "720x800",
-      "type": "image/jpeg",
-      "purpose": "any"
-    },
-    {
-      "src": "/amimodiscoverynews/icon-maskable-512.png",
-      "sizes": "720x800",
-      "type": "image/jpeg",
-      "purpose": "maskable"
-    }
-  ],
-
-  "screenshots": [
-    {
-      "src": "/amimodiscoverynews/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Homepage on desktop"
-    },
-    {
-      "src": "/amimodiscoverynews/screenshot-narrow.png",
-      "sizes": "720x1280",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mobile article view"
-    }
-  ],
-
-  "shortcuts": [
-    {
-      "name": "Top News",
-      "short_name": "Top",
-      "description": "Latest headlines",
-      "url": "/amimodiscoverynews/top",
-      "icons": [
-        {
-          "src": "/amimodiscoverynews/icon-512.png",
-          "sizes": "512x512",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Saved Articles",
-      "short_name": "Saved",
-      "description": "Your reading list",
-      "url": "/amimodiscoverynews/saved",
-      "icons": [
-        {
-          "src": "/amimodiscoverynews/icon-512.png",
-          "sizes": "512x512",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
-
-  "share_target": {
-    "action": "/amimodiscoverynews/share",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
+"icons": [
+  {
+    "src": "/amimodiscoverynews/icon-192.png",
+    "sizes": "192x192",
+    "type": "image/png",
+    "purpose": "any"
   },
-
-  "url_handlers": [
-    {
-      "origin": "https://amimollc.github.io",
-      "paths": [
-        "/amimodiscoverynews/*"
-      ]
-    }
-  ],
-
-  "protocol_handlers": [
-    {
-      "protocol": "web+amimonews",
-      "url": "/amimodiscoverynews/news?article=%s"
-    }
-  ],
-
-  "file_handlers": [
-    {
-      "action": "/amimodiscoverynews/open-news",
-      "accept": {
-        "text/html": [
-          ".html",
-          ".htm"
-        ],
-        "application/rss+xml": [
-          ".rss",
-          ".xml"
-        ]
-      }
-    }
-  ],
-
-  "handle_links": "preferred",
-
-  "launch_handler": {
-    "client_mode": "auto"
+  {
+    "src": "/amimodiscoverynews/icon-512.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "any"
   },
-
-  "edge_side_panel": {
-    "preferred_width": 400
+  {
+    "src": "/amimodiscoverynews/icon-maskable-512.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "maskable"
   },
-
-  "note_taking": {
-    "new_note_url": "/amimodiscoverynews/new-note"
+  {
+    "src": "/amimodiscoverynews/icon-maskable-512.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "any maskable"
   },
-
-  "tab_strip": {
-    "home_tab": "auto"
+  {
+    "src": "/amimodiscoverynews/favicon.png",
+    "sizes": "72x72",
+    "type": "image/png",
+    "purpose": "any"
   },
-
-  "widgets": [
-    {
-      "name": "Amimo News Widget",
-      "description": "Latest headlines widget",
-      "tag": "news-widget",
-      "screenshots": [
-        {
-          "src": "/amimodiscoverynews/widget-preview.png",
-          "sizes": "512x512",
-          "type": "image/png"
-        }
-      ],
-      "data": {
-        "url": "/amimodiscoverynews/widget-data.json"
-      },
-      "icons": [
-        {
-          "src": "/amimodiscoverynews/icon-72.png",
-          "sizes": "192x192",
-          "type": "image/png"
-          "purpose":"any"
-        }
-      ]
-    }
-  ],
-
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "iarc_rating_id": "rating.pending"
-}
+  {
+    "src": "/amimodiscoverynews/favicon.png",
+    "sizes": "96x96",
+    "type": "image/png",
+    "purpose": "any"
+  },
+  {
+    "src": "/amimodiscoverynews/favicon.png",
+    "sizes": "128x128",
+    "type": "image/png",
+    "purpose": "any"
+  },
+  {
+    "src": "/amimodiscoverynews/favicon.png",
+    "sizes": "144x144",
+    "type": "image/png",
+    "purpose": "any"
+  },
+  {
+    "src": "/amimodiscoverynews/favicon.png",
+    "sizes": "152x152",
+    "type": "image/png",
+    "purpose": "any"
+  }
+]
