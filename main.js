@@ -1,5 +1,6 @@
 // ================================================================
 //  main.js – FULL COMPLETE with all features, feeds, helpers
+//  FIX: Top News moved to end of "All" view
 // ================================================================
 
 (function() {
@@ -933,13 +934,7 @@
           html += `</div>`;
         }
 
-        html += `<div class="top-news-inline" style="margin:1.5rem 0;">
-                    <div class="category-section-title" style="border-left-color:#f59e0b;color:#f59e0b;">
-                        <i class="fas fa-chart-line"></i> 🔥 Top News
-                    </div>
-                    <div id="topNewsContainer" style="display:block;padding:0;"></div>
-                  </div>`;
-
+        // Discover section (inside Local)
         html += `<div class="sub-section" id="discoverSection">
                     <div class="sub-section-title">🔍 Discover More Local News</div>`;
         const discoverArticles = localSectionArticles.discover || [];
@@ -975,6 +970,14 @@
         }
       }
     }
+
+    // ----- TOP NEWS NOW APPENDED AFTER ALL CATEGORIES -----
+    html += `<div class="top-news-inline" style="margin:1.5rem 0 2rem 0;">
+                <div class="category-section-title" style="border-left-color:#f59e0b;color:#f59e0b;">
+                    <i class="fas fa-chart-line"></i> 🔥 Top News
+                </div>
+                <div id="topNewsContainer" style="display:block;padding:0;"></div>
+              </div>`;
 
     feedDiv.innerHTML = html;
     attachSaveEvents();
