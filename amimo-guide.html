@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Amimo News — A guide to your feed</title>
+<meta name="description" content="How to use Amimo News: your personalized feed, local news worldwide, saved articles, live channels, and more." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0B1220;
+    --paper: #F5F7FB;
+    --surface: #FFFFFF;
+    --brand: #0A4ED8;
+    --brand-deep: #062E86;
+    --amber: #F2A93B;
+    --slate: #47536B;
+    --slate-soft: #7C87A0;
+    --line: rgba(11, 18, 32, 0.10);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  img, svg { display: block; max-width: 100%; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ---------- Triangle mark (the Amimo logo shape, drawn in CSS) ---------- */
+  .mark {
+    width: 22px; height: 19px;
+    background: var(--brand);
+    clip-path: polygon(8% 0, 92% 0, 50% 100%);
+    flex-shrink: 0;
+  }
+  .mark.amber { background: var(--amber); }
+  .mark.small { width: 9px; height: 8px; margin-top: 6px; }
+  .mark.ghost { background: rgba(255,255,255,0.16); }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(245,247,251,0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 0;
+  }
+  .brand-lockup { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+  .brand-lockup .word { font-family: var(--serif); font-weight: 600; font-size: 1.15rem; letter-spacing: -0.01em; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--sans); font-weight: 600; font-size: 0.92rem;
+    padding: 0.7rem 1.3rem; border-radius: 999px;
+    text-decoration: none; border: 1px solid transparent; cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-deep); transform: translateY(-1px); }
+  .btn-ghost-light { background: transparent; color: #fff; border-color: rgba(255,255,255,0.4); }
+  .btn-ghost-light:hover { border-color: #fff; }
+  .btn-sm { padding: 0.55rem 1.1rem; font-size: 0.85rem; }
+  .chevron { width: 9px; height: 9px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 4.5rem 0 3.5rem; }
+  .hero-eyebrow-mark { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.4rem; }
+  .hero-eyebrow-mark span { font-size: 0.85rem; color: var(--slate); font-weight: 500; }
+  h1.hero-title {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    line-height: 1.08; letter-spacing: -0.01em;
+    max-width: 16ch; margin: 0 0 1.3rem;
+  }
+  .hero-sub {
+    font-size: 1.08rem; color: var(--slate);
+    max-width: 46ch; margin: 0 0 2.1rem;
+  }
+  .hero-ctas { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
+  .link-quiet {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-weight: 600; font-size: 0.92rem; color: var(--ink);
+    text-decoration: none; border-bottom: 1.5px solid var(--line);
+    padding-bottom: 2px;
+  }
+  .link-quiet:hover { border-color: var(--ink); }
+  .link-quiet .chevron { transform: rotate(45deg); border-color: var(--ink); }
+
+  /* ---------- Intro ---------- */
+  .intro { padding: 0 0 3.5rem; border-bottom: 1px solid var(--line); }
+  .intro p {
+    font-size: 1.05rem; color: var(--slate);
+    max-width: 62ch;
+  }
+  .intro p + p { margin-top: 1rem; }
+  .intro strong { color: var(--ink); }
+
+  /* ---------- Section heading ---------- */
+  .section-head { padding: 3rem 0 1.8rem; }
+  .section-head h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin: 0 0 0.5rem;
+  }
+  .section-head p { color: var(--slate); margin: 0; max-width: 56ch; }
+
+  /* ---------- Dispatch list (features) ---------- */
+  .dispatch { border-top: 1px solid var(--line); }
+  .dispatch-row {
+    display: grid; grid-template-columns: 22px 1fr;
+    gap: 1rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .dispatch-row .mark { margin-top: 5px; }
+  .dispatch-row h3 {
+    font-family: var(--sans); font-weight: 700; font-size: 1.02rem;
+    margin: 0 0 0.35rem;
+  }
+  .dispatch-row p { margin: 0; color: var(--slate); font-size: 0.95rem; max-width: 58ch; }
+  @media (min-width: 800px) {
+    .dispatch { display: grid; grid-template-columns: 1fr 1fr; column-gap: 3rem; }
+    .dispatch-row { border-bottom: 1px solid var(--line); }
+  }
+
+  /* ---------- Steps (real sequence) ---------- */
+  .steps { padding-bottom: 1rem; }
+  .step {
+    display: grid; grid-template-columns: 44px 1fr;
+    gap: 1.1rem;
+    position: relative;
+    padding-bottom: 2.2rem;
+  }
+  .step:last-child { padding-bottom: 0; }
+  .step-num {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--surface); border: 1.5px solid var(--brand);
+    color: var(--brand); font-family: var(--serif); font-weight: 600; font-size: 1.05rem;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1;
+  }
+  .step::before {
+    content: ''; position: absolute; left: 21px; top: 44px; bottom: -2.2rem;
+    width: 1.5px; background: var(--line);
+  }
+  .step:last-child::before { display: none; }
+  .step h3 { font-family: var(--sans); font-weight: 700; font-size: 1.02rem; margin: 0.5rem 0 0.35rem; }
+  .step p { margin: 0; color: var(--slate); font-size: 0.95rem; max-width: 54ch; }
+
+  /* ---------- Support band ---------- */
+  .support {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 2.2rem; margin: 3rem 0;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.5rem;
+  }
+  .support h3 { font-family: var(--serif); font-size: 1.3rem; font-weight: 600; margin: 0 0 0.4rem; }
+  .support p { margin: 0; color: var(--slate); font-size: 0.95rem; max-width: 42ch; }
+
+  /* ---------- Final CTA band ---------- */
+  .cta-band {
+    position: relative; overflow: hidden;
+    background: var(--brand-deep); color: #fff;
+    border-radius: 22px;
+    padding: 3.2rem 2.2rem;
+    margin: 3.5rem 0 4.5rem;
+  }
+  .cta-band .mark-bg {
+    position: absolute; right: -40px; top: -60px;
+    width: 340px; height: 300px;
+    background: rgba(255,255,255,0.06);
+    clip-path: polygon(8% 0, 92% 0, 50% 100%);
+    transform: rotate(8deg);
+  }
+  .cta-band-content { position: relative; max-width: 30ch; }
+  .cta-band h2 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(1.5rem, 3vw, 2.1rem);
+    margin: 0 0 0.7rem; line-height: 1.15;
+  }
+  .cta-band p { color: rgba(255,255,255,0.78); margin: 0 0 1.6rem; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 2rem 0 3rem;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  footer .word { font-family: var(--serif); font-weight: 600; font-size: 0.95rem; }
+  footer .fine { color: var(--slate-soft); font-size: 0.82rem; }
+  footer a { text-decoration: none; color: var(--slate); font-size: 0.85rem; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 560px) {
+    .hero { padding: 3rem 0 2.5rem; }
+    .support { flex-direction: column; align-items: flex-start; }
+    .cta-band { padding: 2.4rem 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-row">
+    <a class="brand-lockup" href="#top">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="word">Amimo Discovery</span>
+    </a>
+    <a class="btn btn-primary btn-sm" href="https://amimodiscovery.pages.dev" target="_blank" rel="noopener">Visit now</a>
+  </div>
+</header>
+
+<main id="top" class="wrap">
+
+  <section class="hero">
+    <div class="hero-eyebrow-mark">
+      <span class="mark small" aria-hidden="true"></span>
+      <span>A guide to Amimo News</span>
+    </div>
+    <h1 class="hero-title">One feed. Every newsroom that matters.</h1>
+    <p class="hero-sub">Amimo News pulls headlines from dozens of independent publishers into a single, clean feed — personalized to you, local to wherever you are, and yours to read anywhere. Here's everything it can do for you.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="https://amimodiscovery.pages.dev" target="_blank" rel="noopener">Visit now</a>
+      <a class="link-quiet" href="#features">
+        See what's inside
+        <span class="chevron" aria-hidden="true"></span>
+      </a>
+    </div>
+  </section>
+
+  <section class="intro">
+    <p><strong>Amimo News is a free news reader</strong> — no single publisher, no single point of view. It gathers stories from world, national, and local outlets and sorts them into a feed built around your interests, your language, and your region.</p>
+    <p>You can read it right in your browser, or install it to your phone or desktop like any other app — including offline, once a page has loaded.</p>
+  </section>
+
+  <section id="features">
+    <div class="section-head">
+      <h2>What's inside</h2>
+      <p>The features that make up your everyday reading experience.</p>
+    </div>
+    <div class="dispatch">
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>A feed built For You</h3>
+          <p>Amimo mixes stories from World, Politics, Technology, Business, Sports, Entertainment and Health into one feed, weighted toward what you actually read.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Local news, automatically</h3>
+          <p>Amimo detects your country on your first visit and surfaces local outlets alongside the national picture — covering well over 60 countries.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Every major topic, one tap away</h3>
+          <p>Jump straight into World, Politics, Technology, Business, Sports, Entertainment, or Health whenever you want to go deep on one subject.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Trending, from everywhere at once</h3>
+          <p>A fast-moving rail of the day's biggest stories, mixed across categories and outlets so no single newsroom dominates it.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Search that actually finds it</h3>
+          <p>One search box checks multiple sources at once, so a niche story is far more likely to turn up than it would on a single outlet's site.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Save it for later</h3>
+          <p>Bookmark any story with one tap and come back to it from any device once you're signed in.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Like stories, follow topics</h3>
+          <p>Liking articles and following a topic both quietly sharpen your For You feed over time — no settings screen required.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>One free account, everywhere</h3>
+          <p>Sign in with email or Google and your saved articles, likes and followed topics travel with you to your next device.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Live channels</h3>
+          <p>Browse live news channels alongside your reading feed for when you want to watch as well as read.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Install it like an app</h3>
+          <p>Add Amimo to your home screen for a full-screen experience that opens instantly and keeps working when your connection drops.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>A nudge when it matters</h3>
+          <p>Turn on notifications and Amimo will let you know when a major story breaks, without burying you in alerts.</p>
+        </div>
+      </div>
+      <div class="dispatch-row">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h3>Read it your way</h3>
+          <p>Switch between light and dark themes depending on the time of day or your own preference.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="getting-started">
+    <div class="section-head">
+      <h2>Getting started</h2>
+      <p>From first visit to a feed that actually knows what you like — in a few minutes.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>Open Amimo News</h3>
+          <p>Visit <a class="link-quiet" style="border:none;padding:0;" href="https://amimodiscovery.pages.dev" target="_blank" rel="noopener">amimodiscovery.pages.dev</a> in any browser — no download required to start reading.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>Browse For You, or pick a topic</h3>
+          <p>Start on the personalized feed, or head straight into a category if you already know what you're after.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>Create a free account</h3>
+          <p>Sign up with an email, or continue with Google in one tap — this is what lets your saved articles and preferences follow you to other devices.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <h3>Save, like, and follow topics</h3>
+          <p>Every article you save or like — and every topic you follow — quietly teaches your feed what to show you more of.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div>
+          <h3>Install it to your home screen</h3>
+          <p>Your browser will offer to install Amimo as an app. Do it for instant loading and offline reading.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div>
+          <h3>Turn on notifications</h3>
+          <p>Say yes when prompted, and Amimo will let you know when something big happens.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="support">
+    <div>
+      <h3>Need a hand?</h3>
+      <p>If something isn't working the way it should, or you just have a question, our team reads every message.</p>
+    </div>
+    <a class="btn btn-primary btn-sm email" href="mailto:amimollc@gmail.com" style="text-decoration:none;">Email amimollc@gmail.com</a>
+  </div>
+
+  <section class="cta-band">
+    <span class="mark-bg" aria-hidden="true"></span>
+    <div class="cta-band-content">
+      <h2>Your next headline is one tap away.</h2>
+      <p>Free to use, ready in your browser, and yours to install whenever you like.</p>
+      <a class="btn btn-ghost-light" href="https://amimodiscovery.pages.dev" target="_blank" rel="noopener">Visit now</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <span class="word">Amimo Discovery</span>
+  <a href="mailto:amimollc@gmail.com">amimollc@gmail.com</a>
+  <span class="fine">© <span id="year"></span> Amimo LLC</span>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
